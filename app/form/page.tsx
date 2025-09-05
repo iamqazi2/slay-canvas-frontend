@@ -6,19 +6,19 @@ import Login from '@/components/auth/Login'
 import Logout from '@/components/auth/Logout'
 import Forget from '@/components/auth/Forget'
 import Authentication from '@/components/auth/Authentication'
-import Reset from '@/components/auth/Reset'   
+import Reset from '@/components/auth/Reset'
 import Link from 'next/link'
 
 type FormDataType = {
-  first: string;
-  last: string;
-  email: string;
-  password: string;
-  newPassword: string;
-  confirmPassword: string;
+    first: string;
+    last: string;
+    email: string;
+    password: string;
+    newPassword: string;
+    confirmPassword: string;
 }
 
-const form = () => {
+const Form = () => {
 
     const [forget, setForget] = useState<boolean>(false)
     const [showAuth, setShowAuth] = useState(false)
@@ -26,12 +26,12 @@ const form = () => {
     const [reset, setReset] = useState<boolean>(false)
 
     const [formData, setFormData] = useState<FormDataType>({
-    first: "",
-    last: "",
-    email: "",
-    password: "",
-    newPassword: "",
-    confirmPassword: ""
+        first: "",
+        last: "",
+        email: "",
+        password: "",
+        newPassword: "",
+        confirmPassword: ""
     });
 
     return (
@@ -41,18 +41,18 @@ const form = () => {
             </div>
 
             {showAuth ? (
-                <Authentication setAuth={setShowAuth} setReset={setReset}/>
-            ) : reset ? (                                     
-                <Reset setReset={setReset} formData={formData} setFormData={setFormData}/>
+                <Authentication setAuth={setShowAuth} setReset={setReset} />
+            ) : reset ? (
+                <Reset setReset={setReset} formData={formData} setFormData={setFormData} />
             ) : forget ? (
-                <Forget setForget={setForget} setAuth={setShowAuth} formData={formData} setFormData={setFormData}/>
+                <Forget setForget={setForget} setAuth={setShowAuth} formData={formData} setFormData={setFormData} />
             ) : createAccount ? (
-                <Logout setCreateAccount={setCreateAccount} formData={formData} setFormData={setFormData}/>
+                <Logout setCreateAccount={setCreateAccount} formData={formData} setFormData={setFormData} />
             ) : (
-                <Login setCreateAccount={setCreateAccount} setForget={setForget} formData={formData} setFormData={setFormData}/>
+                <Login setCreateAccount={setCreateAccount} setForget={setForget} formData={formData} setFormData={setFormData} />
             )}
         </div>
     )
 }
 
-export default form
+export default Form
