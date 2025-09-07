@@ -14,20 +14,19 @@ type HeadingProps = {
   color2?: string; // 👈 subtext color
 }
 
-const MainHeading: React.FC<HeadingProps> = ({text, text2, fontSize, width, subFontSize, leading, color1, color2}) => {
+const MainHeading: React.FC<HeadingProps> = ({ text, text2, fontSize, width, subFontSize, leading, color1, color2 }) => {
   return (
     <motion.div
       variants={fadeIn({ direction: "up", delay: 0 })}
       initial="hidden"
       whileInView="show"
-      viewport={{ once: false, amount: 0.7 }}
       className="flex flex-col items-center pb-6"
     >
 
       <h1
         className={`text-center font-bold ${fontSize} ${leading} ${color1
-            ? color1 
-            : "bg-gradient-to-r from-[#8e5eff] to-[#4596ff] bg-clip-text text-transparent"
+          ? color1
+          : "bg-gradient-to-r from-[#8e5eff] to-[#4596ff] bg-clip-text text-transparent"
           }`}
       >
         {text}

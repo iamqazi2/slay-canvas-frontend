@@ -42,7 +42,7 @@ const Sec3Cards: React.FC = () => {
         <div className="flex flex-col gap-10">
             {features.map((item, idx) => (
                 <div key={idx} className={`flex flex-col md:flex-row justify-between items-center ${item.reverse ? "md:flex-row-reverse" : ""}`}>
-                    
+
                     {/* Text Section */}
                     <motion.div
                         variants={fadeIn({ direction: "up", delay: 0 })}
@@ -62,7 +62,7 @@ const Sec3Cards: React.FC = () => {
                         variants={fadeIn({ direction: "up", delay: 0.4 })}
                         initial="hidden"
                         whileInView="show"
-                        
+
                         className={`relative rounded-3xl bg-gradient-to-r ${item.gradient} p-8 w-full max-w-[550px]`}
                     >
                         <div className='relative w-full aspect-[578/371]'>

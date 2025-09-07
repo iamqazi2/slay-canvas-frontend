@@ -8,7 +8,7 @@ interface FadeInProps {
   delay?: number;
 }
 
-export const fadeIn = ({ direction = 'up', delay = 0 }: FadeInProps): Variants => {
+export const fadeIn = ({ direction, delay }: FadeInProps): Variants => {
   return {
     hidden: {
       y: direction === 'up' ? 40 : direction === 'down' ? -40 : 0,

@@ -45,7 +45,6 @@ const Sec7Card = () => {
                         }}
                         className="w-full h-full object-cover"
                         loop
-                        muted
                         playsInline
                     >
                         <source src={item.src} type="video/mp4" />

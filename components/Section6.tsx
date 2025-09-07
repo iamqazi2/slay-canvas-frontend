@@ -1,5 +1,3 @@
-import assets from '@/app/assets'
-import Image from 'next/image'
 import React from 'react'
 import Sec6Card from './cards/Sec6Card'
 import Sec6Heading from './Headings/Sec6Heading'
@@ -13,7 +11,7 @@ const Section6 = () => {
 
                 {/* right */}
                 <div>
-                 <Sec6Card />
+                    <Sec6Card />
                 </div>
 
             </div>

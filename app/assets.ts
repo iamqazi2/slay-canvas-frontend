@@ -4,7 +4,7 @@ const assets = {
   whiteLogo: "/WhiteLogo.svg",
   circle: "/circle.png",
   halfCircle: "/halfCircle.png",
-  moodBoard: "/moodBoard.png",
+  moodBoard: "/moodBoard.svg",
   elem: "/elem.png",
   email: "/email.png",
   arrowRight: "/arrowRight.svg",
@@ -12,17 +12,15 @@ const assets = {
   groupElem: "/groupElem.svg",
   paint: "/paint.svg",
   book: "/book.svg",
-  researchers: "/researchers.png",
-  team: "/team.png",
-  creators: "/creators.png",
-  frame: "/frame.png",
-  dashboard: "/dashboard.png",
-  Group: "/Group.svg",
+  researchers: "/researchers.svg",
+  team: "/team.svg",
+  creators: "/creators.svg",
+  dashboard: "/dashboard.svg",
   halfStar: "/halfStar.svg",
   linkedin: "/linkedin.png",
   logo: "/logo.svg",
-  noteBook: "/noteBook.png",
-  chatbot: "/chatbot.png",
+  noteBook: "/noteBook.svg",
+  chatbot: "/chatbot.svg",
   slayCanvas: "/Slay Canvas.png",
   star: "/star.svg",
   twitter: "/twitter.png",
@@ -36,49 +34,18 @@ const assets = {
   arrowUp: "/arrowUp.svg",
   msg: "/msg.svg",
   testimonialIcons: "/testimonialIcons.png",
-  mindMapping: "/mindMapping.png",
+  mindMapping: "/mindMapping.svg",
   AI: "/AI.svg",
   users: "/users.svg",
-  copyWriting: "/Copy-Writieng.svg",
-  instaPost: "/InstaPost.svg",
-  mainChatbot: "/MainChatbot.svg",
-  youtubePost: "/YoutubePost.svg",
-  recording: "/recording.png",
-  pdf: "/pdf.png",
-  wikipedia: "/wikipedia.png",
-  research: "/research.png",
   google: "/google.svg",
-  more: "/more.png",
-  yt: "/yt.png",
-  linkin: "/linkin.png",
-  copy: "/copy.png",
-  insta: "/insta.png",
-  twit: "/twit.png",
-  tiktok: "/tiktok.png",
-  bookHead2: "/book-head.png",
-  brain: "/brain.png",
-  research2: "/research-.png",
-  blog: "/blog.png",
   inputEye: "/inputEye.svg",
   lock: "/lock.png",
   arrowleft: "/arrowleft.svg",
   reviewElem: "/review-elem.svg",
-  Sec5Img: "/section5Img.png"
+  Sec5Img: "/section5Img.svg",
+  planTick: "/planTick.svg",
+  bluePlanTick: "bluePlanTick.svg",
 };
-
-export const head = [
-  { id: 1, src: assets.yt, text: "Youtube Script" },
-  { id: 2, src: assets.linkin, text: "LinkedIn Script" },
-  { id: 3, src: assets.insta, text: "Instagram Script" },
-  { id: 4, src: assets.twit, text: "Twitter Script" },
-  { id: 5, src: assets.tiktok, text: "TikTok Script" },
-  { id: 6, src: assets.copy, text: "Copywriting Script" },
-  { id: 7, src: assets.blog, text: "Blog Script" },
-  { id: 8, src: assets.bookHead2, text: "Book Script" },
-  { id: 9, src: assets.brain, text: "Brainstorm Script" },
-  { id: 10, src: assets.research2, text: "Research Script" },
-  { id: 11, src: assets.more, text: "So Much More" },
-];
 
 export const users = [
   { id: 1, src: "/user1.png" },
@@ -186,40 +153,110 @@ export const testimonials = [
   {
     id: 5,
     name: "Sophia Patel",
-    img: "/client6.jpg",
+    img: "/client5.jpg",
     review: "Customer support is excellent. Every time I reached out with questions, they responded quickly and solved my issues."
   },
   {
     id: 6,
     name: "David Kim",
-    img: "/client5.jpg",
+    img: "/client6.jpg",
     review: "I rely on this daily for my projects. It boosts productivity and makes complex work feel a lot more manageable."
   },
   {
     id: 7,
     name: "Olivia Brown",
-    img: "/client8.jpg",
+    img: "/client7.jpg",
     review: "The results are consistently great. It feels like having an assistant who never gets tired and always delivers quality."
   },
   {
     id: 8,
     name: "Daniel Wilson",
-    img: "/client2.png",
+    img: "/client8.jpg",
     review: "I’ve tested other tools before, but nothing matches this. It’s reliable, efficient, and keeps improving over time."
   },
   {
     id: 9,
     name: "Ava Martinez",
-    img: "/client7.jpg",
+    img: "/client9.jpg",
     review: "It blended perfectly into my existing workflow. I didn’t need to change much, and that made adopting it really smooth."
   },
   {
     id: 10,
-    name: "Ethan Walker",
-    img: "/client5.jpg",
+    name: "Liam Patel",
+    img: "/client2.png",
     review: "It exceeded my expectations. Flexible, simple, and perfect for my needs. I can’t imagine going back to old methods."
   }
 ]
+
+export const plans = [
+  {
+    id: 1,
+    name: "Starter",
+    description: "Individuals just getting started",
+    monthlyPrice: "Free",
+    annualPrice: "Free",
+    features: [
+      "1 Board",
+      "Up to 10 uploads (images, docs, or links)",
+      "Basic AI Chat (limited queries)",
+      "Visual moodboards",
+      "Community support",
+    ],
+    buttonText: "Try for Free",
+  },
+  {
+    id: 2,
+    name: "Pro",
+    description: "Freelancers & small teams.",
+    monthlyPrice: "$19 /per month",
+    annualPrice: "$190 /per year", // annual discounted price 
+    features: [
+      "All starter features +",
+      "Unlimited Boards",
+      "Unlimited uploads (images, docs, links, videos)",
+      "Advanced AI Chat (summaries, Q&A)",
+      "Mind maps & visual organization",
+      "Real-time collaboration",
+    ],
+    buttonText: "Select Plan",
+    popular: true,
+  },
+  {
+    id: 3,
+    name: "Team",
+    description: "Teams & agencies.",
+    monthlyPrice: "$49 /per month",
+    annualPrice: "$490 /per year",
+    features: [
+      "Everything in Pro +",
+      "Up to 10 team members",
+      "Shared workspaces",
+      "Role-based permissions",
+      "Premium support (chat + email)",
+      "Custom integration support",
+      "Early access to new features",
+    ],
+    buttonText: "Select Plan",
+  },
+];
+
+export const faqData = [
+  {
+    question: "What is SlayCanvas and who is it for?",
+    answer:
+      "SlayCanvas is an AI-powered creative workspace that combines moodboards, research notebooks, and AI chat into one platform. It’s designed for creators, researchers, and teams who want to collect resources, brainstorm ideas, and organize everything visually in one place.",
+  },
+  {
+    question: "Do I need design experience to use SlayCanvas?",
+    answer:
+      "No, you don’t need design experience. SlayCanvas is designed to be simple and intuitive so anyone can use it to organize ideas visually.",
+  },
+  {
+    question: "Can I collaborate with my team on SlayCanvas?",
+    answer:
+      "Yes, SlayCanvas supports collaboration so you and your team can work together in one shared workspace.",
+  },
+];
 
 
 export default assets;

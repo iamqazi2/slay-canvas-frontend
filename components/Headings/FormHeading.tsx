@@ -5,7 +5,7 @@ type FormProps = {
     text2: string;
 }
 
-const FormHeading: React.FC<FormProps> = ({text, text2}) => {
+const FormHeading: React.FC<FormProps> = ({ text, text2 }) => {
     return (
         <div className='mb-3'>
             <h2 className='font-bold text-2xl'>{text}</h2>

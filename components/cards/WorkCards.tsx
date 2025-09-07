@@ -1,9 +1,9 @@
-import assets, { cards } from '@/app/assets'
+import { cards } from '@/app/assets'
 import Image from 'next/image'
 import React from 'react'
 
 const WorkCards = () => {
-  // Duplicate the cards array once to create smooth loop
+
   const allCards = [...cards, ...cards]
 
   return (

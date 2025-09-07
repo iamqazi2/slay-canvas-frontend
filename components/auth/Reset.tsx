@@ -1,42 +1,61 @@
-import React, { useState } from "react";
+import React, { Dispatch, SetStateAction, useState } from "react";
 import FormHeading from "../Headings/FormHeading";
 import FormBtn from "../ui/FormBtn";
 import assets from "@/app/assets";
-import { Router } from "next/router";
+import Image from "next/image";
+import { ChevronLeft } from "lucide-react";
+
+interface FormData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  otp: [string, string, string, string, string, string];
+  newPassword: string;
+  confirmPassword: string;
+}
 
 type ResetProps = {
-  setReset: React.Dispatch<React.SetStateAction<boolean>>;
-  formData: {
-    newPassword: string,
-    confirmPassword: string;
-  }
-  setFormData: React.Dispatch<React.SetStateAction<any>>
+  setCurrentView: (view: "login" | "signup" | "forget" | "otp" | "reset") => void;
+  formData: FormData;
+  setFormData: Dispatch<SetStateAction<FormData>>;
 };
 
-const Reset: React.FC<ResetProps> = ({ setReset, formData, setFormData}) => {
+const Reset: React.FC<ResetProps> = ({ setCurrentView, formData, setFormData }) => {
 
   const [showPassword, setShowPassword] = useState<boolean>(false)
 
   const submitHandler = (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.newPassword !== formData.confirmPassword) {
+      alert("Passwords do not match!");
+      return;
+    } else {
+      console.log("reset", formData)
 
-    console.log("reset", formData)
+      setCurrentView("login")
+    }
+
     setFormData({
+      email: "",
+      password: "",
+      firstName: "",
+      lastName: "",
+      otp: ["", "", "", "", "", ""],
       newPassword: "",
-      confirmPassword: ""
+      confirmPassword: "",
     })
 
-    setReset(false);
   };
 
   return (
     <div className="flex m-auto items-center justify-center bg-white md:w-110 md:h-110 rounded-2xl mt-8 relative">
 
       <div
-        onClick={() => setReset(false)}
-        className="absolute top-4 left-8 flex gap-2 items-center cursor-pointer mt-2 px-1.5 py-0.5 border border-gray-200 rounded mb-4 text-gray-600 hover:text-black"
+        onClick={() => setCurrentView("otp")}
+        className="absolute top-4 left-8 flex gap-1 items-center cursor-pointer mt-2 px-1.5 py-0.5 border border-gray-200 rounded mb-4 text-gray-600 hover:text-black"
       >
-        <img src={assets.arrowleft} alt="arrowleft" />
+        <ChevronLeft size={16} />
         <span className="text-xs">Cancel</span>
       </div>
 
@@ -59,26 +78,28 @@ const Reset: React.FC<ResetProps> = ({ setReset, formData, setFormData}) => {
             <span className="text-xs mb-1.5">New Password</span>
             <input
               placeholder="Enter new password"
-              value={formData.newPassword ?? ""}
-              onChange={(e)=> setFormData({...formData, newPassword: e.target.value})}
               className="w-full rounded-lg bg-[#f5f5f5] px-3 py-2 outline-[#005EA0] border border-gray-200"
               type={showPassword ? 'text' : 'password'}
+              value={formData.newPassword}
+              onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
             />
-            <img onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-8 text-sm text-black"
-                src={assets.inputEye} />
+
+            <Image onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-8 text-sm text-black"
+              src={assets.inputEye} width={25} height={25} alt="input eye" />
           </div>
 
           <div className="relative">
             <span className="text-xs mb-1.5">Confirm Password</span>
             <input
               placeholder="Confirm password"
-              value={formData.confirmPassword ?? ""}
-              onChange={(e)=> setFormData({...formData, confirmPassword: e.target.value})}
               className="w-full rounded-lg bg-[#f5f5f5] px-3 py-2 outline-[#005EA0] border border-gray-200"
               type={showPassword ? 'text' : 'password'}
+              value={formData.confirmPassword}
+              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
             />
-            <img onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-8 text-sm text-black"
-                src={assets.inputEye} />
+
+            <Image onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-8 text-sm text-black"
+              src={assets.inputEye} width={25} height={25} alt="input eye" />
           </div>
 
           <FormBtn text="Submit" />

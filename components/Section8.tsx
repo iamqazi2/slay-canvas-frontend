@@ -7,13 +7,13 @@ import Image from 'next/image'
 const Section8 = () => {
     return (
         <div className='w-full bg-gradient-to-r from-[#8e5eff] to-[#4596ff] relative overflow-hidden'>
-            <div className='bg-white/10 backdrop-blur-md w-20 h-20 rounded-full absolute hidden md:block top-20 left-10'/>
-            <div className='bg-white/10 backdrop-blur-md w-12 h-12 rounded-full absolute bottom-20 right-10'/>
+            <div className='bg-white/10 backdrop-blur-md w-20 h-20 rounded-full absolute hidden md:block top-20 left-10' />
+            <div className='bg-white/10 backdrop-blur-md w-12 h-12 rounded-full absolute bottom-20 right-10' />
 
             <div className='py-12 main-container'>
                 <div className="py-4 px-5 rounded-full text-white flex gap-2.5 
                 bg-white/10 backdrop-blur-md w-[360px] m-auto mb-10">
-                    <img src="/humbleIcon.png" alt="humbleIcon" />
+                    <Image src="/humbleIcon.png" alt="humbleIcon" height={10} width={20} />
                     <span className='font-medium'>Join thousands of creative professionals</span>
                 </div>
 

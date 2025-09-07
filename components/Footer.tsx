@@ -7,26 +7,26 @@ const Footer = () => {
     <div className='bg-[#111827] pt-14 pb-10 '>
       <div className='flex flex-col items-center main-container'>
         <div className='flex flex-col items-center gap-2 mb-10'>
-          <Image src={assets.slayCanvas} alt='slayCanvas' width={135} height={24}/>
+          <Image src={assets.slayCanvas} alt='slayCanvas' width={135} height={24} />
           <h6 className='text-[#BDB3B3]'>Your Creative Command Center</h6>
         </div>
 
-        <ul className='flex flex-col sm:flex-row items-center gap-4 text-[#666666] mb-8 '>
-          <li className='cursor-pointer hover:underline'>About</li>
-          <li className='cursor-pointer hover:underline'>Contact</li>
-          <li className='cursor-pointer hover:underline'>Privacy Policy</li>
-          <li className='cursor-pointer hover:underline'>Terms of Services</li>
+        <ul className='flex flex-col sm:flex-row items-center gap-4 text-[#666666] mb-8  '>
+          <li className='cursor-pointer hover:underline hover:text-white'>About</li>
+          <li className='cursor-pointer hover:underline hover:text-white'>Contact</li>
+          <li className='cursor-pointer hover:underline hover:text-white'>Privacy Policy</li>
+          <li className='cursor-pointer hover:underline hover:text-white'>Terms of Services</li>
         </ul>
 
         <div className='flex items-center gap-2 mb-8'>
           <div className='bg-white/6 backdrop-blur-md p-3 rounded-full hover:bg-white'>
-            <img className='w-5 h-5' src={assets.linkedin} alt="linkedin" />
+            <Image width={15} height={15} src={assets.linkedin} alt="linkedin" />
           </div>
           <div className='bg-white/6 backdrop-blur-md p-3 rounded-full hover:bg-white'>
-            <img className='w-5 h-5' src={assets.twitter} alt="twitter" />
+            <Image width={15} height={15} src={assets.twitter} alt="twitter" />
           </div>
           <div className='bg-white/6 backdrop-blur-md p-3 rounded-full hover:bg-white'>
-            <img className='w-5 h-5' src={assets.email} alt="twitter" />
+            <Image width={15} height={15} src={assets.email} alt="twitter" />
           </div>
         </div>
 
