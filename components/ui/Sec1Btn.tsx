@@ -72,7 +72,7 @@ const Sec1Btn: React.FC<ButtonProps> = ({
       {link2 ? (
         <Link href={link2}>
           <button
-            className="px-3 text-xs md:px-4.5 py-[10.5px] rounded-xl text-[#1279ff] sm:text-sm font-medium w-25 border-1 border-[#1279ff] hover:bg-gradient-to-r from-[#8e5eff] to-[#4596ff] hover:text-white transition-all duration-1000 cursor-pointer hover:border-gray-400"
+            className="px-3 text-xs md:px-4.5 py-[10.5px] rounded-xl text-[#1279ff] sm:text-sm font-medium w- border-1 border-[#1279ff] hover:bg-gradient-to-r from-[#8e5eff] to-[#4596ff] hover:text-white transition-all duration-1000 cursor-pointer hover:border-gray-400"
             style={{ width }}
           >
             {text2}
@@ -81,11 +81,11 @@ const Sec1Btn: React.FC<ButtonProps> = ({
       ) : (
         <button
           className={`
-            flex items-center gap-2 px-3 text-xs md:px-4.5 py-[9px] rounded-xl sm:text-sm font-medium w-25 border border-[#1279ff] transition-all duration-1000 cursor-pointer hover:border-gray-400
+            flex items-center !text-[14px] gap-2 px-4 text-xs md:px-4.5 py-[9px] rounded-xl sm:text-sm font-medium !w-[110px] border border-[#1279ff] transition-all duration-1000 cursor-pointer hover:border-gray-400
             ${
               variant2 === "default"
                 ? "text-[#1279ff] hover:bg-gradient-to-r from-[#8e5eff] to-[#4596ff] hover:text-white"
-                : "bg-white text-[#1279ff] hover:bg-[#9c73fa] hover:text-white transition-all duration-300"
+                : "bg-white text-[#1279ff] hover:bg-[#9c73fa] !text-[12px] hover:text-white transition-all duration-300"
             }
           `}
           style={{ width }}
