@@ -1,17 +1,18 @@
-import React from 'react'
+import React from "react";
 
 type BtnProps = {
   text: string;
-}
+};
 
 const FormBtn: React.FC<BtnProps> = ({ text }) => {
   return (
-    <button
-      className='bg-gradient-to-r from-[#8e5eff] to-[#4596ff] text-white py-3 rounded-xl cursor-pointer mt-2 w-full'
+    <a
+      href="https://slay-canvas.vercel.app/"
+      className="bg-gradient-to-r from-[#8e5eff] flex justify-center to-[#4596ff] text-white py-3 rounded-xl cursor-pointer mt-2 w-full"
     >
       {text}
-    </button>
-  )
-}
+    </a>
+  );
+};
 
-export default FormBtn
+export default FormBtn;
