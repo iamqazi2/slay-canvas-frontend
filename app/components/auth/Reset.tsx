@@ -1,10 +1,10 @@
-import React, { Dispatch, SetStateAction, useState } from "react";
+import assets from "@/app/assets";
+import { ChevronLeft } from "lucide-react";
+import Image from "next/image";
+import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { authApi } from "../../utils/authApi";
 import FormHeading from "../Headings/FormHeading";
 import FormBtn from "../ui/FormBtn";
-import assets from "@/app/assets";
-import Image from "next/image";
-import { ChevronLeft } from "lucide-react";
-import { authApi } from "../../utils/authApi";
 import { useToast } from "../ui/Toast";
 
 interface FormData {
@@ -18,52 +18,73 @@ interface FormData {
 }
 
 type ResetProps = {
-  setCurrentView: (view: "login" | "signup" | "forget" | "otp" | "reset") => void;
+  setCurrentView: (
+    view: "login" | "signup" | "forget" | "otp" | "reset"
+  ) => void;
   formData: FormData;
   setFormData: Dispatch<SetStateAction<FormData>>;
 };
 
-const Reset: React.FC<ResetProps> = ({ setCurrentView, formData, setFormData }) => {
+const Reset: React.FC<ResetProps> = ({
+  setCurrentView,
+  formData,
+  setFormData,
+}) => {
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const { showToast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [storedOtp, setStoredOtp] = useState<string>("");
+  const [storedEmail, setStoredEmail] = useState<string>("");
 
-  const [showPassword, setShowPassword] = useState<boolean>(false)
-  const { showToast } = useToast()
-  const [isLoading, setIsLoading] = useState(false)
+  useEffect(() => {
+    // Retrieve OTP and email from localStorage
+    const otp = localStorage.getItem("resetOtp");
+    const email = localStorage.getItem("resetEmail");
+
+    if (otp && email) {
+      setStoredOtp(otp);
+      setStoredEmail(email);
+    } else {
+      // If no OTP or email found, redirect back to OTP screen
+      showToast("OTP not found. Please verify your OTP first.", "error");
+      setCurrentView("otp");
+    }
+  }, [showToast, setCurrentView]);
 
   const submitHandler = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.email) {
-      showToast("Email is required", "error")
-      return
-    }
-
-    if (formData.otp.some(digit => digit === "")) {
-      showToast("Please enter the complete OTP", "error")
-      return
+    if (!storedOtp || !storedEmail) {
+      showToast("OTP is required", "error");
+      return;
     }
 
     if (!formData.newPassword || !formData.confirmPassword) {
-      showToast("Please fill in all password fields", "error")
-      return
+      showToast("Please fill in all password fields", "error");
+      return;
     }
 
     if (formData.newPassword !== formData.confirmPassword) {
-      showToast("Passwords do not match!", "error")
-      return
+      showToast("Passwords do not match!", "error");
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
       const response = await authApi.resetPassword({
-        email: formData.email,
-        otp: formData.otp.join(""),
+        email: storedEmail,
+        otp: storedOtp,
         new_password: formData.newPassword,
         confirm_password: formData.confirmPassword,
-      })
+      });
 
       if (response.success) {
-        showToast("Password reset successful!", "success")
+        showToast("Password reset successful!", "success");
+
+        // Clear OTP and email from localStorage
+        localStorage.removeItem("resetOtp");
+        localStorage.removeItem("resetEmail");
 
         // Reset form
         setFormData({
@@ -74,24 +95,38 @@ const Reset: React.FC<ResetProps> = ({ setCurrentView, formData, setFormData }) 
           otp: ["", "", "", "", "", ""],
           newPassword: "",
           confirmPassword: "",
-        })
+        });
 
-        setCurrentView("login")
+        setCurrentView("login");
       } else {
-        showToast(response.message || "Password reset failed", "error")
+        showToast(response.message || "Password reset failed", "error");
       }
-    } catch (error) {
-      showToast("An error occurred during password reset", "error")
+    } catch (err) {
+      console.error("Reset password error:", err);
+      showToast("An error occurred during password reset", "error");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="flex m-auto items-center justify-center bg-white md:w-110 md:h-110 rounded-2xl mt-8 relative">
-
       <div
-        onClick={() => setCurrentView("otp")}
+        onClick={() => {
+          // Restore email and OTP to form data when going back
+          if (storedEmail && storedOtp) {
+            const otpArray = storedOtp
+              .split("")
+              .concat(["", "", "", "", "", ""])
+              .slice(0, 6) as [string, string, string, string, string, string];
+            setFormData({
+              ...formData,
+              email: storedEmail,
+              otp: otpArray,
+            });
+          }
+          setCurrentView("otp");
+        }}
         className="absolute top-4 left-8 flex gap-1 items-center cursor-pointer mt-2 px-1.5 py-0.5 border border-gray-200 rounded mb-4 text-gray-600 hover:text-black"
       >
         <ChevronLeft size={16} />
@@ -99,7 +134,6 @@ const Reset: React.FC<ResetProps> = ({ setCurrentView, formData, setFormData }) 
       </div>
 
       <div className="w-[400px] px-8 py-8">
-
         <div className="flex items-center justify-center text-center mt-6">
           <FormHeading
             text="Reset your password 🔑"
@@ -118,13 +152,21 @@ const Reset: React.FC<ResetProps> = ({ setCurrentView, formData, setFormData }) 
             <input
               placeholder="Enter new password"
               className="w-full rounded-lg bg-[#f5f5f5] px-3 py-2 outline-[#005EA0] border border-gray-200"
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               value={formData.newPassword}
-              onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, newPassword: e.target.value })
+              }
             />
 
-            <Image onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-8 text-sm text-black"
-              src={assets.inputEye} width={25} height={25} alt="input eye" />
+            <Image
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-8 text-sm text-black"
+              src={assets.inputEye}
+              width={25}
+              height={25}
+              alt="input eye"
+            />
           </div>
 
           <div className="relative">
@@ -132,13 +174,21 @@ const Reset: React.FC<ResetProps> = ({ setCurrentView, formData, setFormData }) 
             <input
               placeholder="Confirm password"
               className="w-full rounded-lg bg-[#f5f5f5] px-3 py-2 outline-[#005EA0] border border-gray-200"
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               value={formData.confirmPassword}
-              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, confirmPassword: e.target.value })
+              }
             />
 
-            <Image onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-8 text-sm text-black"
-              src={assets.inputEye} width={25} height={25} alt="input eye" />
+            <Image
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-8 text-sm text-black"
+              src={assets.inputEye}
+              width={25}
+              height={25}
+              alt="input eye"
+            />
           </div>
 
           <FormBtn text="Submit" isLoading={isLoading} />

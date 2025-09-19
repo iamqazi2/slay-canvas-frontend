@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { Dispatch, SetStateAction } from "react";
 import FormHeading from "../Headings/FormHeading";
 import FormBtn from "../ui/FormBtn";
@@ -14,20 +14,28 @@ interface FormData {
 }
 
 type AuthProps = {
-  setCurrentView: (view: "login" | "signup" | "forget" | "otp" | "reset") => void;
+  setCurrentView: (
+    view: "login" | "signup" | "forget" | "otp" | "reset"
+  ) => void;
   formData: FormData;
-  setFormData: Dispatch<SetStateAction<FormData>>
+  setFormData: Dispatch<SetStateAction<FormData>>;
 };
 
-const Authentication: React.FC<AuthProps> = ({ setCurrentView, setFormData, formData }) => {
-
+const Authentication: React.FC<AuthProps> = ({
+  setCurrentView,
+  setFormData,
+  formData,
+}) => {
   const handleChange = (index: number, value: string) => {
     // Only allow a single digit (0-9)
     if (value.length <= 1 && "0123456789".includes(value)) {
       // Copy otp array and update the digit at index
       const newOtp = [...formData.otp];
       newOtp[index] = value;
-      setFormData({ ...formData, otp: newOtp as [string, string, string, string, string, string] });
+      setFormData({
+        ...formData,
+        otp: newOtp as [string, string, string, string, string, string],
+      });
 
       // Move to next box if a digit was typed
       if (value && index < 5) {
@@ -39,7 +47,12 @@ const Authentication: React.FC<AuthProps> = ({ setCurrentView, setFormData, form
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("otp", formData.otp.join(""))
+    const otpValue = formData.otp.join("");
+    console.log("otp", otpValue);
+
+    // Save OTP and email to localStorage
+    localStorage.setItem("resetOtp", otpValue);
+    localStorage.setItem("resetEmail", formData.email);
 
     setFormData({
       email: "",
@@ -49,16 +62,18 @@ const Authentication: React.FC<AuthProps> = ({ setCurrentView, setFormData, form
       otp: ["", "", "", "", "", ""],
       newPassword: "",
       confirmPassword: "",
-    })
+    });
 
-    setCurrentView("reset")
+    setCurrentView("reset");
   };
 
   return (
     <div className="flex justify-center items-center mt-12">
       <div className="bg-white p-6 pb-25 rounded-2xl shadow-xl w-[450px] px-12">
-
-        <button onClick={() => setCurrentView("forget")} className="text-sm flex items-center gap-2 px-1.5 py-0.5 border border-gray-200 rounded mb-4 text-gray-600 hover:text-black">
+        <button
+          onClick={() => setCurrentView("forget")}
+          className="text-sm flex items-center gap-2 px-1.5 py-0.5 border border-gray-200 rounded mb-4 text-gray-600 hover:text-black"
+        >
           ✖ <span className="text-xs">Cancel</span>
         </button>
 
@@ -85,18 +100,13 @@ const Authentication: React.FC<AuthProps> = ({ setCurrentView, setFormData, form
             ))}
           </div>
 
-          <FormBtn text='Continue' />
-
+          <FormBtn text="Continue" />
         </form>
 
         {/* Timer & Resend */}
         <div className="flex justify-between mt-3 text-sm text-gray-600">
-          <span>
-            01:00
-          </span>
-          <button
-            className="text-blue-500 font-medium hover:underline"
-          >
+          <span>01:00</span>
+          <button className="text-blue-500 font-medium hover:underline">
             Resend
           </button>
         </div>
