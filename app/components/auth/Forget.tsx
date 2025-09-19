@@ -1,9 +1,11 @@
-import React, { Dispatch, SetStateAction } from "react";
+import React, { Dispatch, SetStateAction, useState } from "react";
 import FormHeading from "../Headings/FormHeading";
 import FormBtn from "../ui/FormBtn";
 import assets from "@/app/assets";
 import { ChevronLeft } from "lucide-react";
 import Image from "next/image";
+import { authApi } from "../../utils/authApi";
+import { useToast } from "../ui/Toast";
 
 interface FormData {
   email: string;
@@ -23,21 +25,35 @@ type ForgetProps = {
 
 const Forget: React.FC<ForgetProps> = ({ setCurrentView, setFormData, formData }) => {
 
-  const submitHandler = (e: React.FormEvent) => {
+  const { showToast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
+
+  const submitHandler = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("forget", formData)
 
-    setFormData({
-      email: "",
-      password: "",
-      firstName: "",
-      lastName: "",
-      otp: ["", "", "", "", "", ""],
-      newPassword: "",
-      confirmPassword: "",
-    })
+    if (!formData.email) {
+      showToast("Please enter your email address", "error")
+      return
+    }
 
-    setCurrentView("otp")
+    setIsLoading(true)
+
+    try {
+      const response = await authApi.forgotPassword({
+        email: formData.email,
+      })
+
+      if (response.success) {
+        showToast("OTP sent to your email!", "success")
+        setCurrentView("otp")
+      } else {
+        showToast(response.message || "Failed to send OTP", "error")
+      }
+    } catch (error) {
+      showToast("An error occurred while sending OTP", "error")
+    } finally {
+      setIsLoading(false)
+    }
   };
 
   return (
@@ -74,7 +90,7 @@ const Forget: React.FC<ForgetProps> = ({ setCurrentView, setFormData, formData }
             />
           </div>
 
-          <FormBtn text="Submit" />
+          <FormBtn text="Submit" isLoading={isLoading} />
         </form>
       </div>
     </div>

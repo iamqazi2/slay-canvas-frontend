@@ -1,10 +1,12 @@
 "use client"
-import React, { Dispatch, SetStateAction } from 'react'
+import React, { Dispatch, SetStateAction, useState } from 'react'
 import Input from '../ui/Input'
 import FormBtn from '../ui/FormBtn'
 import GoogleBtn from '../ui/GoogleBtn'
 import FormHeading from '../Headings/FormHeading'
 import { useRouter } from 'next/navigation'
+import { authApi } from '../../utils/authApi'
+import { useToast } from '../ui/Toast'
 
 
 interface FormData {
@@ -27,22 +29,50 @@ type LoginProps = {
 const Login: React.FC<LoginProps> = ({ setCurrentView, formData, setFormData }) => {
 
     const router = useRouter();
+    const { showToast } = useToast()
+    const [isLoading, setIsLoading] = useState(false)
+    const [rememberMe, setRememberMe] = useState(false)
 
-    const submitHandler = (e: React.FormEvent) => {
+    const submitHandler = async (e: React.FormEvent) => {
         e.preventDefault()
 
-        console.log("login", formData)
+        if (!formData.email || !formData.password) {
+            showToast("Please fill in all fields", "error")
+            return
+        }
 
-        setFormData({
-            email: "",
-            password: "",
-            firstName: "",
-            lastName: "",
-            otp: ["", "", "", "", "", ""],
-            newPassword: "",
-            confirmPassword: "",
-        })
-        // router.push('/')
+        setIsLoading(true)
+
+        try {
+            const response = await authApi.login({
+                email: formData.email,
+                password: formData.password,
+            })
+
+            if (response.success) {
+                showToast("Login successful!", "success")
+
+                // Reset form
+                setFormData({
+                    email: "",
+                    password: "",
+                    firstName: "",
+                    lastName: "",
+                    otp: ["", "", "", "", "", ""],
+                    newPassword: "",
+                    confirmPassword: "",
+                })
+
+                // Redirect to dashboard or home
+                router.push('/dashboard')
+            } else {
+                showToast(response.message || "Login failed", "error")
+            }
+        } catch (error) {
+            showToast("An error occurred during login", "error")
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     return (
@@ -57,14 +87,21 @@ const Login: React.FC<LoginProps> = ({ setCurrentView, formData, setFormData }) 
 
                     <div className='flex justify-between items-center mt-2'>
                         <div className='flex gap-2 items-center'>
-                            <div className='w-4.5 h-4.5 border-1 border-gray-300 rounded-full' />
+                            <div
+                                className={`w-4.5 h-4.5 border-1 border-gray-300 rounded-full cursor-pointer flex items-center justify-center ${rememberMe ? 'bg-gray-800' : ''}`}
+                                onClick={() => setRememberMe(!rememberMe)}
+                            >
+                                {rememberMe && (
+                                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                                )}
+                            </div>
                             <span className='text-xs'>Remember me</span>
                         </div>
 
                         <span onClick={() => setCurrentView("forget")} className='text-xs text-red-600 cursor-pointer'>Forget password ?</span>
                     </div>
 
-                    <FormBtn text='Log in' />
+                    <FormBtn text='Log in' isLoading={isLoading} />
 
                     <div className="flex items-center gap-2">
                         <hr className="flex-grow border-gray-400" />

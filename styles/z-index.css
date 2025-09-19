@@ -1,0 +1,26 @@
+/* Z-Index System for Better Video Research App */
+
+/* Base layers */
+:root {
+  --z-navbar: 10;
+  --z-components: 20;
+  --z-dropdown-backdrop: 40;
+  --z-dropdown-content: 50;
+  --z-modal: 50;
+  --z-sidebar: 50;
+  --z-panels: 150;
+  --z-tooltip: 1000;
+  --z-toast: 2000;
+}
+
+/* Usage examples:
+  - Navbar: z-[var(--z-navbar)]
+  - Draggable components: z-[var(--z-components)]
+  - Dropdown backdrop: z-[var(--z-dropdown-backdrop)]
+  - Dropdown content: z-[var(--z-dropdown-content)]
+  - Modals: z-[var(--z-modal)]
+  - Sidebar: z-[var(--z-sidebar)]
+  - Panels (SharePanel, NotificationPanel): z-[var(--z-panels)]
+  - Tooltips: z-[var(--z-tooltip)]
+  - Toasts: z-[var(--z-toast)]
+*/

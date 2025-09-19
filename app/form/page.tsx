@@ -2,12 +2,13 @@
 import Image from "next/image";
 import React, { useState } from "react";
 import assets from "../assets";
-import Login from "@/components/auth/Login";
-import Signup from "@/components/auth/Signup";
-import Forget from "@/components/auth/Forget";
-import Authentication from "@/components/auth/Authentication";
-import Reset from "@/components/auth/Reset";
+import Login from "@/app/components/auth/Login";
+import Signup from "@/app/components/auth/Signup";
+import Forget from "@/app/components/auth/Forget";
+import Authentication from "@/app/components/auth/Authentication";
+import Reset from "@/app/components/auth/Reset";
 import Link from "next/link";
+import { ToastProvider } from "../components/ui/Toast";
 
 type View = "login" | "signup" | "forget" | "otp" | "reset";
 
@@ -35,58 +36,60 @@ const Form = () => {
   const [currentView, setCurrentView] = useState<View>("login");
 
   return (
-    <div className="bg-gradient-to-r px-[24px] from-[#8e5eff] to-[#4596ff] w-full min-h-screen flex flex-col">
-      {/* Logo */}
-      <div className="pt-8 pb-4 md:px-1 flex items-center justify-center md:justify-start">
-        <Link href="/">
-          <Image
-            src={assets.whiteLogo}
-            alt="whiteLogo"
-            height={40}
-            width={140}
-          />
-        </Link>
-      </div>
+    <ToastProvider>
+      <div className="bg-gradient-to-r px-[24px] from-[#8e5eff] to-[#4596ff] w-full min-h-screen flex flex-col">
+        {/* Logo */}
+        <div className="pt-8 pb-4 md:px-1 flex items-center justify-center md:justify-start">
+          <Link href="/">
+            <Image
+              src={assets.whiteLogo}
+              alt="whiteLogo"
+              height={40}
+              width={140}
+            />
+          </Link>
+        </div>
 
-      {/* Centered Forms */}
-      <div className="flex-1 flex items-center justify-center">
-        {currentView === "login" && (
-          <Login
-            setCurrentView={setCurrentView}
-            formData={formData}
-            setFormData={setFormData}
-          />
-        )}
-        {currentView === "signup" && (
-          <Signup
-            setCurrentView={setCurrentView}
-            formData={formData}
-            setFormData={setFormData}
-          />
-        )}
-        {currentView === "forget" && (
-          <Forget
-            setCurrentView={setCurrentView}
-            formData={formData}
-            setFormData={setFormData}
-          />
-        )}
-        {currentView === "otp" && (
-          <Authentication
-            setCurrentView={setCurrentView}
-            formData={formData}
-            setFormData={setFormData}
-          />
-        )}
-        {currentView === "reset" && (
-          <Reset
-            setCurrentView={setCurrentView}
-            formData={formData}
-            setFormData={setFormData}
-          />
-        )}
+        {/* Centered Forms */}
+        <div className="flex-1 flex items-center justify-center">
+          {currentView === "login" && (
+            <Login
+              setCurrentView={setCurrentView}
+              formData={formData}
+              setFormData={setFormData}
+            />
+          )}
+          {currentView === "signup" && (
+            <Signup
+              setCurrentView={setCurrentView}
+              formData={formData}
+              setFormData={setFormData}
+            />
+          )}
+          {currentView === "forget" && (
+            <Forget
+              setCurrentView={setCurrentView}
+              formData={formData}
+              setFormData={setFormData}
+            />
+          )}
+          {currentView === "otp" && (
+            <Authentication
+              setCurrentView={setCurrentView}
+              formData={formData}
+              setFormData={setFormData}
+            />
+          )}
+          {currentView === "reset" && (
+            <Reset
+              setCurrentView={setCurrentView}
+              formData={formData}
+              setFormData={setFormData}
+            />
+          )}
+        </div>
       </div>
-    </div>
+    </ToastProvider>
   );
 };
 

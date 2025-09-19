@@ -4,6 +4,8 @@ import FormBtn from "../ui/FormBtn";
 import assets from "@/app/assets";
 import Image from "next/image";
 import { ChevronLeft } from "lucide-react";
+import { authApi } from "../../utils/authApi";
+import { useToast } from "../ui/Toast";
 
 interface FormData {
   email: string;
@@ -24,28 +26,65 @@ type ResetProps = {
 const Reset: React.FC<ResetProps> = ({ setCurrentView, formData, setFormData }) => {
 
   const [showPassword, setShowPassword] = useState<boolean>(false)
+  const { showToast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
 
-  const submitHandler = (e: React.FormEvent) => {
+  const submitHandler = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.newPassword !== formData.confirmPassword) {
-      alert("Passwords do not match!");
-      return;
-    } else {
-      console.log("reset", formData)
 
-      setCurrentView("login")
+    if (!formData.email) {
+      showToast("Email is required", "error")
+      return
     }
 
-    setFormData({
-      email: "",
-      password: "",
-      firstName: "",
-      lastName: "",
-      otp: ["", "", "", "", "", ""],
-      newPassword: "",
-      confirmPassword: "",
-    })
+    if (formData.otp.some(digit => digit === "")) {
+      showToast("Please enter the complete OTP", "error")
+      return
+    }
 
+    if (!formData.newPassword || !formData.confirmPassword) {
+      showToast("Please fill in all password fields", "error")
+      return
+    }
+
+    if (formData.newPassword !== formData.confirmPassword) {
+      showToast("Passwords do not match!", "error")
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      const response = await authApi.resetPassword({
+        email: formData.email,
+        otp: formData.otp.join(""),
+        new_password: formData.newPassword,
+        confirm_password: formData.confirmPassword,
+      })
+
+      if (response.success) {
+        showToast("Password reset successful!", "success")
+
+        // Reset form
+        setFormData({
+          email: "",
+          password: "",
+          firstName: "",
+          lastName: "",
+          otp: ["", "", "", "", "", ""],
+          newPassword: "",
+          confirmPassword: "",
+        })
+
+        setCurrentView("login")
+      } else {
+        showToast(response.message || "Password reset failed", "error")
+      }
+    } catch (error) {
+      showToast("An error occurred during password reset", "error")
+    } finally {
+      setIsLoading(false)
+    }
   };
 
   return (
@@ -102,7 +141,7 @@ const Reset: React.FC<ResetProps> = ({ setCurrentView, formData, setFormData }) 
               src={assets.inputEye} width={25} height={25} alt="input eye" />
           </div>
 
-          <FormBtn text="Submit" />
+          <FormBtn text="Submit" isLoading={isLoading} />
         </form>
       </div>
     </div>
