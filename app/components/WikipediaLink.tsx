@@ -9,19 +9,29 @@ interface WikipediaLinkProps {
   onClose?: () => void;
 }
 
-const WikipediaLink: React.FC<WikipediaLinkProps> = ({ className = "", id, initialData, onClose }) => {
+const WikipediaLink: React.FC<WikipediaLinkProps> = ({
+  className = "",
+  id,
+  initialData,
+  onClose,
+}) => {
   // id is used for React key in parent component
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 77, y: 70 }); // Percentage values (70% from left, 70% from top)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [textContent, setTextContent] = useState<string>("");
-  const [linkUrl, setLinkUrl] = useState<string>("https://en.wikipedia.org/wiki/Culture");
+  const [linkUrl, setLinkUrl] = useState<string>(
+    "https://en.wikipedia.org/wiki/Culture"
+  );
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = React.useCallback(
     (e: React.MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.closest('[data-draggable="true"]') || target.closest(".drag-handle")) {
+      if (
+        target.closest('[data-draggable="true"]') ||
+        target.closest(".drag-handle")
+      ) {
         e.preventDefault();
         setIsDragging(true);
 
@@ -43,7 +53,10 @@ const WikipediaLink: React.FC<WikipediaLinkProps> = ({ className = "", id, initi
   const handleTouchStart = React.useCallback(
     (e: React.TouchEvent) => {
       const target = e.target as HTMLElement;
-      if (target.closest('[data-draggable="true"]') || target.closest(".drag-handle")) {
+      if (
+        target.closest('[data-draggable="true"]') ||
+        target.closest(".drag-handle")
+      ) {
         e.preventDefault();
         const touch = e.touches[0];
         setIsDragging(true);
@@ -119,7 +132,9 @@ const WikipediaLink: React.FC<WikipediaLinkProps> = ({ className = "", id, initi
     if (isDragging) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
-      document.addEventListener("touchmove", handleTouchMove, { passive: false });
+      document.addEventListener("touchmove", handleTouchMove, {
+        passive: false,
+      });
       document.addEventListener("touchend", handleTouchEnd);
     }
 
@@ -129,7 +144,13 @@ const WikipediaLink: React.FC<WikipediaLinkProps> = ({ className = "", id, initi
       document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
+  }, [
+    isDragging,
+    handleMouseMove,
+    handleMouseUp,
+    handleTouchMove,
+    handleTouchEnd,
+  ]);
 
   // Handle initial data when component is created
   useEffect(() => {
@@ -160,7 +181,11 @@ const WikipediaLink: React.FC<WikipediaLinkProps> = ({ className = "", id, initi
     };
 
     window.addEventListener("textPasted", handleTextPasted as EventListener);
-    return () => window.removeEventListener("textPasted", handleTextPasted as EventListener);
+    return () =>
+      window.removeEventListener(
+        "textPasted",
+        handleTextPasted as EventListener
+      );
   }, []);
 
   const handleEdit = (): void => {
@@ -180,7 +205,9 @@ const WikipediaLink: React.FC<WikipediaLinkProps> = ({ className = "", id, initi
     if (confirmed) {
       // Check if this is a sidebar component or has onClose prop
       if (id === "sidebar-wikipedia-link" || onClose) {
-        console.log("WikipediaLink is sidebar component or has onClose prop, calling onClose");
+        console.log(
+          "WikipediaLink is sidebar component or has onClose prop, calling onClose"
+        );
         if (onClose) {
           onClose();
         }
@@ -213,7 +240,13 @@ const WikipediaLink: React.FC<WikipediaLinkProps> = ({ className = "", id, initi
 
   // Globe Icon
   const GlobeIcon: React.FC = () => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width="28"
+      height="28"
+      viewBox="0 0 28 28"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
         d="M1.75 14C1.75 17.2489 3.04062 20.3647 5.33794 22.6621C7.63526 24.9594 10.7511 26.25 14 26.25C17.2489 26.25 20.3647 24.9594 22.6621 22.6621C24.9594 20.3647 26.25 17.2489 26.25 14C26.25 10.7511 24.9594 7.63526 22.6621 5.33794C20.3647 3.04062 17.2489 1.75 14 1.75C10.7511 1.75 7.63526 3.04062 5.33794 5.33794C3.04062 7.63526 1.75 10.7511 1.75 14Z"
         fill="white"
@@ -228,8 +261,16 @@ const WikipediaLink: React.FC<WikipediaLinkProps> = ({ className = "", id, initi
         strokeWidth="1.5"
         strokeLinejoin="round"
       />
-      <path d="M2.625 18.0833H25.375H2.625ZM2.625 9.91663H25.375H2.625Z" fill="white" />
-      <path d="M2.625 18.0833H25.375M2.625 9.91663H25.375" stroke="#12A4FF" strokeWidth="1.5" strokeLinecap="round" />
+      <path
+        d="M2.625 18.0833H25.375H2.625ZM2.625 9.91663H25.375H2.625Z"
+        fill="white"
+      />
+      <path
+        d="M2.625 18.0833H25.375M2.625 9.91663H25.375"
+        stroke="#12A4FF"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
     </svg>
   );
 
@@ -356,7 +397,9 @@ const WikipediaLink: React.FC<WikipediaLinkProps> = ({ className = "", id, initi
                   overflowWrap: "break-word",
                 }}
               >
-                {textContent.length > 150 ? `${textContent.substring(0, 150)}...` : textContent}
+                {textContent.length > 150
+                  ? `${textContent.substring(0, 150)}...`
+                  : textContent}
               </div>
             </div>
           ) : (

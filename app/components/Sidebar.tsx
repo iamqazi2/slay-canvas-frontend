@@ -19,12 +19,13 @@ import VideoCollection from "./VideoCollection";
 import PdfDocument from "./PdfDocument";
 import WikipediaLink from "./WikipediaLink";
 import { StoreTypes, VideoItem } from "@/app/models/interfaces";
-import Modal from "./Modal";
-import TextField from "./TextField";
-import Button from "./Button";
-import ImageUpload from "./ImageUpload";
-import AudioUpload from "./AudioUpload";
-import DocumentUpload from "./DocumentUpload";
+import VideoModal from "./modals/VideoModal";
+import ImageModal from "./modals/ImageModal";
+import AudioModal from "./modals/AudioModal";
+import DocumentModal from "./modals/DocumentModal";
+import WikipediaModal from "./modals/WikipediaModal";
+import TextModal from "./modals/TextModal";
+import WebLinkModal from "./modals/WebLinkModal";
 import {
   setHasContent,
   setVideoCollection,
@@ -58,7 +59,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
   });
 
   const [componentData, setComponentData] = useState<{
-    imageFile?: File;
+    imageFiles?: File[];
     audioFile?: File;
     videoFile?: File;
     documentFile?: File;
@@ -70,8 +71,12 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
   const [isAudioPopup, setIsAudioPopup] = useState(false);
   const [isDocumentPopup, setIsDocumentPopup] = useState(false);
   const [isWikipediaPopup, setIsWikipediaPopup] = useState(false);
+  const [isWebLinkPopup, setIsWebLinkPopup] = useState(false);
+  const [isTextPopup, setIsTextPopup] = useState(false);
   const [url, setUrl] = useState("");
   const [wikiUrl, setWikiUrl] = useState("");
+  const [webLinkUrl, setWebLinkUrl] = useState("");
+  const [textContent, setTextContent] = useState("");
 
   const dispatch = useDispatch();
 
@@ -83,10 +88,20 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
 
   // File input handlers
   const handleImageFileChange = (files: File[]) => {
-    const file = files[0];
-    if (file && file.type.startsWith("image/")) {
-      setComponentData((prev) => ({ ...prev, imageFile: file }));
-      setVisibleComponents((prev) => ({ ...prev, imageCollection: true }));
+    const validFiles = files.filter((file) => file.type.startsWith("image/"));
+    if (validFiles.length > 0) {
+      if (visibleComponents.imageCollection) {
+        // Add to existing collection
+        validFiles.forEach((file) => {
+          window.dispatchEvent(
+            new CustomEvent("imageFilePasted", { detail: { file } })
+          );
+        });
+      } else {
+        // Create new collection
+        setComponentData((prev) => ({ ...prev, imageFiles: validFiles }));
+        setVisibleComponents((prev) => ({ ...prev, imageCollection: true }));
+      }
       setIsImagePopup(false);
     }
   };
@@ -168,6 +183,18 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     setComponentData((prev) => ({ ...prev, textContent: wikiUrl.trim() }));
     setVisibleComponents((prev) => ({ ...prev, wikipediaLink: true }));
     setIsWikipediaPopup(false);
+  };
+
+  const showWebLink = () => {
+    setComponentData((prev) => ({ ...prev, textContent: webLinkUrl.trim() }));
+    setVisibleComponents((prev) => ({ ...prev, wikipediaLink: true }));
+    setIsWebLinkPopup(false);
+  };
+
+  const showText = () => {
+    setComponentData((prev) => ({ ...prev, textContent: textContent.trim() }));
+    setVisibleComponents((prev) => ({ ...prev, wikipediaLink: true }));
+    setIsTextPopup(false);
   };
 
   // Utility functions for video processing
@@ -339,26 +366,26 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
               <LockIcon width={24} height={24} className="sm:w-8 sm:h-8" />
             </div>
 
-            {/* Text/Type Icon - Wikipedia Link */}
+            {/* Text/Type Icon - Text */}
             <div
               className="cursor-pointer hover:opacity-70 transition-opacity"
-              onClick={() => setIsWikipediaPopup(true)}
+              onClick={() => setIsTextPopup(true)}
             >
               <TrashIcon width={24} height={24} className="sm:w-8 sm:h-8" />
             </div>
 
-            {/* Hierarchy/Flowchart Icon - Placeholder for future component */}
+            {/* Hierarchy/Flowchart Icon - Wikipedia */}
             <div
               className="cursor-pointer hover:opacity-70 transition-opacity"
-              onClick={() => console.log("Grid component clicked")}
+              onClick={() => setIsWikipediaPopup(true)}
             >
               <GridIconNew width={24} height={24} className="sm:w-8 sm:h-8" />
             </div>
 
-            {/* Globe Icon - Wikipedia Link (alternative) */}
+            {/* Globe Icon - Web Link */}
             <div
               className="cursor-pointer hover:opacity-70 transition-opacity"
-              onClick={() => setIsWikipediaPopup(true)}
+              onClick={() => setIsWebLinkPopup(true)}
             >
               <GlobeIcon width={24} height={24} className="sm:w-8 sm:h-8" />
             </div>
@@ -376,10 +403,15 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
               <FileIcon width={24} height={24} className="sm:w-8 sm:h-8" />
             </div>
 
-            {/* Folder Icon - Placeholder for future component */}
+            {/* Folder Icon - Video Collection */}
             <div
               className="cursor-pointer hover:opacity-70 transition-opacity"
-              onClick={() => console.log("Folder component clicked")}
+              onClick={() => {
+                setVisibleComponents((prev) => ({
+                  ...prev,
+                  videoCollection: true,
+                }));
+              }}
             >
               <FolderIcon width={24} height={24} className="sm:w-8 sm:h-8" />
             </div>
@@ -436,8 +468,8 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
             id="sidebar-image-collection"
             className="z-30"
             initialData={
-              componentData.imageFile
-                ? { file: componentData.imageFile }
+              componentData.imageFiles
+                ? { files: componentData.imageFiles }
                 : undefined
             }
             onClose={() => {
@@ -445,7 +477,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
                 ...prev,
                 imageCollection: false,
               }));
-              setComponentData((prev) => ({ ...prev, imageFile: undefined }));
+              setComponentData((prev) => ({ ...prev, imageFiles: undefined }));
             }}
           />
         )}
@@ -473,6 +505,10 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
                 ? { file: componentData.videoFile }
                 : undefined
             }
+            onClose={() => {
+              setVisibleComponents((prev) => ({ ...prev, videoCollection: false }));
+              setComponentData((prev) => ({ ...prev, videoFile: undefined }));
+            }}
           />
         )}
 
@@ -513,107 +549,59 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
         )}
       </div>
 
-      <Modal
+      <VideoModal
         isOpen={isVideoPopup}
         onClose={() => setIsVideoPopup(false)}
-        closeOnEscape
-        showCloseButton
-        size="md"
-        title="YouTube, Vimeo, Instagram, Facebook, TikTok, Twitter, or direct video link"
-      >
-        <div className="flex flex-col w-full items-center gap-4">
-          <TextField
-            value={url}
-            onChange={(e) => setUrl(e)}
-            label="Enter Url"
-            onEnter={showVideo}
-          />
-          <Button onClick={showVideo} variant="gradient" className="w-full">
-            Submit
-          </Button>
-        </div>
-      </Modal>
+        onSubmit={(submittedUrl) => {
+          setUrl(submittedUrl);
+          showVideo();
+        }}
+      />
 
-      <Modal
+      <ImageModal
         isOpen={isImagePopup}
         onClose={() => setIsImagePopup(false)}
-        closeOnEscape
-        showCloseButton
-        size="md"
-        title="Upload Image (JPG, PNG, GIF, etc.)"
-      >
-        <div className="flex flex-col w-full items-center gap-4">
-          <ImageUpload
-            label="Click to upload"
-            showPreview
-            onFilesChange={handleImageFileChange}
-            showProgress
-            multiple
-            showThumbnails
-          />
-        </div>
-      </Modal>
+        onFilesChange={handleImageFileChange}
+      />
 
-      <Modal
+      <WikipediaModal
         isOpen={isWikipediaPopup}
         onClose={() => setIsWikipediaPopup(false)}
-        closeOnEscape
-        showCloseButton
-        size="md"
-        title="Enter Wikipedia Url"
-      >
-        <div className="flex flex-col w-full items-center gap-4">
-          <TextField
-            value={wikiUrl}
-            onChange={(e) => setWikiUrl(e)}
-            label="Enter Wikipedia Url"
-            onEnter={showWikipedia}
-          />
-          <Button onClick={showWikipedia} variant="gradient" className="w-full">
-            Submit
-          </Button>
-        </div>
-      </Modal>
+        onSubmit={(submittedUrl) => {
+          setWikiUrl(submittedUrl);
+          showWikipedia();
+        }}
+      />
 
-      <Modal
+      <AudioModal
         isOpen={isAudioPopup}
         onClose={() => setIsAudioPopup(false)}
-        closeOnEscape
-        showCloseButton
-        size="md"
-        title="Upload Audio (MP3, WAV, etc.)"
-      >
-        <div className="flex flex-col w-full items-center gap-4">
-          <AudioUpload
-            label="Click to upload"
-            showPreview
-            onFilesChange={handleAudioFileChange}
-            showProgress
-            multiple
-            showWaveform
-          />
-        </div>
-      </Modal>
+        onFilesChange={handleAudioFileChange}
+      />
 
-      <Modal
+      <DocumentModal
         isOpen={isDocumentPopup}
         onClose={() => setIsDocumentPopup(false)}
-        closeOnEscape
-        showCloseButton
-        size="md"
-        title="Upload Document (PDF, DOCX, TXT, XLSX, CSV)"
-      >
-        <div className="flex flex-col w-full items-center gap-4">
-          <DocumentUpload
-            label="Click to upload"
-            showPreview
-            onFilesChange={handleDocumentFileChange}
-            showProgress
-            multiple
-            showFileInfo
-          />
-        </div>
-      </Modal>
+        onFilesChange={handleDocumentFileChange}
+      />
+
+      <WebLinkModal
+        isOpen={isWebLinkPopup}
+        onClose={() => setIsWebLinkPopup(false)}
+        onSubmit={(submittedUrl) => {
+          setWebLinkUrl(submittedUrl);
+          showWebLink();
+        }}
+      />
+
+      <TextModal
+        isOpen={isTextPopup}
+        onClose={() => setIsTextPopup(false)}
+        onSubmit={(submittedText) => {
+          setTextContent(submittedText);
+          showText();
+        }}
+      />
     </>
   );
 }
