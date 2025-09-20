@@ -91,7 +91,7 @@ export default function Home() {
           <ImageCollection
             key={id}
             id={id}
-            initialData={data?.file ? { file: data.file } : undefined}
+            initialData={data?.file ? { files: [data.file] } : undefined}
           />
         );
       case "pdfDocument":

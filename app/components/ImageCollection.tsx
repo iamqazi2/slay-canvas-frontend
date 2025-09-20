@@ -9,10 +9,10 @@ interface ImageItem {
 }
 
 interface ImageCollectionProps {
-  id?: string;
-  className?: string;
-  initialData?: { file: File };
-  onClose?: () => void;
+   id?: string;
+   className?: string;
+   initialData?: { files: File[] };
+   onClose?: () => void;
 }
 
 const ImageCollection: React.FC<ImageCollectionProps> = ({ id, className = "", initialData, onClose }) => {
@@ -170,16 +170,15 @@ const ImageCollection: React.FC<ImageCollectionProps> = ({ id, className = "", i
 
   // Handle initial data when component is created
   useEffect(() => {
-    if (initialData?.file) {
-      const file = initialData.file;
-      if (file.type.startsWith("image/")) {
-        const newImage = {
-          id: Date.now().toString(),
+    if (initialData?.files && initialData.files.length > 0) {
+      const newImages = initialData.files
+        .filter(file => file.type.startsWith("image/"))
+        .map(file => ({
+          id: Date.now().toString() + Math.random(),
           title: file.name,
           thumbnail: URL.createObjectURL(file),
-        };
-        setImages([newImage]);
-      }
+        }));
+      setImages(newImages);
     }
   }, [initialData]);
 
@@ -204,25 +203,29 @@ const ImageCollection: React.FC<ImageCollectionProps> = ({ id, className = "", i
     return () => window.removeEventListener("imageFilePasted", handleImageFilePasted as EventListener);
   }, []);
 
-  const handleEdit = (): void => {
-    // Trigger file input to add more images
+  const handleEdit = (imageId: string): void => {
+    // Trigger file input to replace the image
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
-    input.multiple = true;
+    input.multiple = false;
     input.onchange = (e) => {
-      const files = (e.target as HTMLInputElement).files;
-      if (files) {
-        Array.from(files).forEach((file) => {
-          if (file.type.startsWith("image/")) {
-            const newImage = {
-              id: Date.now().toString() + Math.random(),
-              title: file.name,
-              thumbnail: URL.createObjectURL(file),
-            };
-            setImages((prevImages) => [...prevImages, newImage]);
-          }
-        });
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file && file.type.startsWith("image/")) {
+        // Clean up old thumbnail URL
+        const oldImage = images.find(img => img.id === imageId);
+        if (oldImage && oldImage.thumbnail.startsWith("blob:")) {
+          URL.revokeObjectURL(oldImage.thumbnail);
+        }
+
+        const updatedImage = {
+          id: imageId,
+          title: file.name,
+          thumbnail: URL.createObjectURL(file),
+        };
+        setImages((prevImages) =>
+          prevImages.map((img) => (img.id === imageId ? updatedImage : img))
+        );
       }
     };
     input.click();
@@ -316,10 +319,10 @@ const ImageCollection: React.FC<ImageCollectionProps> = ({ id, className = "", i
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={handleEdit}
+                  onClick={() => handleEdit(image.id)}
                   className="p-1 hover:bg-white/10 rounded transition-colors"
                   style={{ pointerEvents: "auto" }}
-                  title="Add more images"
+                  title="Replace image"
                 >
                   <EditIcon />
                 </button>
