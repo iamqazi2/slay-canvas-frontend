@@ -66,6 +66,7 @@ interface VideoCollectionProps {
     file?: File;
     text?: string;
   };
+  onClose?: () => void;
 }
 
 // Video Card Component with drag and drop on header
@@ -282,7 +283,9 @@ interface VideoCollectionProps {
 
 export default function VideoCollection({
   className = "",
+  id,
   initialData,
+  onClose,
 }: VideoCollectionProps) {
   // id is used for React key in parent component
   const [isDragging, setIsDragging] = useState(false);
@@ -290,6 +293,8 @@ export default function VideoCollection({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [isVideoPopup, setIsVideoPopup] = useState(false);
   const [url, setUrl] = useState("");
+  const [title, setTitle] = useState("Collections");
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
 
   // const [videos, setVideos] = useState<VideoItem[]>([]);
   // const [hasContent, setHasContent] = useState(false);
@@ -1208,7 +1213,7 @@ export default function VideoCollection({
       >
         {/* Main Container */}
         <div
-          className="relative w-full h-full"
+          className="relative border-1 border-[#1279FF] p-0 w-full h-full"
           style={{
             background: "var(--video-collection-bg)",
             boxShadow: "0px 0px 28.82px 0px var(--video-collection-sub-shadow)",
@@ -1217,7 +1222,7 @@ export default function VideoCollection({
         >
           {/* Sub Div */}
           <div
-            className="absolute inset-0 rounded-lg px-0.5"
+            className="absolute inset-0 rounded-lg "
             style={{
               background: "var(--video-collection-main-bg)",
               borderRadius: "8.65px",
@@ -1225,7 +1230,7 @@ export default function VideoCollection({
           >
             {/* Header - Draggable */}
             <div
-              className="flex bg-[#1279FF] items-center w-full gap-2 px-2 py-2 drag-handle cursor-move rounded-t-lg border border-gray-300"
+              className="flex bg-[#1279FF] items-center justify-between w-full px-2 py-2 drag-handle cursor-move rounded-t-lg border border-gray-300"
               data-draggable="true"
               onMouseDown={handleMouseDown}
               onTouchStart={handleTouchStart}
@@ -1234,42 +1239,88 @@ export default function VideoCollection({
                 paddingLeft: "7.21px",
               }}
             >
-              {/* Folder Icon */}
-              <svg
-                width="21"
-                height="21"
-                viewBox="0 0 21 21"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M4.01074 4.28931H8.75586L10.2266 5.75903L10.4375 5.97095H17.4609C17.9876 5.97095 18.4216 6.40432 18.4219 6.93091V15.3381C18.4219 15.8649 17.9877 16.2991 17.4609 16.2991H4.01074C3.48427 16.2991 3.05032 15.8655 3.0498 15.3391L3.05762 5.25024L3.06348 5.15161C3.11267 4.66652 3.52129 4.28931 4.01074 4.28931Z"
-                  fill="white"
-                  stroke="white"
-                  strokeWidth="1.44117"
-                />
-              </svg>
+              <div className="flex items-center gap-2">
+                {/* Folder Icon */}
+                <svg
+                  width="21"
+                  height="21"
+                  viewBox="0 0 21 21"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M4.01074 4.28931H8.75586L10.2266 5.75903L10.4375 5.97095H17.4609C17.9876 5.97095 18.4216 6.40432 18.4219 6.93091V15.3381C18.4219 15.8649 17.9877 16.2991 17.4609 16.2991H4.01074C3.48427 16.2991 3.05032 15.8655 3.0498 15.3391L3.05762 5.25024L3.06348 5.15161C3.11267 4.66652 3.52129 4.28931 4.01074 4.28931Z"
+                    fill="white"
+                    stroke="white"
+                    strokeWidth="1.44117"
+                  />
+                </svg>
 
-              {/* Title */}
-              <span
-                className="!text-white font-medium"
-                style={{
-                  fontWeight: 500,
-                  fontSize: "11.53px",
-                  lineHeight: "100%",
-                  letterSpacing: "0%",
-                  color: "var(--video-collection-text-primary)",
+                {/* Title */}
+                {isEditingTitle ? (
+                  <input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    onBlur={() => setIsEditingTitle(false)}
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter") {
+                        setIsEditingTitle(false);
+                      }
+                    }}
+                    className="bg-transparent border-none outline-none text-white font-medium"
+                    style={{
+                      fontWeight: 500,
+                      fontSize: "11.53px",
+                      lineHeight: "100%",
+                      letterSpacing: "0%",
+                      color: "var(--video-collection-text-primary)",
+                    }}
+                    autoFocus
+                  />
+                ) : (
+                  <span
+                    onClick={() => setIsEditingTitle(true)}
+                    className="!text-white font-medium cursor-pointer hover:opacity-80"
+                    style={{
+                      fontWeight: 500,
+                      fontSize: "11.53px",
+                      lineHeight: "100%",
+                      letterSpacing: "0%",
+                      color: "var(--video-collection-text-primary)",
+                    }}
+                  >
+                    {title}
+                  </span>
+                )}
+              </div>
+
+              {/* Close Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onClose) {
+                    onClose();
+                  } else {
+                    // For dashboard instances, emit remove event
+                    const removeEvent = new CustomEvent("removeComponent", {
+                      detail: { componentId: id },
+                    });
+                    window.dispatchEvent(removeEvent);
+                  }
                 }}
+                className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/20 transition-colors"
               >
-                {"Dhruv's Video Collection"}
-              </span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
+                  <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
+                </svg>
+              </button>
             </div>
 
             {/* Content Area */}
             <div
-              className="relative w-full h-[370px] overflow-hidden"
+              className="relative w-full h-[365px] overflow-hidden"
               style={{
-                background: "var(--video-collection-bg)",
+                background: "white",
                 borderRadius: "8.65px",
 
                 // paddingTop: "25.22px",
@@ -1541,6 +1592,32 @@ export default function VideoCollection({
                           />
                         </svg>
 
+                        {/* Remove Video Icon */}
+                        {/* <button
+                          onClick={() => {
+                            // Remove the current video
+                            dispatch(setVideoCollection(videos.filter(v => v.url !== videoUrl)));
+                            if (videos.length <= 1) {
+                              dispatch(setHasContent(false));
+                              dispatch(setVideoUrl(""));
+                            } else {
+                              // Set to the last video
+                              const lastVideo = videos[videos.length - 1];
+                              dispatch(setVideoUrl(lastVideo.url));
+                            }
+                          }}
+                          className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/20 transition-colors"
+                        >
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="white"
+                          >
+                            <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
+                          </svg>
+                        </button> */}
+
                         {/* Close Icon */}
                         <button onClick={handleRemoveContent}>
                           <svg
@@ -1741,7 +1818,7 @@ export default function VideoCollection({
                   </div>
                 ) : (
                   /* Empty State */
-                  <div className="flex flex-col items-center justify-center h-full">
+                  <div className=" flex flex-col items-center justify-center h-full">
                     {/* File Broken Icon */}
                     <svg
                       width="73"
