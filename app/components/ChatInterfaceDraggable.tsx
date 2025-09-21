@@ -4,6 +4,14 @@ import React, { useEffect, useRef, useState } from "react";
 
 interface ChatInterfaceProps {
   className?: string;
+  attachedAssets?: ComponentInstance[];
+  inline?: boolean;
+}
+
+interface ComponentInstance {
+  id: string;
+  type: string;
+  data?: { file?: File; files?: File[]; text?: string };
 }
 
 interface Message {
@@ -20,7 +28,7 @@ interface Message {
   };
 }
 
-const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
+const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "", attachedAssets = [], inline = false }) => {
   const [selectedChat, setSelectedChat] = useState(0);
   const [selectedFilter, setSelectedFilter] = useState("All Attached Nodes");
   const [searchQuery, setSearchQuery] = useState("");
@@ -35,8 +43,26 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  // Update attachedFiles when attachedAssets change
+  useEffect(() => {
+    const filesFromAssets: File[] = [];
+    attachedAssets.forEach(asset => {
+      if (asset.data?.files) {
+        filesFromAssets.push(...asset.data.files);
+      } else if (asset.data?.file) {
+        filesFromAssets.push(asset.data.file);
+      }
+    });
+    setAttachedFiles(prev => {
+      const existingNames = prev.map(f => f.name);
+      const newFiles = filesFromAssets.filter(f => !existingNames.includes(f.name));
+      return [...prev, ...newFiles];
+    });
+  }, [attachedAssets]);
+
   const handleMouseDown = React.useCallback(
     (e: React.MouseEvent) => {
+      if (inline) return; // No dragging in inline mode
       // Only allow dragging from the header area or ellipses
       const target = e.target as HTMLElement;
       if (target.closest('[data-draggable="true"]') || target.closest(".drag-handle")) {
@@ -55,7 +81,7 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
         });
       }
     },
-    [position]
+    [position, inline]
   );
 
   const handleTouchStart = React.useCallback(
@@ -485,8 +511,8 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
   return (
     <div
       ref={containerRef}
-      className={`${"fixed z-20 select-none rounded-xl shadow-[0px_0px_31.9px_0px_#1E1E1E33] border border-gray-200"} ${className}`}
-      style={{
+      className={`${inline ? "relative w-full h-full" : "fixed z-20 select-none rounded-xl shadow-[0px_0px_31.9px_0px_#1E1E1E33] border border-gray-200"} ${className}`}
+      style={inline ? {} : {
         left: `${position.x}%`,
         top: `${position.y}%`,
         width: "min(800px, 95vw)",
@@ -500,7 +526,7 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
       }}
       onMouseDown={(e) => {
         // Prevent dragging on small screens to avoid issues
-        if (window.innerWidth < 640) {
+        if (!inline && window.innerWidth < 640) {
           e.preventDefault();
         }
       }}

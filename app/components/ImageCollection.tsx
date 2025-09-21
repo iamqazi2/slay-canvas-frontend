@@ -9,13 +9,20 @@ interface ImageItem {
 }
 
 interface ImageCollectionProps {
-   id?: string;
-   className?: string;
-   initialData?: { files: File[] };
-   onClose?: () => void;
+  id?: string;
+  className?: string;
+  initialData?: { files: File[] };
+  onClose?: () => void;
+  inline?: boolean;
 }
 
-const ImageCollection: React.FC<ImageCollectionProps> = ({ id, className = "", initialData, onClose }) => {
+const ImageCollection: React.FC<ImageCollectionProps> = ({
+  id,
+  className = "",
+  initialData,
+  onClose,
+  inline = false,
+}) => {
   // id is used for React key in parent component
   const [images, setImages] = useState<ImageItem[]>([]);
 
@@ -25,7 +32,13 @@ const ImageCollection: React.FC<ImageCollectionProps> = ({ id, className = "", i
   const containerRef = useRef<HTMLDivElement>(null);
 
   const PhotosIcon: React.FC = () => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width="28"
+      height="28"
+      viewBox="0 0 28 28"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
         d="M2.33301 7.00004C2.33301 5.76236 2.82467 4.57538 3.69984 3.70021C4.57501 2.82504 5.762 2.33337 6.99967 2.33337H20.9997C22.2373 2.33337 23.4243 2.82504 24.2995 3.70021C25.1747 4.57538 25.6663 5.76236 25.6663 7.00004V21C25.6663 22.2377 25.1747 23.4247 24.2995 24.2999C23.4243 25.175 22.2373 25.6667 20.9997 25.6667H6.99967C5.762 25.6667 4.57501 25.175 3.69984 24.2999C2.82467 23.4247 2.33301 22.2377 2.33301 21V7.00004Z"
         fill="white"
@@ -55,9 +68,13 @@ const ImageCollection: React.FC<ImageCollectionProps> = ({ id, className = "", i
 
   const handleMouseDown = React.useCallback(
     (e: React.MouseEvent) => {
+      if (inline) return;
       // Only allow dragging from the header area or ellipses
       const target = e.target as HTMLElement;
-      if (target.closest('[data-draggable="true"]') || target.closest(".drag-handle")) {
+      if (
+        target.closest('[data-draggable="true"]') ||
+        target.closest(".drag-handle")
+      ) {
         e.preventDefault();
         setIsDragging(true);
 
@@ -73,14 +90,17 @@ const ImageCollection: React.FC<ImageCollectionProps> = ({ id, className = "", i
         });
       }
     },
-    [position]
+    [position, inline]
   );
 
   const handleTouchStart = React.useCallback(
     (e: React.TouchEvent) => {
       // Only allow dragging from the header area or ellipses
       const target = e.target as HTMLElement;
-      if (target.closest('[data-draggable="true"]') || target.closest(".drag-handle")) {
+      if (
+        target.closest('[data-draggable="true"]') ||
+        target.closest(".drag-handle")
+      ) {
         e.preventDefault();
         const touch = e.touches[0];
         setIsDragging(true);
@@ -156,7 +176,9 @@ const ImageCollection: React.FC<ImageCollectionProps> = ({ id, className = "", i
     if (isDragging) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
-      document.addEventListener("touchmove", handleTouchMove, { passive: false });
+      document.addEventListener("touchmove", handleTouchMove, {
+        passive: false,
+      });
       document.addEventListener("touchend", handleTouchEnd);
     }
 
@@ -166,14 +188,20 @@ const ImageCollection: React.FC<ImageCollectionProps> = ({ id, className = "", i
       document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
+  }, [
+    isDragging,
+    handleMouseMove,
+    handleMouseUp,
+    handleTouchMove,
+    handleTouchEnd,
+  ]);
 
   // Handle initial data when component is created
   useEffect(() => {
     if (initialData?.files && initialData.files.length > 0) {
       const newImages = initialData.files
-        .filter(file => file.type.startsWith("image/"))
-        .map(file => ({
+        .filter((file) => file.type.startsWith("image/"))
+        .map((file) => ({
           id: Date.now().toString() + Math.random(),
           title: file.name,
           thumbnail: URL.createObjectURL(file),
@@ -199,8 +227,15 @@ const ImageCollection: React.FC<ImageCollectionProps> = ({ id, className = "", i
       }
     };
 
-    window.addEventListener("imageFilePasted", handleImageFilePasted as EventListener);
-    return () => window.removeEventListener("imageFilePasted", handleImageFilePasted as EventListener);
+    window.addEventListener(
+      "imageFilePasted",
+      handleImageFilePasted as EventListener
+    );
+    return () =>
+      window.removeEventListener(
+        "imageFilePasted",
+        handleImageFilePasted as EventListener
+      );
   }, []);
 
   const handleEdit = (imageId: string): void => {
@@ -213,7 +248,7 @@ const ImageCollection: React.FC<ImageCollectionProps> = ({ id, className = "", i
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file && file.type.startsWith("image/")) {
         // Clean up old thumbnail URL
-        const oldImage = images.find(img => img.id === imageId);
+        const oldImage = images.find((img) => img.id === imageId);
         if (oldImage && oldImage.thumbnail.startsWith("blob:")) {
           URL.revokeObjectURL(oldImage.thumbnail);
         }
@@ -242,7 +277,9 @@ const ImageCollection: React.FC<ImageCollectionProps> = ({ id, className = "", i
 
     // Check if this is a sidebar component or has onClose prop
     if (id === "sidebar-image-collection" || onClose) {
-      console.log("ImageCollection is sidebar component or has onClose prop, calling onClose");
+      console.log(
+        "ImageCollection is sidebar component or has onClose prop, calling onClose"
+      );
       if (onClose) {
         onClose();
       }
@@ -266,38 +303,30 @@ const ImageCollection: React.FC<ImageCollectionProps> = ({ id, className = "", i
   return (
     <div
       ref={containerRef}
-      className={`fixed z-20 select-none rounded-xl p-1 ${className}`}
-      style={{
-        left: `${position.x}%`,
-        top: `${position.y}%`,
-        width: "min(296px, 70vw)",
-        height: "min(224px, 50vh)",
-        maxWidth: "296px",
-        maxHeight: "224px",
-        opacity: 1,
-        transform: "rotate(0deg)",
-        background: "#244785",
-      }}
-      tabIndex={0}
+      className={`${
+        inline ? "relative" : "fixed z-20"
+      } select-none rounded-xl p-1 ${className}`}
+      style={
+        inline
+          ? {
+              width: "100%",
+              height: "100%",
+              background: "#244785",
+            }
+          : {
+              left: `${position.x}%`,
+              top: `${position.y}%`,
+              width: "min(296px, 70vw)",
+              height: "min(224px, 50vh)",
+              maxWidth: "296px",
+              maxHeight: "224px",
+              opacity: 1,
+              transform: "rotate(0deg)",
+              background: "#244785",
+            }
+      }
+      tabIndex={inline ? undefined : 0}
     >
-      <div className="relative right-0 top-0">
-        <svg
-          className="absolute top-0 right-0"
-          width="166"
-          height="185"
-          viewBox="0 0 166 185"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M1.92441 183.282C50.5537 75.3057 97.4066 16.1953 165 1.50017"
-            stroke="#1279FF"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeDasharray="7 7"
-          />
-        </svg>
-      </div>
       {/* Main Container */}
       <div className="relative w-full h-full">
         {images.map((image) => (
@@ -315,7 +344,9 @@ const ImageCollection: React.FC<ImageCollectionProps> = ({ id, className = "", i
             >
               <div className="flex items-center overflow-hidden gap-2">
                 <PhotosIcon />
-                <span className="text-white truncate font-medium text-[16px] leading-[100%]">{image.title}</span>
+                <span className="text-white truncate font-medium text-[16px] leading-[100%]">
+                  {image.title}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -347,7 +378,12 @@ const ImageCollection: React.FC<ImageCollectionProps> = ({ id, className = "", i
               onClick={() => handleImageClick(image)}
               title="Click to open image in new tab"
             >
-              <img src={image.thumbnail} alt={image.title} className="w-full h-full object-cover" draggable={false} />
+              <img
+                src={image.thumbnail}
+                alt={image.title}
+                className="w-full h-full object-cover"
+                draggable={false}
+              />
             </div>
           </div>
         ))}
