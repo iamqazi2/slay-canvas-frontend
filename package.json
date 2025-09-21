@@ -17,9 +17,9 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-redux": "^9.2.0",
+    "swiper": "^11.2.10",
     "zustand": "^5.0.8",
-    "reactflow": "^11.11.4",
-    "swiper": "^11.2.10"
+    "reactflow": "^11.11.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
