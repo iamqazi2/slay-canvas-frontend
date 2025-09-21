@@ -6,63 +6,97 @@ import {
   RegisterRequest,
   ResetPasswordRequest,
 } from "../types/auth";
-import { BASE_URL } from "./constants";
-
-const url = BASE_URL + "/api/auth";
+import { apiClient } from "./apiClient";
 
 class AuthApi {
-  private async makeRequest<T>(
-    endpoint: string,
-    method: "GET" | "POST" | "PUT" | "DELETE" = "POST",
-    body?: unknown
-  ): Promise<ApiResponse<T>> {
+  async register(data: RegisterRequest): Promise<ApiResponse<AuthResponse>> {
     try {
-      const response = await fetch(`${url}${endpoint}`, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          accept: "application/json",
-        },
-        body: body ? JSON.stringify(body) : undefined,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.message || `HTTP error! status: ${response.status}`
-        );
-      }
+      const response = await apiClient.post<AuthResponse>(
+        "/auth/register",
+        data,
+        { skipAuth: true }
+      );
 
       return {
         success: true,
-        message: data.message || "Success",
-        data: data,
+        message: response.message,
+        data: response,
       };
     } catch (error) {
-      console.error("API Error:", error);
+      console.error("Register Error:", error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : "An error occurred",
+        message: error instanceof Error ? error.message : "Registration failed",
         error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
-  async register(data: RegisterRequest): Promise<ApiResponse<AuthResponse>> {
-    return this.makeRequest<AuthResponse>("/register", "POST", data);
-  }
-
   async login(data: LoginRequest): Promise<ApiResponse<AuthResponse>> {
-    return this.makeRequest<AuthResponse>("/login", "POST", data);
+    try {
+      const response = await apiClient.post<AuthResponse>("/auth/login", data, {
+        skipAuth: true,
+      });
+
+      return {
+        success: true,
+        message: response.message,
+        data: response,
+      };
+    } catch (error) {
+      console.error("Login Error:", error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Login failed",
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
   }
 
   async forgotPassword(data: ForgotPasswordRequest): Promise<ApiResponse> {
-    return this.makeRequest("/forgot-password", "POST", data);
+    try {
+      const response = await apiClient.post<{ message: string }>(
+        "/auth/forgot-password",
+        data,
+        { skipAuth: true }
+      );
+
+      return {
+        success: true,
+        message: response.message || "Password reset email sent",
+      };
+    } catch (error) {
+      console.error("Forgot Password Error:", error);
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Failed to send reset email",
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
   }
 
   async resetPassword(data: ResetPasswordRequest): Promise<ApiResponse> {
-    return this.makeRequest("/reset-password", "POST", data);
+    try {
+      const response = await apiClient.post<{ message: string }>(
+        "/auth/reset-password",
+        data,
+        { skipAuth: true }
+      );
+
+      return {
+        success: true,
+        message: response.message || "Password reset successfully",
+      };
+    } catch (error) {
+      console.error("Reset Password Error:", error);
+      return {
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Failed to reset password",
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
   }
 }
 

@@ -30,18 +30,26 @@ export interface ApiResponse<T = unknown> {
   error?: string;
 }
 
+export interface UserPublic {
+  id: number;
+  email: string;
+  name: string;
+  avatar_url?: string;
+  is_active: boolean;
+  subscription_plan: string;
+  created_at: string;
+}
+
 export interface AuthResponse {
-  token?: string;
-  user?: {
-    id: string;
-    email: string;
-    name: string;
-  };
+  message: string;
+  user: UserPublic;
+  access_token: string;
+  token_type: string;
 }
 
 export interface ToastMessage {
   id: string;
-  type: 'success' | 'error' | 'info' | 'warning';
+  type: "success" | "error" | "info" | "warning";
   message: string;
   duration?: number;
 }
