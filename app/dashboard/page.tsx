@@ -145,82 +145,8 @@ const ChatNode = ({
     position: { x: number; y: number };
   };
 }) => {
-  const { position } = data;
-  const { x, y } = position;
-  const centerX = 400;
-  const centerY = 300;
-  const threshold = 100;
-
-  let handleStyle: React.CSSProperties = {};
-  let handleType: "source" | "target" = "source";
-  let handlePosition: Position = Position.Right;
-
-  if (x < centerX - threshold && y < centerY - threshold) {
-    // left top -> right bottom
-    handleStyle = { right: "-12px", bottom: "-12px" };
-    handleType = "source";
-    handlePosition = Position.Bottom;
-  } else if (x < centerX - threshold && Math.abs(y - centerY) <= threshold) {
-    // center left -> center right
-    handleStyle = { right: "-12px", top: "50%", transform: "translateY(-50%)" };
-    handleType = "source";
-    handlePosition = Position.Right;
-  } else if (x < centerX - threshold && y > centerY + threshold) {
-    // left bottom -> top right
-    handleStyle = { right: "-12px", top: "-12px" };
-    handleType = "source";
-    handlePosition = Position.Top;
-  } else if (Math.abs(x - centerX) <= threshold && y < centerY - threshold) {
-    // top center -> center bottom
-    handleStyle = {
-      bottom: "-12px",
-      left: "50%",
-      transform: "translateX(-50%)",
-    };
-    handleType = "source";
-    handlePosition = Position.Bottom;
-  } else if (Math.abs(x - centerX) <= threshold && y > centerY + threshold) {
-    // bottom center -> top center
-    handleStyle = { top: "-12px", left: "50%", transform: "translateX(-50%)" };
-    handleType = "source";
-    handlePosition = Position.Top;
-  } else if (x > centerX + threshold && y < centerY - threshold) {
-    // right top -> bottom left
-    handleStyle = { left: "-12px", bottom: "-12px" };
-    handleType = "target";
-    handlePosition = Position.Bottom;
-  } else if (x > centerX + threshold && Math.abs(y - centerY) <= threshold) {
-    // right center -> left center
-    handleStyle = { left: "-12px", top: "50%", transform: "translateY(-50%)" };
-    handleType = "target";
-    handlePosition = Position.Left;
-  } else if (x > centerX + threshold && y > centerY + threshold) {
-    // right bottom -> left top
-    handleStyle = { left: "-12px", top: "-12px" };
-    handleType = "target";
-    handlePosition = Position.Top;
-  } else {
-    // default center right
-    handleStyle = { right: "-12px", top: "50%", transform: "translateY(-50%)" };
-    handleType = "source";
-    handlePosition = Position.Right;
-  }
-
   return (
     <div className="w-full h-full">
-      <Handle
-        type={handleType}
-        position={handlePosition}
-        style={{
-          background: "#F0F5F7",
-          width: "24px",
-          height: "24px",
-          border: "2px solid #4596FF",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          zIndex: 1000,
-          ...handleStyle,
-        }}
-      />
       <ChatInterfaceDraggable
         attachedAssets={data.attachedAssets}
         inline={true}
@@ -415,6 +341,7 @@ export default function Home() {
             onConnect={onConnect}
             nodeTypes={nodeTypes}
             defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+            defaultEdgeOptions={{ style: { stroke: '#4596FF', strokeDasharray: '5,5' } }}
           >
             <Controls />
             <Background />
