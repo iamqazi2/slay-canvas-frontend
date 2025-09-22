@@ -1,9 +1,18 @@
 "use client";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
+import { Handle, Position } from "reactflow";
 
 interface ChatInterfaceProps {
   className?: string;
+  attachedAssets?: ComponentInstance[];
+  inline?: boolean;
+}
+
+interface ComponentInstance {
+  id: string;
+  type: string;
+  data?: { file?: File; files?: File[]; text?: string };
 }
 
 interface Message {
@@ -20,7 +29,11 @@ interface Message {
   };
 }
 
-const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
+const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({
+  className = "",
+  attachedAssets = [],
+  inline = false,
+}) => {
   const [selectedChat, setSelectedChat] = useState(0);
   const [selectedFilter, setSelectedFilter] = useState("All Attached Nodes");
   const [searchQuery, setSearchQuery] = useState("");
@@ -35,11 +48,34 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  // Update attachedFiles when attachedAssets change
+  useEffect(() => {
+    const filesFromAssets: File[] = [];
+    attachedAssets.forEach((asset) => {
+      if (asset.data?.files) {
+        filesFromAssets.push(...asset.data.files);
+      } else if (asset.data?.file) {
+        filesFromAssets.push(asset.data.file);
+      }
+    });
+    setAttachedFiles((prev) => {
+      const existingNames = prev.map((f) => f.name);
+      const newFiles = filesFromAssets.filter(
+        (f) => !existingNames.includes(f.name)
+      );
+      return [...prev, ...newFiles];
+    });
+  }, [attachedAssets]);
+
   const handleMouseDown = React.useCallback(
     (e: React.MouseEvent) => {
+      if (inline) return; // No dragging in inline mode
       // Only allow dragging from the header area or ellipses
       const target = e.target as HTMLElement;
-      if (target.closest('[data-draggable="true"]') || target.closest(".drag-handle")) {
+      if (
+        target.closest('[data-draggable="true"]') ||
+        target.closest(".drag-handle")
+      ) {
         e.preventDefault();
         setIsDragging(true);
 
@@ -55,14 +91,17 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
         });
       }
     },
-    [position]
+    [position, inline]
   );
 
   const handleTouchStart = React.useCallback(
     (e: React.TouchEvent) => {
       // Only allow dragging from the header area or ellipses
       const target = e.target as HTMLElement;
-      if (target.closest('[data-draggable="true"]') || target.closest(".drag-handle")) {
+      if (
+        target.closest('[data-draggable="true"]') ||
+        target.closest(".drag-handle")
+      ) {
         e.preventDefault();
         const touch = e.touches[0];
         setIsDragging(true);
@@ -138,7 +177,9 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
     if (isDragging) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
-      document.addEventListener("touchmove", handleTouchMove, { passive: false });
+      document.addEventListener("touchmove", handleTouchMove, {
+        passive: false,
+      });
       document.addEventListener("touchend", handleTouchEnd);
     }
 
@@ -148,14 +189,35 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
       document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
+  }, [
+    isDragging,
+    handleMouseMove,
+    handleMouseUp,
+    handleTouchMove,
+    handleTouchEnd,
+  ]);
 
   // Logo Component
   const LogoIcon: React.FC<{ size?: number }> = ({ size = 24 }) => (
-    <div className="flex items-center justify-center rounded-full bg-white" style={{ width: size, height: size }}>
-      <svg width={size * 0.6} height={size * 0.6} viewBox="0 0 46 46" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12.8048 29.1955L12.6621 28.9615V33.5877V28.963L12.8048 29.1955Z" fill="#1E1E1E" />
-        <path d="M16.9337 33.3713L16.9199 33.3636L16.9337 33.3713Z" fill="#1E1E1E" />
+    <div
+      className="flex items-center justify-center rounded-full bg-white"
+      style={{ width: size, height: size }}
+    >
+      <svg
+        width={size * 0.6}
+        height={size * 0.6}
+        viewBox="0 0 46 46"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M12.8048 29.1955L12.6621 28.9615V33.5877V28.963L12.8048 29.1955Z"
+          fill="#1E1E1E"
+        />
+        <path
+          d="M16.9337 33.3713L16.9199 33.3636L16.9337 33.3713Z"
+          fill="#1E1E1E"
+        />
         <path
           d="M16.9316 33.3707L16.9202 33.3636L16.8974 33.3493C15.2312 32.2986 13.8306 30.877 12.8048 29.1954L12.6621 28.9629V33.5876H16.9316V33.3707Z"
           fill="#1E1E1E"
@@ -174,7 +236,13 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
 
   // Logo Header Component
   const LogoHeaderIcon: React.FC<{ size?: number }> = ({ size = 22 }) => (
-    <svg width={size} height={size} viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 22 22"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
         d="M11.728 22.3299C13.6539 22.3297 15.547 21.8313 17.2234 20.8833C18.8997 19.9353 20.3024 18.5698 21.2951 16.9194C22.2878 15.2691 22.8368 13.3901 22.8887 11.4649C22.9407 9.53974 22.4938 7.63385 21.5915 5.93242C20.6892 4.23098 19.3621 2.79185 17.7393 1.75482C16.1165 0.717799 14.253 0.118142 12.3299 0.0141084C10.4069 -0.0899256 8.48957 0.3052 6.76433 1.1611C5.03909 2.017 3.56455 3.30458 2.48397 4.89874C3.17013 4.80462 3.86734 4.82857 4.54543 4.96954L4.89231 5.04033C6.39298 3.35906 8.46294 2.29287 10.7031 2.04734C12.9433 1.80181 15.1951 2.39431 17.0243 3.71061C18.8535 5.02692 20.1306 6.97382 20.6095 9.17595C21.0883 11.3781 20.7349 13.6795 19.6174 15.6366C18.5 17.5936 16.6976 19.0676 14.5577 19.7745C12.4178 20.4813 10.092 20.371 8.02873 19.4646C5.96542 18.5583 4.31069 16.9202 3.38358 14.8662C2.45646 12.8121 2.32261 10.4876 3.00783 8.34066C3.04535 8.22243 3.0857 8.10492 3.12817 7.9867C3.17065 7.86847 3.21525 7.7545 3.26197 7.64052H3.30374C3.41156 7.64023 3.51931 7.64567 3.62655 7.65681C3.74356 7.66795 3.85984 7.68567 3.97485 7.7099C4.56437 7.83353 5.10897 8.11569 5.54996 8.52599C5.99094 8.93629 6.3116 9.45916 6.47735 10.0383C6.5191 10.1854 6.55009 10.3354 6.57009 10.4871C6.59094 10.6365 6.60135 10.7872 6.60124 10.938V10.9847C6.60124 11.1157 6.60902 11.2545 6.62106 11.4052C6.63309 11.556 6.65504 11.7139 6.68123 11.864C6.87299 12.9637 7.39956 13.9774 8.18903 14.7667C8.97849 15.5559 9.99236 16.0822 11.0921 16.2737C12.1919 16.4651 13.324 16.3124 14.3337 15.8364C15.3435 15.3603 16.1816 14.5842 16.7337 13.614L16.7479 13.5885C16.8137 13.4695 16.871 13.3605 16.9206 13.2536C16.9772 13.134 17.0318 13.0087 17.0834 12.8735C17.1075 12.8105 17.1309 12.7461 17.1542 12.6809C17.2052 12.528 17.247 12.3857 17.2816 12.2441C17.342 11.9968 17.3853 11.7456 17.4112 11.4923C17.4299 11.3112 17.4393 11.1293 17.4395 10.9472V10.938C17.4395 10.7844 17.4331 10.6301 17.4204 10.48C17.4062 10.3228 17.3864 10.1685 17.3609 10.022C17.1938 9.04942 16.7642 8.14101 16.1185 7.3948C15.4727 6.64859 14.6354 6.09294 13.697 5.78785C12.7585 5.48276 11.7546 5.4398 10.7935 5.66363C9.83239 5.88746 8.95071 6.36957 8.24361 7.0579L8.21884 7.08127L8.24008 7.10817C8.69025 7.68421 9.0349 8.3354 9.25806 9.03159L9.28143 9.10238L9.32461 9.04008C9.68351 8.53004 10.1797 8.13221 10.7555 7.89274C11.3314 7.65327 11.9633 7.58198 12.5781 7.68714C13.1928 7.7923 13.7651 8.0696 14.2286 8.48687C14.6922 8.90414 15.0279 9.44428 15.1968 10.0446C15.2384 10.1921 15.2699 10.3423 15.291 10.4942C15.3109 10.6434 15.3211 10.7938 15.3214 10.9444C15.3209 11.7393 15.0333 12.5073 14.5116 13.107C13.9898 13.7068 13.269 14.0979 12.4818 14.2084C11.6946 14.319 10.894 14.1415 10.2273 13.7086C9.56053 13.2758 9.07255 12.6167 8.85314 11.8527L8.84322 11.8258C8.83827 11.8066 8.8326 11.7875 8.82906 11.767C8.80138 11.6621 8.77941 11.5557 8.76323 11.4484C8.76323 11.4399 8.76323 11.4322 8.76323 11.4244C8.76249 11.4175 8.76249 11.4107 8.76323 11.4038L8.74978 11.2906C8.73756 11.1787 8.73141 11.0662 8.73137 10.9536V10.9444C8.73137 10.7908 8.72571 10.6364 8.71367 10.4857C8.70164 10.3349 8.67969 10.1763 8.6535 10.0276C8.49109 9.07754 8.0778 8.18809 7.45637 7.45128C6.83494 6.71447 6.02794 6.15707 5.11885 5.83674C5.00558 5.79615 4.8909 5.75958 4.7748 5.72701C4.65587 5.69374 4.53623 5.66401 4.41518 5.63923C3.61969 5.47221 2.79665 5.48819 2.00824 5.68595C1.05303 7.38436 0.558774 9.30313 0.574587 11.2517C0.590399 13.2002 1.11572 15.1107 2.09838 16.7934C3.08104 18.476 4.48683 19.8724 6.17612 20.8436C7.86541 21.8149 9.77941 22.3273 11.728 22.3299Z"
         fill="white"
@@ -184,7 +252,13 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
 
   // Search Icon
   const SearchIcon: React.FC = () => (
-    <svg width="16" height="16" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 14 14"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
         d="M12.4993 12.5L8.88824 8.88885M1.66602 5.87959C1.66602 6.43284 1.77499 6.98068 1.98671 7.49182C2.19843 8.00296 2.50875 8.46739 2.89996 8.8586C3.29117 9.24981 3.75561 9.56014 4.26675 9.77186C4.77789 9.98358 5.32572 10.0926 5.87898 10.0926C6.43223 10.0926 6.98007 9.98358 7.49121 9.77186C8.00235 9.56014 8.46678 9.24981 8.85799 8.8586C9.2492 8.46739 9.55953 8.00296 9.77125 7.49182C9.98297 6.98068 10.0919 6.43284 10.0919 5.87959C10.0919 5.32633 9.98297 4.7785 9.77125 4.26736C9.55953 3.75622 9.2492 3.29178 8.85799 2.90057C8.46678 2.50936 8.00235 2.19904 7.49121 1.98732C6.98007 1.7756 6.43223 1.66663 5.87898 1.66663C5.32572 1.66663 4.77789 1.7756 4.26675 1.98732C3.75561 2.19904 3.29117 2.50936 2.89996 2.90057C2.50875 3.29178 2.19843 3.75622 1.98671 4.26736C1.77499 4.7785 1.66602 5.32633 1.66602 5.87959Z"
         stroke="#4596FF"
@@ -197,7 +271,13 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
 
   // Chat Icon
   const ChatIcon: React.FC<{ fill: string }> = ({ fill }) => (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 14 14"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
         d="M12.9737 0.666504H1.69167C1.41966 0.666504 1.15878 0.776251 0.966437 0.971601C0.774092 1.16695 0.666034 1.4319 0.666034 1.70817V12.1248C0.664851 12.3235 0.720179 12.5182 0.825367 12.6857C0.930555 12.8532 1.08113 12.9862 1.25898 13.0688C1.39451 13.1329 1.54217 13.1663 1.69167 13.1665C1.93244 13.1659 2.1652 13.0787 2.34872 12.9204L2.35449 12.9159L4.44808 11.0832H12.9737C13.2457 11.0832 13.5066 10.9734 13.6989 10.7781C13.8913 10.5827 13.9993 10.3178 13.9993 10.0415V1.70817C13.9993 1.4319 13.8913 1.16695 13.6989 0.971601C13.5066 0.776251 13.2457 0.666504 12.9737 0.666504ZM12.9737 10.0415H4.25577C4.13264 10.0416 4.01364 10.0866 3.92052 10.1685L1.69167 12.1248V1.70817H12.9737V10.0415Z"
         fill={fill}
@@ -207,7 +287,13 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
 
   // More Options Icon
   const MoreIcon: React.FC<{ fill: string }> = ({ fill }) => (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <circle cx="8" cy="2" r="1.5" fill={fill} />
       <circle cx="8" cy="8" r="1.5" fill={fill} />
       <circle cx="8" cy="14" r="1.5" fill={fill} />
@@ -216,7 +302,13 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
 
   // Attachment Icon
   const AttachmentIcon: React.FC = () => (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 20 20"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
         d="M18.5 9.5L10.5 17.5C9.11929 18.8807 6.88071 18.8807 5.5 17.5C4.11929 16.1193 4.11929 13.8807 5.5 12.5L13.5 4.5C14.3284 3.67157 15.6716 3.67157 16.5 4.5C17.3284 5.32843 17.3284 6.67157 16.5 7.5L8.5 15.5"
         stroke="#fff"
@@ -229,7 +321,13 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
 
   // Microphone Icon
   const MicrophoneIcon: React.FC = () => (
-    <svg width="17" height="25" viewBox="0 0 17 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width="17"
+      height="25"
+      viewBox="0 0 17 25"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
         d="M8.33333 15.6251C10.7045 15.6251 12.6263 13.5269 12.6263 10.9376V4.68762C12.6263 2.09834 10.7045 0.00012207 8.33333 0.00012207C5.96212 0.00012207 4.0404 2.09834 4.0404 4.68762V10.9376C4.0404 13.5269 5.96212 15.6251 8.33333 15.6251ZM16.6667 10.8818C16.6667 10.7591 16.5758 10.6586 16.4646 10.6586H14.9495C14.8384 10.6586 14.7475 10.7591 14.7475 10.8818C14.7475 14.7964 11.8763 17.9689 8.33333 17.9689C4.7904 17.9689 1.91919 14.7964 1.91919 10.8818C1.91919 10.7591 1.82828 10.6586 1.71717 10.6586H0.20202C0.0909091 10.6586 0 10.7591 0 10.8818C0 15.5888 3.19697 19.4728 7.32323 20.0224V22.8796H3.65404C3.30808 22.8796 3.0303 23.2786 3.0303 23.7724V24.7769C3.0303 24.8997 3.10101 25.0001 3.18687 25.0001H13.4798C13.5657 25.0001 13.6364 24.8997 13.6364 24.7769V23.7724C13.6364 23.2786 13.3586 22.8796 13.0126 22.8796H9.24242V20.0364C13.4167 19.5342 16.6667 15.6279 16.6667 10.8818Z"
         fill="#1E1E1E"
@@ -239,7 +337,13 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
 
   // Send Icon
   const SendIcon: React.FC = () => (
-    <svg width="24" height="20" viewBox="0 0 24 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width="24"
+      height="20"
+      viewBox="0 0 24 20"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
         d="M12.7585 1.23588C12.6327 1.36303 12.5328 1.51412 12.4647 1.68048C12.3966 1.84684 12.3615 2.0252 12.3615 2.20533C12.3615 2.38547 12.3966 2.56382 12.4647 2.73018C12.5328 2.89655 12.6327 3.04764 12.7585 3.17479L18.55 9.04738L2.01575 9.04738C1.65778 9.04738 1.31447 9.19158 1.06134 9.44825C0.80822 9.70492 0.666016 10.053 0.666016 10.416C0.666016 10.779 0.80822 11.1271 1.06134 11.3838C1.31447 11.6405 1.65778 11.7847 2.01575 11.7847L18.55 11.7847L12.7585 17.6595C12.5049 17.9167 12.3625 18.2654 12.3625 18.629C12.3625 18.9926 12.5049 19.3413 12.7585 19.5984C13.0121 19.8556 13.356 20 13.7146 20C14.0732 20 14.4171 19.8556 14.6706 19.5984L22.769 11.3866C22.8949 11.2595 22.9947 11.1084 23.0628 10.942C23.1309 10.7757 23.166 10.5973 23.166 10.4172C23.166 10.237 23.1309 10.0587 23.0628 9.89231C22.9947 9.72595 22.8949 9.57486 22.769 9.44771L14.6706 1.23588C14.5452 1.10829 14.3962 1.00705 14.2322 0.937971C14.0681 0.868895 13.8922 0.833334 13.7146 0.833334C13.5369 0.833334 13.361 0.868895 13.197 0.937971C13.0329 1.00705 12.8839 1.10829 12.7585 1.23588Z"
         fill="white"
@@ -249,7 +353,13 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
 
   // Maximize Icon
   const MaximizeIcon: React.FC = () => (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
         d="M3 3H7M3 3V7M3 3L7 7M13 3H9M13 3V7M13 3L9 7M3 13H7M3 13V9M3 13L7 9M13 13H9M13 13V9M13 13L9 9"
         stroke="#6B7280"
@@ -260,7 +370,11 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
     </svg>
   );
 
-  const recentChats = ["What's the best ap..", "What's the best ap..", "What's the best ap.."];
+  const recentChats = [
+    "What's the best ap..",
+    "What's the best ap..",
+    "What's the best ap..",
+  ];
 
   const filterTags = [
     "All Attached Nodes",
@@ -373,11 +487,21 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
     return (
       <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
         <div className={`max-w-[80%] ${isUser ? "order-2" : "order-1"}`}>
-          <div className={`rounded-2xl px-4 py-3 ${isUser ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-900"}`}>
+          <div
+            className={`rounded-2xl px-4 py-3 ${
+              isUser ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-900"
+            }`}
+          >
             {message.type === "attachment" && message.attachment && (
               <div className="mb-2">
                 <div className="flex items-center gap-2 p-2 bg-white/20 rounded-lg">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
                     <path
                       d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"
                       stroke="currentColor"
@@ -394,8 +518,12 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
                     />
                   </svg>
                   <div>
-                    <p className="text-sm font-medium">{message.attachment.name}</p>
-                    <p className="text-xs opacity-75">{formatFileSize(message.attachment.size)}</p>
+                    <p className="text-sm font-medium">
+                      {message.attachment.name}
+                    </p>
+                    <p className="text-xs opacity-75">
+                      {formatFileSize(message.attachment.size)}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -403,7 +531,13 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
             {message.type === "voice" && (
               <div className="mb-2">
                 <div className="flex items-center gap-2 p-2 bg-white/20 rounded-lg">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
                     <path
                       d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
                       stroke="currentColor"
@@ -444,7 +578,13 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
                     <p className="text-xs opacity-75">0:03</p>
                   </div>
                   <button className="ml-auto p-1 hover:bg-white/20 rounded">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
                       <polygon points="5,3 19,12 5,21" fill="currentColor" />
                     </svg>
                   </button>
@@ -456,7 +596,10 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
                 {message.text.split("\n").map((line, index) => {
                   if (line.startsWith("**") && line.endsWith(":**")) {
                     return (
-                      <div key={index} className="font-semibold text-base mt-3 mb-2">
+                      <div
+                        key={index}
+                        className="font-semibold text-base mt-3 mb-2"
+                      >
                         {line.replace(/\*\*/g, "")}
                       </div>
                     );
@@ -476,7 +619,11 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
             isUser ? "bg-blue-500 order-1 ml-3" : "bg-gray-300 order-2 mr-3"
           }`}
         >
-          {isUser ? <span className="text-white text-sm font-medium">U</span> : <LogoIcon size={14} />}
+          {isUser ? (
+            <span className="text-white text-sm font-medium">U</span>
+          ) : (
+            <LogoIcon size={14} />
+          )}
         </div>
       </div>
     );
@@ -485,22 +632,30 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
   return (
     <div
       ref={containerRef}
-      className={`${"fixed z-20 select-none rounded-xl shadow-[0px_0px_31.9px_0px_#1E1E1E33] border border-gray-200"} ${className}`}
-      style={{
-        left: `${position.x}%`,
-        top: `${position.y}%`,
-        width: "min(800px, 95vw)",
-        height: "min(600px, 85vh)",
-        maxWidth: "800px",
-        maxHeight: "600px",
-        minWidth: "400px",
-        minHeight: "400px",
-        opacity: 1,
-        transform: "rotate(0deg)",
-      }}
+      className={`${
+        inline
+          ? "relative w-full h-full"
+          : "fixed z-20 select-none rounded-xl shadow-[0px_0px_31.9px_0px_#1E1E1E33] border border-gray-200"
+      } ${className}`}
+      style={
+        inline
+          ? {}
+          : {
+              left: `${position.x}%`,
+              top: `${position.y}%`,
+              width: "min(800px, 95vw)",
+              height: "min(600px, 85vh)",
+              maxWidth: "800px",
+              maxHeight: "600px",
+              minWidth: "400px",
+              minHeight: "400px",
+              opacity: 1,
+              transform: "rotate(0deg)",
+            }
+      }
       onMouseDown={(e) => {
         // Prevent dragging on small screens to avoid issues
-        if (window.innerWidth < 640) {
+        if (!inline && window.innerWidth < 640) {
           e.preventDefault();
         }
       }}
@@ -510,7 +665,8 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
       <div
         className="px-4 cursor-move sm:px-6 py-3 sm:py-4 text-white rounded-t-xl"
         style={{
-          background: "radial-gradient(50% 97.57% at 50% 50%, #4596FF 0%, #8E5EFF 100%)",
+          background:
+            "radial-gradient(50% 97.57% at 50% 50%, #4596FF 0%, #8E5EFF 100%)",
         }}
         data-draggable="true"
         onMouseDown={handleMouseDown}
@@ -518,12 +674,16 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
       >
         <div className="flex items-center gap-3">
           <LogoHeaderIcon size={22} />
-          <h1 className="text-lg sm:text-xl font-semibold">SlayCanvas AI Chat</h1>
+          <h1 className="text-lg sm:text-xl font-semibold">
+            SlayCanvas AI Chat
+          </h1>
         </div>
       </div>
       <div className={`flex h-full ${className}`}>
         {/* Left Sidebar */}
-        <div className={`w-[200px] min-w-[180px] max-w-[220px] bg-white border-r border-gray-200 flex flex-col`}>
+        <div
+          className={`w-[200px] min-w-[180px] max-w-[220px] bg-white border-r border-gray-200 flex flex-col`}
+        >
           {/* Top Section */}
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
@@ -553,7 +713,9 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
           {/* Recent Chats Section */}
           <div className="flex-1 px-4 overflow-y-auto">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-medium text-gray-700">Recent Chats</h3>
+              <h3 className="text-xs font-medium text-gray-700">
+                Recent Chats
+              </h3>
               <button className="text-xs text-[#1279FF] font-medium hover:text-[#0D6EFD] transition-colors">
                 New Chat +
               </button>
@@ -564,18 +726,28 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
                 <div
                   key={index}
                   className={`flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors ${
-                    selectedChat === index ? "bg-[#4596FF99] text-white" : " hover:bg-gray-50"
+                    selectedChat === index
+                      ? "bg-[#4596FF99] text-white"
+                      : " hover:bg-gray-50"
                   }`}
                   onClick={() => setSelectedChat(index)}
                 >
                   <div className="flex items-center gap-2">
-                    <ChatIcon fill={`${selectedChat === index ? "#fff" : "#1E1E1E"}`} />
-                    <span className={`text-xs truncate ${selectedChat === index ? "text-white" : "text-[#424242]"}`}>
+                    <ChatIcon
+                      fill={`${selectedChat === index ? "#fff" : "#1E1E1E"}`}
+                    />
+                    <span
+                      className={`text-xs truncate ${
+                        selectedChat === index ? "text-white" : "text-[#424242]"
+                      }`}
+                    >
                       {chat}
                     </span>
                   </div>
                   <button className="p-1 hover:bg-gray-200 rounded transition-colors">
-                    <MoreIcon fill={`${selectedChat === index ? "#fff" : "#1E1E1E"}`} />
+                    <MoreIcon
+                      fill={`${selectedChat === index ? "#fff" : "#1E1E1E"}`}
+                    />
                   </button>
                 </div>
               ))}
@@ -583,7 +755,10 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
           </div>
 
           {/* Bottom Section */}
-          <div className="p-4 border-t border-gray-200" onClick={() => router.push("/chat")}>
+          <div
+            className="p-4 border-t border-gray-200"
+            onClick={() => router.push("/chat")}
+          >
             <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">
               <MaximizeIcon />
               <span>Maximize the Chat</span>
@@ -595,12 +770,17 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
         <div className="flex-1 min-w-[300px] flex flex-col">
           {/* Filter Tags */}
           <div className="px-6 py-4 border-b border-gray-200 bg-white">
-            <div className="flex gap-2 w-full overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+            <div
+              className="flex gap-2 w-full overflow-x-auto"
+              style={{ scrollbarWidth: "none" }}
+            >
               {filterTags.map((tag, index) => (
                 <button
                   key={index}
                   className={`px-4 py-2 min-w-fit rounded-full text-sm font-medium transition-colors ${
-                    selectedFilter === tag ? "bg-[#4596FF] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    selectedFilter === tag
+                      ? "bg-[#4596FF] text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                   onClick={() => setSelectedFilter(tag)}
                 >
@@ -619,11 +799,14 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
                     <LogoIcon size={80} />
                   </div>
 
-                  <h2 className="text-2xl text-center font-medium text-gray-800 mb-4">How can we assist you today?</h2>
+                  <h2 className="text-2xl text-center font-medium text-gray-800 mb-4">
+                    How can we assist you today?
+                  </h2>
 
                   <p className="text-base text-gray-500 leading-relaxed">
-                    Get expert guidance powered by AI agents specializing in Sales, Marketing, and Negotiation. Choose
-                    the agent that suits your needs and start your conversation with ease.
+                    Get expert guidance powered by AI agents specializing in
+                    Sales, Marketing, and Negotiation. Choose the agent that
+                    suits your needs and start your conversation with ease.
                   </p>
                 </div>
               </div>
@@ -644,16 +827,30 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
             {attachedFiles.length > 0 && (
               <div className="mb-4 p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-gray-700">Attached Files:</span>
-                  <button onClick={() => setAttachedFiles([])} className="text-sm text-red-600 hover:text-red-800">
+                  <span className="text-sm font-medium text-gray-700">
+                    Attached Files:
+                  </span>
+                  <button
+                    onClick={() => setAttachedFiles([])}
+                    className="text-sm text-red-600 hover:text-red-800"
+                  >
                     Clear All
                   </button>
                 </div>
                 <div className="space-y-2">
                   {attachedFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-white rounded-lg border"
+                    >
                       <div className="flex items-center gap-3">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
                           <path
                             d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"
                             stroke="currentColor"
@@ -669,11 +866,24 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
                             strokeLinejoin="round"
                           />
                         </svg>
-                        <span className="text-sm text-gray-700">{file.name}</span>
-                        <span className="text-xs text-gray-500">({formatFileSize(file.size)})</span>
+                        <span className="text-sm text-gray-700">
+                          {file.name}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          ({formatFileSize(file.size)})
+                        </span>
                       </div>
-                      <button onClick={() => removeAttachment(index)} className="text-red-500 hover:text-red-700 p-1">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <button
+                        onClick={() => removeAttachment(index)}
+                        className="text-red-500 hover:text-red-700 p-1"
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
                           <path
                             d="M18 6L6 18M6 6l12 12"
                             stroke="currentColor"
@@ -722,10 +932,13 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
                     onClick={handleSendMessage}
                     disabled={!message.trim() && attachedFiles.length === 0}
                     className={`p-1.5 rounded-lg transition-colors ${
-                      message.trim() || attachedFiles.length > 0 ? "opacity-100" : "opacity-50 cursor-not-allowed"
+                      message.trim() || attachedFiles.length > 0
+                        ? "opacity-100"
+                        : "opacity-50 cursor-not-allowed"
                     }`}
                     style={{
-                      background: "linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%)",
+                      background:
+                        "linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%)",
                     }}
                   >
                     <SendIcon />
@@ -736,6 +949,40 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({ className = "" }
           </div>
         </div>
       </div>
+      {inline && (
+        <>
+          <Handle
+            type="target"
+            position={Position.Left}
+            style={{
+              background: "#F0F5F7",
+              width: "24px",
+              height: "24px",
+              border: "2px solid #4596FF",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              zIndex: 1000,
+              left: "-12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+            }}
+          />
+          <Handle
+            type="source"
+            position={Position.Right}
+            style={{
+              background: "#F0F5F7",
+              width: "24px",
+              height: "24px",
+              border: "2px solid #4596FF",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              zIndex: 1000,
+              right: "-12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+            }}
+          />
+        </>
+      )}
     </div>
   );
 };

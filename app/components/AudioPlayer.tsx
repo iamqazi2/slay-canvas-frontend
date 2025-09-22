@@ -8,9 +8,16 @@ interface AudioPlayerProps {
   id?: string;
   initialData?: { file: File };
   onClose?: () => void;
+  inline?: boolean;
 }
 
-const AudioPlayer: React.FC<AudioPlayerProps> = ({ className = "", id, initialData, onClose }) => {
+const AudioPlayer: React.FC<AudioPlayerProps> = ({
+  className = "",
+  id,
+  initialData,
+  onClose,
+  inline = false,
+}) => {
   // id is used for React key in parent component
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
@@ -42,7 +49,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ className = "", id, initialDa
     });
   });
 
-  const generateWaveformFromAudio = async (audioFile: string): Promise<void> => {
+  const generateWaveformFromAudio = async (
+    audioFile: string
+  ): Promise<void> => {
     try {
       const audioContext = new window.AudioContext();
       const response = await fetch(audioFile);
@@ -82,9 +91,13 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ className = "", id, initialDa
 
   // Draggable handlers
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (inline) return; // No dragging in inline mode
     // Only allow dragging from the header area or ellipses
     const target = e.target as HTMLElement;
-    if (target.closest('[data-draggable="true"]') || target.closest(".drag-handle")) {
+    if (
+      target.closest('[data-draggable="true"]') ||
+      target.closest(".drag-handle")
+    ) {
       e.preventDefault();
       setIsDraggingComponent(true);
 
@@ -104,7 +117,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ className = "", id, initialDa
   const handleTouchStart = (e: React.TouchEvent) => {
     // Only allow dragging from the header area or ellipses
     const target = e.target as HTMLElement;
-    if (target.closest('[data-draggable="true"]') || target.closest(".drag-handle")) {
+    if (
+      target.closest('[data-draggable="true"]') ||
+      target.closest(".drag-handle")
+    ) {
       e.preventDefault();
       const touch = e.touches[0];
       setIsDraggingComponent(true);
@@ -178,7 +194,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ className = "", id, initialDa
     if (isDraggingComponent) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
-      document.addEventListener("touchmove", handleTouchMove, { passive: false });
+      document.addEventListener("touchmove", handleTouchMove, {
+        passive: false,
+      });
       document.addEventListener("touchend", handleTouchEnd);
     }
 
@@ -188,7 +206,14 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ className = "", id, initialDa
       document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [isDraggingComponent, dragStart, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
+  }, [
+    isDraggingComponent,
+    dragStart,
+    handleMouseMove,
+    handleMouseUp,
+    handleTouchMove,
+    handleTouchEnd,
+  ]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -248,8 +273,15 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ className = "", id, initialDa
       }
     };
 
-    window.addEventListener("audioFilePasted", handleAudioFilePasted as EventListener);
-    return () => window.removeEventListener("audioFilePasted", handleAudioFilePasted as EventListener);
+    window.addEventListener(
+      "audioFilePasted",
+      handleAudioFilePasted as EventListener
+    );
+    return () =>
+      window.removeEventListener(
+        "audioFilePasted",
+        handleAudioFilePasted as EventListener
+      );
   }, [audioFile]);
 
   useEffect(() => {
@@ -320,7 +352,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ className = "", id, initialDa
     audio.currentTime = newTime;
   };
 
-  const handleProgressMouseDown = (e: React.MouseEvent<HTMLDivElement>): void => {
+  const handleProgressMouseDown = (
+    e: React.MouseEvent<HTMLDivElement>
+  ): void => {
     setIsDragging(true);
     handleProgressClick(e);
   };
@@ -331,7 +365,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ className = "", id, initialDa
 
       const rect = progressRef.current.getBoundingClientRect();
       const moveX = e.clientX - rect.left;
-      const newProgress = Math.max(0, Math.min(100, (moveX / rect.width) * 100));
+      const newProgress = Math.max(
+        0,
+        Math.min(100, (moveX / rect.width) * 100)
+      );
       const newTime = (newProgress / 100) * duration;
 
       setProgress(newProgress);
@@ -437,7 +474,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ className = "", id, initialDa
 
     // Check if this is a sidebar component (hardcoded ID) or has onClose prop
     if (id === "sidebar-audio-player" || onClose) {
-      console.log("AudioPlayer is sidebar component or has onClose prop, calling onClose");
+      console.log(
+        "AudioPlayer is sidebar component or has onClose prop, calling onClose"
+      );
       if (onClose) {
         onClose();
       } else {
@@ -469,22 +508,34 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ className = "", id, initialDa
     <>
       <div
         ref={containerRef}
-        className={`fixed z-20 select-none ${className}`}
-        style={{
-          left: `${position.x}%`,
-          top: `${position.y}%`,
-          width: "min(400px, 90vw)",
-          height: "min(200px, 40vh)",
-          maxWidth: "400px",
-          maxHeight: "200px",
-          opacity: 1,
-          transform: "rotate(0deg)",
-        }}
+        className={`${
+          inline ? "relative w-full h-full" : "fixed z-20 select-none"
+        } ${className}`}
+        style={
+          inline
+            ? {}
+            : {
+                left: `${position.x}%`,
+                top: `${position.y}%`,
+                width: "min(400px, 90vw)",
+                height: "min(200px, 40vh)",
+                maxWidth: "400px",
+                maxHeight: "200px",
+                opacity: 1,
+                transform: "rotate(0deg)",
+              }
+        }
         onPaste={handlePaste}
         tabIndex={0}
       >
         {audioFile && <audio ref={audioRef} src={audioFile} />}
-        <input type="file" ref={fileInputRef} accept="audio/*" onChange={handleFileChange} className="hidden" />
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="audio/*"
+          onChange={handleFileChange}
+          className="hidden"
+        />
 
         {/* Main Container */}
         <div
@@ -508,7 +559,13 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ className = "", id, initialDa
           >
             <div className="flex overflow-hidden items-center space-x-3 text-white">
               <div className="w-[29px] h-[29px]">
-                <svg width="29" height="29" viewBox="0 0 29 29" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg
+                  width="29"
+                  height="29"
+                  viewBox="0 0 29 29"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
                   <path
                     d="M18.1042 7.14364C18.1042 4.88847 16.276 3.0603 14.0208 3.0603C11.7657 3.0603 9.9375 4.88847 9.9375 7.14364V14.727C9.9375 16.9821 11.7657 18.8103 14.0208 18.8103C16.276 18.8103 18.1042 16.9821 18.1042 14.727V7.14364Z"
                     fill="white"
@@ -573,12 +630,38 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ className = "", id, initialDa
                 }}
               >
                 {isPlaying ? (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="6" y="4" width="4" height="16" rx="2" fill="white" />
-                    <rect x="14" y="4" width="4" height="16" rx="2" fill="white" />
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <rect
+                      x="6"
+                      y="4"
+                      width="4"
+                      height="16"
+                      rx="2"
+                      fill="white"
+                    />
+                    <rect
+                      x="14"
+                      y="4"
+                      width="4"
+                      height="16"
+                      rx="2"
+                      fill="white"
+                    />
                   </svg>
                 ) : (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
                     <path d="M8 5V19L19 12L8 5Z" fill="white" />
                   </svg>
                 )}
@@ -596,7 +679,8 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ className = "", id, initialDa
                   <div className="flex items-end justify-between h-full space-x-0.5">
                     {waveformData.length > 0
                       ? waveformData.map((height, index) => {
-                          const isActive = index < (progress / 100) * waveformData.length;
+                          const isActive =
+                            index < (progress / 100) * waveformData.length;
                           const barHeight = Math.max(4, height * 50); // Minimum 4px height
                           return (
                             <div
@@ -605,7 +689,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ className = "", id, initialDa
                               style={{
                                 width: "3px",
                                 height: `${barHeight}px`,
-                                backgroundColor: isActive ? "#1E1E1E" : "rgba(30, 30, 30, 0.5)",
+                                backgroundColor: isActive
+                                  ? "#1E1E1E"
+                                  : "rgba(30, 30, 30, 0.5)",
                                 opacity: isActive ? 1 : 0.6,
                               }}
                             />
@@ -652,7 +738,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ className = "", id, initialDa
                   className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:bg-gray-200 transition-colors"
                 >
                   <Mic className="w-6 h-6 text-gray-500 mx-auto mb-2" />
-                  <p className="text-gray-600 text-sm">Click to upload an audio file or use Ctrl+V to paste</p>
+                  <p className="text-gray-600 text-sm">
+                    Click to upload an audio file or use Ctrl+V to paste
+                  </p>
                 </div>
               </div>
             )}
@@ -669,32 +757,19 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ className = "", id, initialDa
               right: "-10px",
             }}
           >
-            <svg width="9" height="11" viewBox="0 0 9 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg
+              width="9"
+              height="11"
+              viewBox="0 0 9 11"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
               <path
                 d="M7.79841 0.6123C8.09939 0.52497 8.41641 0.697898 8.48094 1.00458C8.68701 1.98387 8.69713 2.99625 8.50856 3.98288C8.28442 5.15567 7.78589 6.25876 7.05374 7.20196C6.32159 8.14516 5.3766 8.9017 4.29604 9.40971C3.38701 9.83708 2.40375 10.0784 1.40395 10.1216C1.09084 10.1352 0.844695 9.87092 0.854648 9.55768C0.864602 9.24444 1.12701 9.00119 1.43991 8.9835C2.26042 8.93712 3.06628 8.73377 3.81318 8.38263C4.73165 7.95082 5.53489 7.30777 6.15722 6.50604C6.77954 5.70432 7.20329 4.7667 7.39382 3.76982C7.54875 2.95917 7.54588 2.12806 7.38732 1.32168C7.32685 1.01417 7.49742 0.699631 7.79841 0.6123Z"
                 fill="#1279FF"
               />
             </svg>
           </div>
-        </div>
-
-        <div className="relative right-0">
-          <svg
-            className="absolute right-0"
-            width="223"
-            height="164"
-            viewBox="0 0 223 164"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M217 162.5C265.63 54.5232 -56.5939 16.1954 10.9997 1.50008"
-              stroke="#1279FF"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeDasharray="7 7"
-            />
-          </svg>
         </div>
       </div>
     </>

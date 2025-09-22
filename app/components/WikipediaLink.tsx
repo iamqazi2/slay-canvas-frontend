@@ -7,6 +7,7 @@ interface WikipediaLinkProps {
   id?: string;
   initialData?: { text: string };
   onClose?: () => void;
+  inline?: boolean;
 }
 
 const WikipediaLink: React.FC<WikipediaLinkProps> = ({
@@ -14,6 +15,7 @@ const WikipediaLink: React.FC<WikipediaLinkProps> = ({
   id,
   initialData,
   onClose,
+  inline = false,
 }) => {
   // id is used for React key in parent component
   const [isDragging, setIsDragging] = useState(false);
@@ -27,6 +29,7 @@ const WikipediaLink: React.FC<WikipediaLinkProps> = ({
 
   const handleMouseDown = React.useCallback(
     (e: React.MouseEvent) => {
+      if (inline) return; // No dragging in inline mode
       const target = e.target as HTMLElement;
       if (
         target.closest('[data-draggable="true"]') ||
@@ -47,7 +50,7 @@ const WikipediaLink: React.FC<WikipediaLinkProps> = ({
         });
       }
     },
-    [position]
+    [position, inline]
   );
 
   const handleTouchStart = React.useCallback(
@@ -277,17 +280,23 @@ const WikipediaLink: React.FC<WikipediaLinkProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`fixed select-none ${className}`}
-      style={{
-        left: `${position.x}%`,
-        top: `${position.y}%`,
-        width: "min(300px, 80vw)",
-        height: "min(145px, 30vh)",
-        maxWidth: "300px",
-        maxHeight: "145px",
-        opacity: 1,
-        transform: "rotate(0deg)",
-      }}
+      className={`${
+        inline ? "relative w-full h-full" : "fixed select-none"
+      } ${className}`}
+      style={
+        inline
+          ? {}
+          : {
+              left: `${position.x}%`,
+              top: `${position.y}%`,
+              width: "min(300px, 80vw)",
+              height: "min(145px, 30vh)",
+              maxWidth: "300px",
+              maxHeight: "145px",
+              opacity: 1,
+              transform: "rotate(0deg)",
+            }
+      }
       tabIndex={0}
     >
       {/* Main Container */}

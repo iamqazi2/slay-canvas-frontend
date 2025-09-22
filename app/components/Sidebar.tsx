@@ -17,6 +17,7 @@ import ImageCollection from "./ImageCollection";
 import AudioPlayer from "./AudioPlayer";
 import VideoCollection from "./VideoCollection";
 import PdfDocument from "./PdfDocument";
+import TextCollection from "./TextCollection";
 import WikipediaLink from "./WikipediaLink";
 import { StoreTypes, VideoItem } from "@/app/models/interfaces";
 import VideoModal from "./modals/VideoModal";
@@ -50,12 +51,14 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     videoCollection: boolean;
     pdfDocument: boolean;
     wikipediaLink: boolean;
+    text: boolean;
   }>({
     imageCollection: false,
     audioPlayer: false,
     videoCollection: false,
     pdfDocument: false,
     wikipediaLink: false,
+    text: false,
   });
 
   const [componentData, setComponentData] = useState<{
@@ -90,18 +93,15 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
   const handleImageFileChange = (files: File[]) => {
     const validFiles = files.filter((file) => file.type.startsWith("image/"));
     if (validFiles.length > 0) {
-      if (visibleComponents.imageCollection) {
-        // Add to existing collection
-        validFiles.forEach((file) => {
-          window.dispatchEvent(
-            new CustomEvent("imageFilePasted", { detail: { file } })
-          );
-        });
-      } else {
-        // Create new collection
-        setComponentData((prev) => ({ ...prev, imageFiles: validFiles }));
-        setVisibleComponents((prev) => ({ ...prev, imageCollection: true }));
-      }
+      // Always create new collection for flow
+      setComponentData((prev) => ({ ...prev, imageFiles: validFiles }));
+      setVisibleComponents((prev) => ({ ...prev, imageCollection: true }));
+      // Dispatch to dashboard
+      window.dispatchEvent(
+        new CustomEvent("createComponent", {
+          detail: { componentType: "imageCollection", data: { files: validFiles } },
+        })
+      );
       setIsImagePopup(false);
     }
   };
@@ -112,6 +112,12 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
       setComponentData((prev) => ({ ...prev, audioFile: file }));
       setVisibleComponents((prev) => ({ ...prev, audioPlayer: true }));
       setIsAudioPopup(false);
+      // Dispatch to dashboard
+      window.dispatchEvent(
+        new CustomEvent("createComponent", {
+          detail: { componentType: "audioPlayer", data: { file } },
+        })
+      );
     }
   };
 
@@ -121,6 +127,12 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
       setComponentData((prev) => ({ ...prev, videoFile: file }));
       setVisibleComponents((prev) => ({ ...prev, videoCollection: true }));
       setIsVideoPopup(false);
+      // Dispatch to dashboard
+      window.dispatchEvent(
+        new CustomEvent("createComponent", {
+          detail: { componentType: "videoCollection", data: { file } },
+        })
+      );
     }
   };
 
@@ -139,6 +151,12 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
       setComponentData((prev) => ({ ...prev, documentFile: file }));
       setVisibleComponents((prev) => ({ ...prev, pdfDocument: true }));
       setIsDocumentPopup(false);
+      // Dispatch to dashboard
+      window.dispatchEvent(
+        new CustomEvent("createComponent", {
+          detail: { componentType: "pdfDocument", data: { file } },
+        })
+      );
     }
   };
 
@@ -183,18 +201,36 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     setComponentData((prev) => ({ ...prev, textContent: wikiUrl.trim() }));
     setVisibleComponents((prev) => ({ ...prev, wikipediaLink: true }));
     setIsWikipediaPopup(false);
+    // Dispatch to dashboard
+    window.dispatchEvent(
+      new CustomEvent("createComponent", {
+        detail: { componentType: "wikipediaLink", data: { text: wikiUrl.trim() } },
+      })
+    );
   };
 
   const showWebLink = () => {
     setComponentData((prev) => ({ ...prev, textContent: webLinkUrl.trim() }));
     setVisibleComponents((prev) => ({ ...prev, wikipediaLink: true }));
     setIsWebLinkPopup(false);
+    // Dispatch to dashboard
+    window.dispatchEvent(
+      new CustomEvent("createComponent", {
+        detail: { componentType: "wikipediaLink", data: { text: webLinkUrl.trim() } },
+      })
+    );
   };
 
-  const showText = () => {
-    setComponentData((prev) => ({ ...prev, textContent: textContent.trim() }));
-    setVisibleComponents((prev) => ({ ...prev, wikipediaLink: true }));
+  const showText = (text: string) => {
+    setComponentData((prev) => ({ ...prev, textContent: text.trim() }));
+    setVisibleComponents((prev) => ({ ...prev, text: true }));
     setIsTextPopup(false);
+    // Dispatch to dashboard
+    window.dispatchEvent(
+      new CustomEvent("createComponent", {
+        detail: { componentType: "text", data: { text: text.trim() } },
+      })
+    );
   };
 
   // Utility functions for video processing
@@ -300,6 +336,12 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
       const video = createVideoFromUrl(url.trim());
       addVideo(video);
       setIsVideoPopup(false);
+      // Dispatch to dashboard
+      window.dispatchEvent(
+        new CustomEvent("createComponent", {
+          detail: { componentType: "videoCollection", data: { text: url.trim() } },
+        })
+      );
     }
   };
 
@@ -461,93 +503,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
         className="hidden"
       />
 
-      <div className="relative z-50 inset-0 w-full h-full overflow-hidden">
-        {/* Render Components */}
-        {visibleComponents.imageCollection && (
-          <ImageCollection
-            id="sidebar-image-collection"
-            className="z-30"
-            initialData={
-              componentData.imageFiles
-                ? { files: componentData.imageFiles }
-                : undefined
-            }
-            onClose={() => {
-              setVisibleComponents((prev) => ({
-                ...prev,
-                imageCollection: false,
-              }));
-              setComponentData((prev) => ({ ...prev, imageFiles: undefined }));
-            }}
-          />
-        )}
-
-        {visibleComponents.audioPlayer && (
-          <AudioPlayer
-            id="sidebar-audio-player"
-            initialData={
-              componentData.audioFile
-                ? { file: componentData.audioFile }
-                : undefined
-            }
-            onClose={() => {
-              setVisibleComponents((prev) => ({ ...prev, audioPlayer: false }));
-              setComponentData((prev) => ({ ...prev, audioFile: undefined }));
-            }}
-          />
-        )}
-
-        {visibleComponents.videoCollection && (
-          <VideoCollection
-            id="sidebar-video-collection"
-            initialData={
-              componentData.videoFile
-                ? { file: componentData.videoFile }
-                : undefined
-            }
-            onClose={() => {
-              setVisibleComponents((prev) => ({ ...prev, videoCollection: false }));
-              setComponentData((prev) => ({ ...prev, videoFile: undefined }));
-            }}
-          />
-        )}
-
-        {visibleComponents.pdfDocument && (
-          <PdfDocument
-            id="sidebar-pdf-document"
-            initialData={
-              componentData.documentFile
-                ? { file: componentData.documentFile }
-                : undefined
-            }
-            onClose={() => {
-              setVisibleComponents((prev) => ({ ...prev, pdfDocument: false }));
-              setComponentData((prev) => ({
-                ...prev,
-                documentFile: undefined,
-              }));
-            }}
-          />
-        )}
-
-        {visibleComponents.wikipediaLink && (
-          <WikipediaLink
-            id="sidebar-wikipedia-link"
-            initialData={
-              componentData.textContent
-                ? { text: componentData.textContent }
-                : undefined
-            }
-            onClose={() => {
-              setVisibleComponents((prev) => ({
-                ...prev,
-                wikipediaLink: false,
-              }));
-              setComponentData((prev) => ({ ...prev, textContent: undefined }));
-            }}
-          />
-        )}
-      </div>
+      {/* Components now rendered in React Flow */}
 
       <VideoModal
         isOpen={isVideoPopup}
@@ -598,8 +554,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
         isOpen={isTextPopup}
         onClose={() => setIsTextPopup(false)}
         onSubmit={(submittedText) => {
-          setTextContent(submittedText);
-          showText();
+          showText(submittedText);
         }}
       />
     </>
