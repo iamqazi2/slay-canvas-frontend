@@ -1,10 +1,13 @@
 "use client";
+import { assetApi } from "@/app/utils/assetApi";
+import { knowledgeBaseApi } from "@/app/utils/knowledgeBaseApi";
 import { useCallback, useEffect, useState } from "react";
 import ReactFlow, {
   addEdge,
   Background,
   Connection,
   Controls,
+  Edge,
   Handle,
   MiniMap,
   Node,
@@ -26,7 +29,14 @@ import {
 import ChatNav from "../components/New-Navbar";
 import { useUserStore } from "../store/userStore";
 import { useWorkspaceStore } from "../store/workspaceStore";
-import { assetsToComponentInstances } from "../utils/assetUtils";
+import { KnowledgeBase } from "../types/workspace";
+import {
+  assetsToComponentInstances,
+  componentInstanceToAssetCreate,
+  getAssetCreationStrategy,
+  getAssetIdFromComponentId,
+  isBackendAsset,
+} from "../utils/assetUtils";
 
 interface ComponentInstance {
   id: string;
@@ -205,6 +215,7 @@ export default function Home() {
 
   const [showChatInFlow, setShowChatInFlow] = useState<boolean>(false);
   const [attachedAssets, setAttachedAssets] = useState<ComponentInstance[]>([]);
+  const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -244,6 +255,13 @@ export default function Home() {
       );
       setComponentInstances(workspaceAssets);
 
+      // Load knowledge bases from workspace
+      if (currentWorkspace.knowledge_bases) {
+        setKnowledgeBases(currentWorkspace.knowledge_bases);
+      } else {
+        setKnowledgeBases([]);
+      }
+
       // Reset other states when switching workspaces
       setAttachedAssets([]);
       setShowChatInFlow(false);
@@ -265,42 +283,93 @@ export default function Home() {
     }
   };
 
+  // Handle chat click - show existing knowledge bases or create new
+  const handleChatClick = async () => {
+    if (!currentWorkspace) {
+      console.error("No current workspace");
+      return;
+    }
+
+    try {
+      // Check if workspace has existing knowledge bases
+      const existingKBs = currentWorkspace.knowledge_bases || [];
+
+      if (existingKBs.length === 0) {
+        // Create a new knowledge base if none exist
+        const kbResponse = await knowledgeBaseApi.createKnowledgeBase({
+          name: `Chat Session ${new Date().toLocaleDateString()}`,
+          description: `Knowledge base for chat session in ${currentWorkspace.name}`,
+          project_name: currentWorkspace.name,
+        });
+
+        console.log("Created knowledge base:", kbResponse);
+
+        // Refresh workspace to get the new knowledge base
+        switchWorkspace(currentWorkspaceId!);
+      } else {
+        console.log("Workspace already has knowledge bases:", existingKBs);
+        // Knowledge bases are already displayed as nodes
+      }
+    } catch (error) {
+      console.error("Failed to handle chat click:", error);
+    }
+  };
+
   const onConnect = useCallback(
-    (params: Connection) => {
-      if (showChatInFlow) {
-        // Handle connections to chat node (asset -> chat)
-        if (params.target === "chat-node") {
-          setEdges((eds) => addEdge(params, eds));
-          // Add the asset to attachedAssets
-          const assetNode = nodes.find((n) => n.id === params.source);
+    async (params: Connection) => {
+      // Handle connections to/from knowledge base nodes
+      const targetIsKB = params.target?.startsWith("kb-");
+      const sourceIsKB = params.source?.startsWith("kb-");
+
+      if (targetIsKB || sourceIsKB) {
+        setEdges((eds) => addEdge(params, eds));
+
+        // Determine which asset and which KB are being connected
+        const assetNodeId = targetIsKB ? params.source : params.target;
+        const kbNodeId = targetIsKB ? params.target : params.source;
+
+        if (assetNodeId && kbNodeId) {
+          const assetNode = nodes.find((n) => n.id === assetNodeId);
+
           if (assetNode && assetNode.data) {
+            const assetData = assetNode.data as ComponentInstance;
             setAttachedAssets((prev) => {
-              const exists = prev.find((a) => a.id === assetNode.data.id);
+              const exists = prev.find((a) => a.id === assetData.id);
               if (!exists) {
-                return [...prev, assetNode.data as ComponentInstance];
+                return [...prev, assetData];
               }
               return prev;
             });
-          }
-        }
-        // Handle connections from chat node (chat -> asset)
-        else if (params.source === "chat-node") {
-          setEdges((eds) => addEdge(params, eds));
-          // Add the asset to attachedAssets
-          const assetNode = nodes.find((n) => n.id === params.target);
-          if (assetNode && assetNode.data) {
-            setAttachedAssets((prev) => {
-              const exists = prev.find((a) => a.id === assetNode.data.id);
-              if (!exists) {
-                return [...prev, assetNode.data as ComponentInstance];
+
+            // Extract KB ID from node ID (kb-4 -> 4)
+            const kbId = parseInt(kbNodeId.replace("kb-", ""));
+
+            // Link asset to knowledge base if we have both IDs
+            if (currentWorkspaceId) {
+              const assetId = getAssetIdFromComponentId(assetData.id);
+              if (assetId) {
+                try {
+                  await knowledgeBaseApi.linkAssetToKnowledgeBase(
+                    currentWorkspaceId,
+                    assetId,
+                    kbId
+                  );
+                  console.log(
+                    `Linked asset ${assetId} to knowledge base ${kbId}`
+                  );
+                } catch (error) {
+                  console.error(
+                    "Failed to link asset to knowledge base:",
+                    error
+                  );
+                }
               }
-              return prev;
-            });
+            }
           }
         }
       }
     },
-    [nodes, showChatInFlow, setEdges, setAttachedAssets]
+    [nodes, setEdges, setAttachedAssets, currentWorkspaceId]
   );
 
   // Update nodes when componentInstances or showChatInFlow change
@@ -326,6 +395,7 @@ export default function Home() {
 
     setNodes((currentNodes) => {
       const newNodes: Node[] = [
+        // Asset nodes
         ...componentInstances.map((instance, index) => {
           const dimensions = getNodeDimensions(instance.type);
           // Find existing node to preserve position
@@ -340,55 +410,216 @@ export default function Home() {
             style: { width: dimensions.width, height: dimensions.height },
           };
         }),
-        ...(showChatInFlow
-          ? [
-              (() => {
-                const chatPosition = currentNodes.find(
-                  (n) => n.id === "chat-node"
-                )?.position || {
-                  x: 400,
-                  y: 300,
-                };
-                return {
-                  id: "chat-node",
-                  type: "chat",
-                  position: chatPosition,
-                  data: { attachedAssets, position: chatPosition },
-                  style: { width: 800, height: 600 },
-                };
-              })(),
-            ]
-          : []),
+        // Knowledge base (chat) nodes
+        ...knowledgeBases.map((kb, index) => {
+          const kbNodeId = `kb-${kb.id}`;
+          const existingKbNode = currentNodes.find((n) => n.id === kbNodeId);
+
+          // Find assets linked to this knowledge base
+          const linkedAssets = componentInstances.filter((instance) => {
+            // Extract asset ID from component instance ID (asset-15 -> 15)
+            const assetId = getAssetIdFromComponentId(instance.id);
+            if (!assetId || !currentWorkspace?.assets) return false;
+
+            // Find the corresponding asset in workspace data
+            const workspaceAsset = currentWorkspace.assets.find(
+              (a) => a.id === assetId
+            );
+            return workspaceAsset?.knowledge_base_id === kb.id;
+          });
+
+          return {
+            id: kbNodeId,
+            type: "chat",
+            position: existingKbNode
+              ? existingKbNode.position
+              : { x: 400 + index * 300, y: 300 + index * 100 },
+            data: {
+              attachedAssets: linkedAssets,
+              position: existingKbNode?.position || {
+                x: 400 + index * 300,
+                y: 300 + index * 100,
+              },
+              knowledgeBase: kb,
+            },
+            style: { width: 800, height: 600 },
+          };
+        }),
       ];
       return newNodes;
     });
-  }, [componentInstances, showChatInFlow, attachedAssets, setNodes]);
+  }, [
+    componentInstances,
+    showChatInFlow,
+    attachedAssets,
+    knowledgeBases,
+    currentWorkspace?.assets,
+    setNodes,
+  ]);
+
+  // Create edges for existing asset-knowledge base relationships
+  useEffect(() => {
+    if (!currentWorkspace?.assets || knowledgeBases.length === 0) return;
+
+    const existingEdges: Edge[] = [];
+
+    currentWorkspace.assets.forEach((asset) => {
+      if (asset.knowledge_base_id) {
+        // Create edge from asset to knowledge base
+        const assetNodeId = `asset-${asset.id}`;
+        const kbNodeId = `kb-${asset.knowledge_base_id}`;
+
+        existingEdges.push({
+          id: `${assetNodeId}-${kbNodeId}`,
+          source: assetNodeId,
+          target: kbNodeId,
+          type: "default",
+          style: { stroke: "#4596FF", strokeDasharray: "5,5" },
+        });
+      }
+    });
+
+    if (existingEdges.length > 0) {
+      console.log("Creating edges for existing relationships:", existingEdges);
+      setEdges(existingEdges);
+    }
+  }, [currentWorkspace?.assets, knowledgeBases, setEdges]);
 
   // Listen for component creation events
   useEffect(() => {
-    const handleCreateComponent = (event: CustomEvent) => {
+    const handleCreateComponent = async (event: CustomEvent) => {
       const { componentType, data } = event.detail;
+      console.log("🔧 handleCreateComponent called with:", {
+        componentType,
+        data,
+      });
+
       const newInstance: ComponentInstance = {
         id: `${componentType}-${Date.now()}`,
         type: componentType,
         data: data,
       };
 
+      // Add to local state immediately for UI responsiveness
       setComponentInstances((prev) => [...prev, newInstance]);
+
+      // Save to backend if we have a current workspace
+      if (currentWorkspaceId) {
+        try {
+          const strategy = getAssetCreationStrategy(componentType);
+          console.log("📍 Asset creation strategy:", strategy);
+          console.log("🔍 Data structure analysis:", {
+            hasFile: !!data?.file,
+            hasFiles: !!data?.files,
+            fileType: data?.file?.constructor?.name,
+            filesType: data?.files?.constructor?.name,
+            dataKeys: data ? Object.keys(data) : "no data",
+            fullData: data,
+          });
+          let savedAsset;
+
+          if (strategy.endpoint === "link") {
+            // Handle social, wiki, internet links
+            console.log("🔗 Creating link asset");
+            const assetCreate = componentInstanceToAssetCreate(newInstance);
+            console.log("📝 Asset create data:", assetCreate);
+            savedAsset = await assetApi.createLinkAsset(
+              currentWorkspaceId,
+              assetCreate
+            );
+          } else if (strategy.endpoint === "text") {
+            // Handle text content
+            console.log("📄 Creating text asset");
+            const assetCreate = componentInstanceToAssetCreate(newInstance);
+            console.log("📝 Asset create data:", assetCreate);
+            savedAsset = await assetApi.createTextAsset(
+              currentWorkspaceId,
+              assetCreate
+            );
+          } else if (strategy.endpoint === "file") {
+            console.log("📁 Checking file upload conditions...");
+            console.log(
+              "  - strategy.endpoint === 'file':",
+              strategy.endpoint === "file"
+            );
+            console.log("  - data?.file exists:", !!data?.file);
+            console.log("  - data?.files exists:", !!data?.files);
+
+            // Check for file in data.file or data.files
+            const fileToUpload = data?.file || (data?.files && data.files[0]);
+            console.log("  - fileToUpload:", fileToUpload);
+
+            if (fileToUpload) {
+              // Handle file uploads (image, audio, document)
+              console.log("📁 Creating file asset");
+              const title =
+                data?.title || fileToUpload?.name || "Uploaded File";
+              console.log("📂 File upload details:", {
+                fileName: fileToUpload.name,
+                fileType: fileToUpload.type,
+                assetType: strategy.assetType,
+                title,
+              });
+              savedAsset = await assetApi.uploadFileAsset(
+                currentWorkspaceId,
+                fileToUpload,
+                strategy.assetType as "image" | "audio" | "document",
+                title
+              );
+            } else {
+              console.error(
+                "❌ No file provided for file asset type:",
+                componentType,
+                "Data received:",
+                data
+              );
+              return;
+            }
+          } else {
+            console.error(
+              "❌ Unknown strategy endpoint:",
+              strategy.endpoint,
+              "for componentType:",
+              componentType
+            );
+            return;
+          }
+
+          // Update the instance with the backend ID
+          if (savedAsset) {
+            console.log("✅ Asset saved successfully:", savedAsset);
+            setComponentInstances((prev) =>
+              prev.map((instance) =>
+                instance.id === newInstance.id
+                  ? { ...instance, id: `asset-${savedAsset.id}` }
+                  : instance
+              )
+            );
+          }
+        } catch (error) {
+          console.error("❌ Failed to save asset to backend:", error);
+          // Optionally show user notification here
+        }
+      } else {
+        console.warn("⚠️ No current workspace ID available");
+      }
     };
 
-    const handleRemoveComponent = (event: CustomEvent) => {
+    const handleRemoveComponent = async (event: CustomEvent) => {
       const { componentId } = event.detail;
       console.log(
         "handleRemoveComponent called with componentId:",
         componentId
       );
+
+      // Remove from local state
       setComponentInstances((prev) => {
         console.log("Current component instances before filter:", prev);
         const filtered = prev.filter((instance) => instance.id !== componentId);
         console.log("Filtered component instances:", filtered);
         return filtered;
       });
+
       // Remove node and edges
       setNodes((nds) => nds.filter((node) => node.id !== componentId));
       setEdges((eds) =>
@@ -396,32 +627,50 @@ export default function Home() {
           (edge) => edge.source !== componentId && edge.target !== componentId
         )
       );
+
       // Remove from attachedAssets if present
       setAttachedAssets((prev) =>
         prev.filter((asset) => asset.id !== componentId)
       );
+
+      // Delete from backend if it's a backend asset
+      if (
+        currentWorkspaceId &&
+        isBackendAsset({ id: componentId } as ComponentInstance)
+      ) {
+        try {
+          const assetId = getAssetIdFromComponentId(componentId);
+          if (assetId) {
+            await assetApi.deleteAsset(currentWorkspaceId, assetId);
+            console.log("Successfully deleted asset from backend:", assetId);
+          }
+        } catch (error) {
+          console.error("Failed to delete asset from backend:", error);
+          // Optionally show user notification here
+        }
+      }
     };
 
     window.addEventListener(
       "createComponent",
-      handleCreateComponent as EventListener
+      handleCreateComponent as unknown as EventListener
     );
     window.addEventListener(
       "removeComponent",
-      handleRemoveComponent as EventListener
+      handleRemoveComponent as unknown as EventListener
     );
 
     return () => {
       window.removeEventListener(
         "createComponent",
-        handleCreateComponent as EventListener
+        handleCreateComponent as unknown as EventListener
       );
       window.removeEventListener(
         "removeComponent",
-        handleRemoveComponent as EventListener
+        handleRemoveComponent as unknown as EventListener
       );
     };
-  }, [setNodes, setEdges, setAttachedAssets]);
+  }, [setNodes, setEdges, setAttachedAssets, currentWorkspaceId]);
 
   return (
     <div className="">
@@ -431,7 +680,7 @@ export default function Home() {
             setIsWorkspaceSidebarOpen(!isWorkspaceSidebarOpen)
           }
         />
-        <Sidebar onChatClick={() => setShowChatInFlow(true)} />
+        <Sidebar onChatClick={handleChatClick} />
 
         {/* Light Theme Workspace Sidebar */}
         <div

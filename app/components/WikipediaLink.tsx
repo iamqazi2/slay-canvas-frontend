@@ -1,6 +1,6 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
-import { EditIcon, DeleteIcon } from "./icons";
+import React, { useEffect, useRef, useState } from "react";
+import { DeleteIcon, EditIcon } from "./icons";
 
 interface WikipediaLinkProps {
   className?: string;
@@ -22,9 +22,7 @@ const WikipediaLink: React.FC<WikipediaLinkProps> = ({
   const [position, setPosition] = useState({ x: 77, y: 70 }); // Percentage values (70% from left, 70% from top)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [textContent, setTextContent] = useState<string>("");
-  const [linkUrl, setLinkUrl] = useState<string>(
-    "https://en.wikipedia.org/wiki/Culture"
-  );
+  const [linkUrl, setLinkUrl] = useState<string>("");
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = React.useCallback(
@@ -161,11 +159,15 @@ const WikipediaLink: React.FC<WikipediaLinkProps> = ({
       const text = initialData.text;
       setTextContent(text);
 
-      // Generate Wikipedia link from the text
-
-      const generateRoute = text.split("/wiki/")[1];
-      const wikiLink = generateWikipediaLink(generateRoute);
-      setLinkUrl(wikiLink);
+      // If the text is already a URL, use it directly
+      if (text.startsWith("http")) {
+        setLinkUrl(text);
+      } else {
+        // Generate Wikipedia link from the text
+        const generateRoute = text.split("/wiki/")[1];
+        const wikiLink = generateWikipediaLink(generateRoute || text);
+        setLinkUrl(wikiLink);
+      }
     }
   }, [initialData]);
 
@@ -366,7 +368,7 @@ const WikipediaLink: React.FC<WikipediaLinkProps> = ({
             borderRadius: "12px",
           }}
         >
-          {textContent ? (
+          {textContent && linkUrl ? (
             <div className="space-y-2">
               <button
                 onClick={handleOpen}
@@ -412,32 +414,9 @@ const WikipediaLink: React.FC<WikipediaLinkProps> = ({
               </div>
             </div>
           ) : (
-            <button
-              onClick={handleOpen}
-              className="text-left w-full hover:bg-gray-50 rounded transition-colors p-2"
-              style={{ pointerEvents: "auto" }}
-            >
-              <span
-                className="font-medium underline"
-                style={{
-                  fontFamily: "Urbanist, sans-serif",
-                  fontWeight: 500,
-                  fontSize: "16px",
-                  lineHeight: "100%",
-                  letterSpacing: "0%",
-                  textDecoration: "underline",
-                  textDecorationStyle: "solid",
-                  textDecorationThickness: "0%",
-                  textDecorationSkipInk: "auto",
-                  color: "#244785",
-                  wordWrap: "break-word",
-                  wordBreak: "break-all",
-                  overflowWrap: "break-word",
-                }}
-              >
-                https://en.wikipedia.org/wiki/Culture
-              </span>
-            </button>
+            <div className="text-center text-gray-500 p-4">
+              <span style={{ fontSize: "14px" }}>No link data available</span>
+            </div>
           )}
         </div>
       </div>

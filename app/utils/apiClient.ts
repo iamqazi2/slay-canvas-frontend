@@ -26,9 +26,13 @@ class AuthenticatedFetch {
 
     // Prepare headers
     const requestHeaders: Record<string, string> = {
-      "Content-Type": "application/json",
       ...(headers as Record<string, string>),
     };
+
+    // Only set Content-Type if body is not FormData
+    if (!(restOptions.body instanceof FormData)) {
+      requestHeaders["Content-Type"] = "application/json";
+    }
 
     // Add authorization header if not skipped and token exists
     if (!skipAuth) {
@@ -88,10 +92,20 @@ class AuthenticatedFetch {
     data?: unknown,
     options: FetchOptions = {}
   ): Promise<T> {
+    let body: string | FormData | undefined;
+
+    if (data instanceof FormData) {
+      // Pass FormData directly
+      body = data;
+    } else if (data) {
+      // JSON stringify for other data types
+      body = JSON.stringify(data);
+    }
+
     return this.makeRequest<T>(endpoint, {
       ...options,
       method: "POST",
-      body: data ? JSON.stringify(data) : undefined,
+      body: body,
     });
   }
 
