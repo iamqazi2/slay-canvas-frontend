@@ -33,6 +33,7 @@ class AuthenticatedFetch {
     // Add authorization header if not skipped and token exists
     if (!skipAuth) {
       const token = getAccessToken();
+
       if (token) {
         requestHeaders["Authorization"] = `Bearer ${token}`;
       }

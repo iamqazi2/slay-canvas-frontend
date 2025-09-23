@@ -1,5 +1,18 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
+import ReactFlow, {
+  addEdge,
+  Background,
+  Connection,
+  Controls,
+  Handle,
+  MiniMap,
+  Node,
+  Position,
+  useEdgesState,
+  useNodesState,
+} from "reactflow";
+import "reactflow/dist/style.css";
 import {
   AudioPlayer,
   ChatInterfaceDraggable,
@@ -11,35 +24,13 @@ import {
   WikipediaLink,
 } from "../components";
 import ChatNav from "../components/New-Navbar";
-import ReactFlow, {
-  Node,
-  Edge,
-  addEdge,
-  Connection,
-  useNodesState,
-  useEdgesState,
-  Controls,
-  Background,
-  MiniMap,
-  Handle,
-  Position,
-} from "reactflow";
-import "reactflow/dist/style.css";
+import { useUserStore } from "../store/userStore";
+import { useWorkspaceStore } from "../store/workspaceStore";
 
 interface ComponentInstance {
   id: string;
   type: string;
   data?: { file?: File; files?: File[]; text?: string };
-}
-
-interface Workspace {
-  id: string;
-  name: string;
-  componentInstances: ComponentInstance[];
-  nodes: Node[];
-  edges: Edge[];
-  attachedAssets: ComponentInstance[];
-  showChatInFlow: boolean;
 }
 
 const renderComponent = (instance: ComponentInstance) => {
@@ -172,9 +163,25 @@ const nodeTypes = {
 };
 
 export default function Home() {
+  // Workspace store
+  const {
+    workspaces,
+    currentWorkspace,
+    currentWorkspaceId,
+    isLoading: workspaceLoading,
+    error: workspaceError,
+    fetchWorkspaces,
+    createWorkspace,
+    switchWorkspace,
+    clearError,
+  } = useWorkspaceStore();
+
+  const { isAuthenticated } = useUserStore();
+
+  // Local canvas state
   const [componentInstances, setComponentInstances] = useState<
     ComponentInstance[]
-  >([{ id: "video-collection-1", type: "videoCollection" }]);
+  >([]);
 
   const [showChatInFlow, setShowChatInFlow] = useState<boolean>(false);
   const [attachedAssets, setAttachedAssets] = useState<ComponentInstance[]>([]);
@@ -184,70 +191,36 @@ export default function Home() {
 
   const [isWorkspaceSidebarOpen, setIsWorkspaceSidebarOpen] =
     useState<boolean>(false);
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([
-    {
-      id: "default",
-      name: "Workspace 1",
-      componentInstances: [
-        { id: "video-collection-1", type: "videoCollection" },
-      ],
-      nodes: [],
-      edges: [],
-      attachedAssets: [],
-      showChatInFlow: false,
-    },
-  ]);
-  const [currentWorkspaceId, setCurrentWorkspaceId] =
-    useState<string>("default");
 
-  const saveCurrentWorkspace = () => {
-    setWorkspaces((prev) =>
-      prev.map((ws) =>
-        ws.id === currentWorkspaceId
-          ? {
-              ...ws,
-              componentInstances,
-              nodes,
-              edges,
-              attachedAssets,
-              showChatInFlow,
-            }
-          : ws
-      )
-    );
-  };
+  // Load workspaces on component mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchWorkspaces();
+    }
+  }, [isAuthenticated, fetchWorkspaces]);
 
-  const createNewWorkspace = () => {
-    saveCurrentWorkspace();
-    const newId = `workspace-${Date.now()}`;
-    const newWorkspace: Workspace = {
-      id: newId,
+  // Load workspace details when currentWorkspaceId changes
+  useEffect(() => {
+    if (
+      currentWorkspaceId &&
+      (!currentWorkspace || currentWorkspace.id !== currentWorkspaceId)
+    ) {
+      switchWorkspace(currentWorkspaceId);
+    }
+  }, [currentWorkspaceId, currentWorkspace, switchWorkspace]);
+
+  const createNewWorkspace = async () => {
+    const newWorkspace = await createWorkspace({
       name: `Workspace ${workspaces.length + 1}`,
-      componentInstances: [],
-      nodes: [],
-      edges: [],
-      attachedAssets: [],
-      showChatInFlow: false,
-    };
-    setWorkspaces((prev) => [...prev, newWorkspace]);
-    setCurrentWorkspaceId(newId);
-    setComponentInstances([]);
-    setNodes([]);
-    setEdges([]);
-    setAttachedAssets([]);
-    setShowChatInFlow(false);
-  };
+      description: "New workspace",
+      settings: {},
+      is_public: false,
+      collaborator_ids: [],
+    });
 
-  const switchWorkspace = (id: string) => {
-    saveCurrentWorkspace();
-    const ws = workspaces.find((w) => w.id === id);
-    if (ws) {
-      setComponentInstances(ws.componentInstances);
-      setNodes(ws.nodes);
-      setEdges(ws.edges);
-      setAttachedAssets(ws.attachedAssets);
-      setShowChatInFlow(ws.showChatInFlow);
-      setCurrentWorkspaceId(id);
+    if (newWorkspace) {
+      // Switch to the new workspace
+      switchWorkspace(newWorkspace.id);
     }
   };
 
@@ -310,41 +283,44 @@ export default function Home() {
       }
     };
 
-    const newNodes: Node[] = [
-      ...componentInstances.map((instance, index) => {
-        const dimensions = getNodeDimensions(instance.type);
-        // Find existing node to preserve position
-        const existingNode = nodes.find((n) => n.id === instance.id);
-        return {
-          id: instance.id,
-          type: "asset",
-          position: existingNode
-            ? existingNode.position
-            : { x: 100 + index * 200, y: 100 },
-          data: instance,
-          style: { width: dimensions.width, height: dimensions.height },
-        };
-      }),
-      ...(showChatInFlow
-        ? [
-            (() => {
-              const chatPosition = nodes.find((n) => n.id === "chat-node")
-                ?.position || {
-                x: 400,
-                y: 300,
-              };
-              return {
-                id: "chat-node",
-                type: "chat",
-                position: chatPosition,
-                data: { attachedAssets, position: chatPosition },
-                style: { width: 800, height: 600 },
-              };
-            })(),
-          ]
-        : []),
-    ];
-    setNodes(newNodes);
+    setNodes((currentNodes) => {
+      const newNodes: Node[] = [
+        ...componentInstances.map((instance, index) => {
+          const dimensions = getNodeDimensions(instance.type);
+          // Find existing node to preserve position
+          const existingNode = currentNodes.find((n) => n.id === instance.id);
+          return {
+            id: instance.id,
+            type: "asset",
+            position: existingNode
+              ? existingNode.position
+              : { x: 100 + index * 200, y: 100 },
+            data: instance,
+            style: { width: dimensions.width, height: dimensions.height },
+          };
+        }),
+        ...(showChatInFlow
+          ? [
+              (() => {
+                const chatPosition = currentNodes.find(
+                  (n) => n.id === "chat-node"
+                )?.position || {
+                  x: 400,
+                  y: 300,
+                };
+                return {
+                  id: "chat-node",
+                  type: "chat",
+                  position: chatPosition,
+                  data: { attachedAssets, position: chatPosition },
+                  style: { width: 800, height: 600 },
+                };
+              })(),
+            ]
+          : []),
+      ];
+      return newNodes;
+    });
   }, [componentInstances, showChatInFlow, attachedAssets, setNodes]);
 
   // Listen for component creation events
@@ -488,51 +464,85 @@ export default function Home() {
               <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wider mb-4">
                 Your Workspaces
               </h3>
-              {workspaces.map((ws, index) => (
-                <div
-                  key={ws.id}
-                  onClick={() => switchWorkspace(ws.id)}
-                  className={`relative p-4 rounded-xl cursor-pointer transition-all duration-200 group ${
-                    ws.id === currentWorkspaceId
-                      ? "bg-gradient-to-r from-[#8E5EFF]/10 to-[#4596FF]/10 border-2 border-[#8E5EFF] shadow-lg"
-                      : "bg-gray-50 hover:bg-gray-100 border-2 border-transparent hover:border-gray-200 shadow-sm hover:shadow-md"
-                  }`}
-                >
-                  {/* Workspace Icon */}
-                  <div className="flex items-center space-x-4">
-                    <div
-                      className={`w-12 h-12 rounded-lg flex items-center justify-center shadow-md ${
-                        ws.id === currentWorkspaceId
-                          ? "bg-gradient-to-r from-[#8E5EFF] to-[#4596FF]"
-                          : "bg-gradient-to-r from-[#8E5EFF]/70 to-[#4596FF]/70 group-hover:from-[#8E5EFF] group-hover:to-[#4596FF]"
-                      } transition-all duration-200`}
-                    >
-                      <span className="text-white font-bold text-lg">
-                        {index + 1}
-                      </span>
-                    </div>
 
-                    <div className="flex-1">
-                      <h4
-                        className={`font-semibold ${
-                          ws.id === currentWorkspaceId
-                            ? "text-gray-800"
-                            : "text-gray-700 group-hover:text-gray-800"
-                        } transition-colors duration-200`}
-                      >
-                        {ws.name}
-                      </h4>
-                    </div>
-
-                    {/* Active Indicator */}
-                    {ws.id === currentWorkspaceId && (
-                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-[#8E5EFF] to-[#4596FF] shadow-lg">
-                        <div className="w-full h-full rounded-full bg-gradient-to-r from-[#8E5EFF] to-[#4596FF] animate-pulse"></div>
-                      </div>
-                    )}
-                  </div>
+              {/* Error Display */}
+              {workspaceError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                  <p className="text-red-600 text-sm">{workspaceError}</p>
+                  <button
+                    onClick={clearError}
+                    className="text-red-500 text-xs underline mt-1"
+                  >
+                    Dismiss
+                  </button>
                 </div>
-              ))}
+              )}
+
+              {/* Loading State */}
+              {workspaceLoading && (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8E5EFF]"></div>
+                </div>
+              )}
+
+              {/* Workspaces */}
+              {!workspaceLoading &&
+                workspaces.length === 0 &&
+                !workspaceError && (
+                  <div className="text-center py-8 text-gray-500">
+                    <p className="text-sm">No workspaces found</p>
+                    <p className="text-xs mt-1">
+                      Create your first workspace to get started
+                    </p>
+                  </div>
+                )}
+
+              {!workspaceLoading &&
+                workspaces.map((ws, index) => (
+                  <div
+                    key={ws.id}
+                    onClick={() => switchWorkspace(ws.id)}
+                    className={`relative p-4 rounded-xl cursor-pointer transition-all duration-200 group ${
+                      ws.id === currentWorkspaceId
+                        ? "bg-gradient-to-r from-[#8E5EFF]/10 to-[#4596FF]/10 border-2 border-[#8E5EFF] shadow-lg"
+                        : "bg-gray-50 hover:bg-gray-100 border-2 border-transparent hover:border-gray-200 shadow-sm hover:shadow-md"
+                    }`}
+                  >
+                    {/* Workspace Icon */}
+                    <div className="flex items-center space-x-4">
+                      <div
+                        className={`w-12 h-12 rounded-lg flex items-center justify-center shadow-md ${
+                          ws.id === currentWorkspaceId
+                            ? "bg-gradient-to-r from-[#8E5EFF] to-[#4596FF]"
+                            : "bg-gradient-to-r from-[#8E5EFF]/70 to-[#4596FF]/70 group-hover:from-[#8E5EFF] group-hover:to-[#4596FF]"
+                        } transition-all duration-200`}
+                      >
+                        <span className="text-white font-bold text-lg">
+                          {index + 1}
+                        </span>
+                      </div>
+
+                      <div className="flex-1">
+                        <h4
+                          className={`font-semibold ${
+                            ws.id === currentWorkspaceId
+                              ? "text-gray-800"
+                              : "text-gray-700 group-hover:text-gray-800"
+                          } transition-colors duration-200`}
+                        >
+                          {ws.name}
+                        </h4>
+                      </div>
+
+                      {/* Active Indicator */}
+                      {ws.id === currentWorkspaceId && (
+                        <div className="w-3 h-3 rounded-full bg-gradient-to-r from-[#8E5EFF] to-[#4596FF] shadow-lg">
+                          <div className="w-full h-full rounded-full bg-gradient-to-r from-[#8E5EFF] to-[#4596FF] animate-pulse"></div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
             </div>
 
             {/* Footer */}
@@ -541,10 +551,7 @@ export default function Home() {
                 <p>
                   Current:{" "}
                   <span className="text-[#8E5EFF] font-medium">
-                    {
-                      workspaces.find((ws) => ws.id === currentWorkspaceId)
-                        ?.name
-                    }
+                    {currentWorkspace?.name || "No workspace selected"}
                   </span>
                 </p>
               </div>
