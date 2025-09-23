@@ -26,11 +26,19 @@ import {
 import ChatNav from "../components/New-Navbar";
 import { useUserStore } from "../store/userStore";
 import { useWorkspaceStore } from "../store/workspaceStore";
+import { assetsToComponentInstances } from "../utils/assetUtils";
 
 interface ComponentInstance {
   id: string;
   type: string;
-  data?: { file?: File; files?: File[]; text?: string };
+  data?: {
+    file?: File;
+    files?: File[];
+    text?: string;
+    url?: string;
+    content?: string;
+    title?: string;
+  };
 }
 
 const renderComponent = (instance: ComponentInstance) => {
@@ -78,7 +86,13 @@ const renderComponent = (instance: ComponentInstance) => {
           key={id}
           id={id}
           inline={true}
-          initialData={data?.text ? { text: data.text } : undefined}
+          initialData={
+            data?.text
+              ? { text: data.text }
+              : data?.url
+              ? { text: data.url }
+              : undefined
+          }
         />
       );
     case "text":
@@ -87,7 +101,13 @@ const renderComponent = (instance: ComponentInstance) => {
           key={id}
           id={id}
           inline={true}
-          initialData={data?.text ? { text: data.text } : undefined}
+          initialData={
+            data?.text
+              ? { text: data.text }
+              : data?.content
+              ? { text: data.content }
+              : undefined
+          }
         />
       );
     default:
@@ -199,6 +219,13 @@ export default function Home() {
     }
   }, [isAuthenticated, fetchWorkspaces]);
 
+  // Auto-select first workspace if none is selected
+  useEffect(() => {
+    if (workspaces.length > 0 && !currentWorkspaceId && !workspaceLoading) {
+      switchWorkspace(workspaces[0].id);
+    }
+  }, [workspaces, currentWorkspaceId, workspaceLoading, switchWorkspace]);
+
   // Load workspace details when currentWorkspaceId changes
   useEffect(() => {
     if (
@@ -208,6 +235,20 @@ export default function Home() {
       switchWorkspace(currentWorkspaceId);
     }
   }, [currentWorkspaceId, currentWorkspace, switchWorkspace]);
+
+  // Load workspace assets when currentWorkspace changes
+  useEffect(() => {
+    if (currentWorkspace && currentWorkspace.assets) {
+      const workspaceAssets = assetsToComponentInstances(
+        currentWorkspace.assets
+      );
+      setComponentInstances(workspaceAssets);
+
+      // Reset other states when switching workspaces
+      setAttachedAssets([]);
+      setShowChatInFlow(false);
+    }
+  }, [currentWorkspace]);
 
   const createNewWorkspace = async () => {
     const newWorkspace = await createWorkspace({
