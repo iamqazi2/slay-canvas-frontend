@@ -16,7 +16,11 @@ import { useRouter } from "next/navigation";
 import SharePanel from "./SharePanel";
 import NotificationPanel from "./NotificationPanel";
 
-export default function ChatNav() {
+type ChatNavProps = {
+  onWorkspaceToggle?: () => void;
+};
+
+export default function ChatNav({ onWorkspaceToggle }: ChatNavProps) {
   const router = useRouter();
   const [isSharePanelVisible, setIsSharePanelVisible] =
     useState<boolean>(false);
@@ -47,7 +51,12 @@ export default function ChatNav() {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
               <span className="max-sm:hidden flex items-center gap-3">
-                <GridIcon />
+                <div
+                  className="cursor-pointer hover:opacity-70"
+                  onClick={onWorkspaceToggle}
+                >
+                  <GridIcon />
+                </div>
                 <Separator />
               </span>
               <span className="cursor-pointer" onClick={() => router.push("/")}>
