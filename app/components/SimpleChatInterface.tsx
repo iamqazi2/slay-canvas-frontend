@@ -5,6 +5,7 @@ import {
   WorkspaceDetailed,
 } from "@/app/types/workspace";
 import { chatApi } from "@/app/utils/chatApi";
+import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
@@ -29,6 +30,8 @@ interface SimpleChatInterfaceProps {
   workspace?: WorkspaceDetailed;
   className?: string;
   attachedAssets?: ComponentInstance[];
+  showHandles?: boolean; // Controls whether to show ReactFlow handles
+  initialConversationId?: number; // Optional conversation ID to load initially
 }
 
 export default function SimpleChatInterface({
@@ -36,8 +39,10 @@ export default function SimpleChatInterface({
   workspace,
   className = "",
   attachedAssets = [],
+  showHandles = false,
+  initialConversationId,
 }: SimpleChatInterfaceProps) {
-  const [selectedChat, setSelectedChat] = useState(0);
+  const [selectedChat, setSelectedChat] = useState(-1); // -1 means no selection
   const [selectedFilter, setSelectedFilter] = useState("All Attached Nodes");
   const [searchQuery, setSearchQuery] = useState("");
   const [message, setMessage] = useState("");
@@ -57,23 +62,48 @@ export default function SimpleChatInterface({
 
   // Load existing conversation if we have conversations from knowledgeBase
   useEffect(() => {
-    // Load conversations from all knowledge bases in the workspace
-    if (workspace?.knowledge_bases) {
-      const allConversations: Conversation[] = [];
+    let allConversations: Conversation[] = [];
+
+    // Priority 1: Load conversations directly from knowledgeBase (for chat page)
+    if (knowledgeBase?.conversations) {
+      allConversations = [...knowledgeBase.conversations];
+      console.log(
+        "Loaded conversations from knowledgeBase:",
+        allConversations.length
+      );
+    }
+    // Priority 2: Load conversations from workspace knowledge bases (for dashboard)
+    else if (workspace?.knowledge_bases) {
       workspace.knowledge_bases.forEach((kb) => {
         if (kb.conversations) {
           allConversations.push(...kb.conversations);
         }
       });
-      const sortedConversations = allConversations.sort(
-        (a, b) =>
-          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      console.log(
+        "Loaded conversations from workspace:",
+        allConversations.length
       );
-      setConversations(sortedConversations);
-      console.log("Loaded conversations:", sortedConversations.length);
     }
+
+    const sortedConversations = allConversations.sort(
+      (a, b) =>
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    );
+
+    setConversations(sortedConversations);
     console.log("Knowledge base loaded:", knowledgeBase?.name);
-  }, [knowledgeBase, workspace]);
+
+    // If we have an initial conversation ID, load it
+    if (initialConversationId && sortedConversations.length > 0) {
+      const conversationIndex = sortedConversations.findIndex(
+        (conv) => conv.id === initialConversationId
+      );
+      if (conversationIndex !== -1) {
+        setSelectedChat(conversationIndex);
+        loadConversation(sortedConversations[conversationIndex]);
+      }
+    }
+  }, [knowledgeBase, workspace, initialConversationId]);
 
   // Load conversation messages
   const loadConversation = async (conversation: Conversation) => {
@@ -95,6 +125,20 @@ export default function SimpleChatInterface({
     setSelectedChat(index);
     if (conversations[index]) {
       loadConversation(conversations[index]);
+      if (!showHandles) {
+        const params = new URLSearchParams({
+          kb: knowledgeBase.name,
+        });
+
+        const conversationId = conversations[index].id;
+
+        // Include current conversation ID if one is selected
+        if (conversationId) {
+          params.set("conversationId", conversationId.toString());
+        }
+
+        router.push(`/chat?${params.toString()}`);
+      }
     } else {
       // Start new conversation
       setMessages([]);
@@ -561,17 +605,6 @@ export default function SimpleChatInterface({
             </div>
           </div>
         </div>
-        <div
-          className={`w-8 h-8 rounded-full flex items-center justify-center ${
-            isUser ? "bg-blue-500 order-1 ml-3" : "bg-gray-300 order-2 mr-3"
-          }`}
-        >
-          {isUser ? (
-            <span className="text-white text-sm font-medium">U</span>
-          ) : (
-            <LogoIcon size={14} />
-          )}
-        </div>
       </div>
     );
   };
@@ -687,7 +720,7 @@ export default function SimpleChatInterface({
           {/* Bottom Section */}
           <div
             className="p-4 border-t border-gray-200"
-            onClick={() => router.push("/chat")}
+            onClick={() => router.push(`/chat?kb=${knowledgeBase.name}`)}
           >
             <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">
               <MaximizeIcon />
@@ -762,21 +795,24 @@ export default function SimpleChatInterface({
                   ))}
 
                   {isStreaming && (
-                    <div className="flex justify-start">
-                      <div className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" />
-                          <div
-                            className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
-                            style={{ animationDelay: "0.1s" }}
-                          />
-                          <div
-                            className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
-                            style={{ animationDelay: "0.2s" }}
-                          />
-                        </div>
-                      </div>
+                    <div className="flex justify-center items-center">
+                      <Loader2 className="animate-spin text-gray-500" />
                     </div>
+                    // <div className="flex justify-start">
+                    //   <div className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg">
+                    //     <div className="flex space-x-1">
+                    //       <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" />
+                    //       <div
+                    //         className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+                    //         style={{ animationDelay: "0.1s" }}
+                    //       />
+                    //       <div
+                    //         className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+                    //         style={{ animationDelay: "0.2s" }}
+                    //       />
+                    //     </div>
+                    //   </div>
+                    // </div>
                   )}
 
                   <div ref={messagesEndRef} />
@@ -822,37 +858,41 @@ export default function SimpleChatInterface({
         </div>
       </div>
 
-      {/* ReactFlow Handles */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        style={{
-          background: "#F0F5F7",
-          width: "24px",
-          height: "24px",
-          border: "2px solid #4596FF",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          zIndex: 1000,
-          left: "-12px",
-          top: "50%",
-          transform: "translateY(-50%)",
-        }}
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        style={{
-          background: "#F0F5F7",
-          width: "24px",
-          height: "24px",
-          border: "2px solid #4596FF",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          zIndex: 1000,
-          right: "-12px",
-          top: "50%",
-          transform: "translateY(-50%)",
-        }}
-      />
+      {/* ReactFlow Handles - Only show when used in ReactFlow */}
+      {showHandles && (
+        <>
+          <Handle
+            type="target"
+            position={Position.Left}
+            style={{
+              background: "#F0F5F7",
+              width: "24px",
+              height: "24px",
+              border: "2px solid #4596FF",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              zIndex: 1000,
+              left: "-12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+            }}
+          />
+          <Handle
+            type="source"
+            position={Position.Right}
+            style={{
+              background: "#F0F5F7",
+              width: "24px",
+              height: "24px",
+              border: "2px solid #4596FF",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              zIndex: 1000,
+              right: "-12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }

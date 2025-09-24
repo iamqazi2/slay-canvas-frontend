@@ -213,6 +213,7 @@ const ChatNode = ({
         knowledgeBase={data.knowledgeBase}
         workspace={data.workspace}
         className="h-full"
+        showHandles={true}
       />
     </div>
   );
