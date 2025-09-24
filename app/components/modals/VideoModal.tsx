@@ -8,9 +8,15 @@ interface VideoModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (url: string) => void;
+  heading?: string;
 }
 
-export default function VideoModal({ isOpen, onClose, onSubmit }: VideoModalProps) {
+export default function VideoModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  heading,
+}: VideoModalProps) {
   const [url, setUrl] = useState("");
 
   const handleSubmit = () => {
@@ -32,7 +38,10 @@ export default function VideoModal({ isOpen, onClose, onSubmit }: VideoModalProp
       closeOnEscape
       showCloseButton
       size="md"
-      title="Enter Video URL (YouTube, Vimeo, Instagram, Facebook, TikTok, Twitter, or direct video link)"
+      title={
+        heading ||
+        "Enter Video URL (YouTube, Vimeo, Instagram, Facebook, TikTok, Twitter, or direct video link)"
+      }
     >
       <div className="flex flex-col w-full items-center gap-4">
         <TextField

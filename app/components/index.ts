@@ -22,5 +22,5 @@ export { default as Separator } from "./Separator";
 export { default as SharePanel } from "./SharePanel";
 export { default as Sidebar } from "./Sidebar";
 export { default as TextCollection } from "./TextCollection";
-export { default as VideoCollection } from "./VideoCollection";
+export { default as VideoPreview } from "./VideoPreview";
 export { default as WikipediaLink } from "./WikipediaLink";

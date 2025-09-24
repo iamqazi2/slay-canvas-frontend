@@ -7,7 +7,7 @@ import {
   PdfDocument,
   Sidebar,
   TextCollection,
-  VideoCollection,
+  VideoPreview,
   WikipediaLink,
 } from "../components";
 import ChatNav from "../components/New-Navbar";
@@ -47,7 +47,7 @@ const renderComponent = (instance: ComponentInstance) => {
 
   switch (type) {
     case "videoCollection":
-      return <VideoCollection key={id} id={id} inline={true} />;
+      return <VideoPreview key={id} file={data?.file} src={data?.text} />;
     case "audioPlayer":
       return (
         <AudioPlayer
@@ -108,11 +108,11 @@ const renderComponent = (instance: ComponentInstance) => {
 const AssetNode = ({ data }: { data: ComponentInstance }) => {
   return (
     <div
-      className="relative h-full"
+      className="relative "
       style={{
         border:
           data.type === "videoCollection" ? "1px solid #4596FF" : undefined,
-        borderRadius: data.type === "videoCollection" ? "8px" : undefined,
+        borderRadius: data.type === "videoCollection" ? "24px" : undefined,
       }}
     >
       <Handle
@@ -174,7 +174,7 @@ const nodeTypes = {
 export default function Home() {
   const [componentInstances, setComponentInstances] = useState<
     ComponentInstance[]
-  >([{ id: "video-collection-1", type: "videoCollection" }]);
+  >([]);
 
   const [showChatInFlow, setShowChatInFlow] = useState<boolean>(false);
   const [attachedAssets, setAttachedAssets] = useState<ComponentInstance[]>([]);
@@ -188,9 +188,7 @@ export default function Home() {
     {
       id: "default",
       name: "Workspace 1",
-      componentInstances: [
-        { id: "video-collection-1", type: "videoCollection" },
-      ],
+      componentInstances: [],
       nodes: [],
       edges: [],
       attachedAssets: [],
@@ -294,7 +292,7 @@ export default function Home() {
     const getNodeDimensions = (type: string) => {
       switch (type) {
         case "videoCollection":
-          return { width: 475, height: 409 };
+          return { width: 400, height: 600 };
         case "imageCollection":
           return { width: 296, height: 224 };
         case "audioPlayer":

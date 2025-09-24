@@ -11,14 +11,8 @@ import {
   TrashIcon,
   LockIcon,
   GridIconNew,
-  SocialMediaIcon,
 } from "./icons";
-import ImageCollection from "./ImageCollection";
-import AudioPlayer from "./AudioPlayer";
-import VideoCollection from "./VideoCollection";
-import PdfDocument from "./PdfDocument";
-import TextCollection from "./TextCollection";
-import WikipediaLink from "./WikipediaLink";
+import Image from "next/image";
 import { StoreTypes, VideoItem } from "@/app/models/interfaces";
 import VideoModal from "./modals/VideoModal";
 import ImageModal from "./modals/ImageModal";
@@ -27,6 +21,7 @@ import DocumentModal from "./modals/DocumentModal";
 import WikipediaModal from "./modals/WikipediaModal";
 import TextModal from "./modals/TextModal";
 import WebLinkModal from "./modals/WebLinkModal";
+import PlusModal from "./modals/PlusModal";
 import {
   setHasContent,
   setVideoCollection,
@@ -76,10 +71,12 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
   const [isWikipediaPopup, setIsWikipediaPopup] = useState(false);
   const [isWebLinkPopup, setIsWebLinkPopup] = useState(false);
   const [isTextPopup, setIsTextPopup] = useState(false);
+  const [isPlusPopup, setIsPlusPopup] = useState(false);
   const [url, setUrl] = useState("");
   const [wikiUrl, setWikiUrl] = useState("");
   const [webLinkUrl, setWebLinkUrl] = useState("");
   const [textContent, setTextContent] = useState("");
+  const [videoModalHeading, setVideoModalHeading] = useState("Add Video");
 
   const dispatch = useDispatch();
 
@@ -99,7 +96,10 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
       // Dispatch to dashboard
       window.dispatchEvent(
         new CustomEvent("createComponent", {
-          detail: { componentType: "imageCollection", data: { files: validFiles } },
+          detail: {
+            componentType: "imageCollection",
+            data: { files: validFiles },
+          },
         })
       );
       setIsImagePopup(false);
@@ -125,7 +125,6 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     const file = files[0];
     if (file && file.type.startsWith("video/")) {
       setComponentData((prev) => ({ ...prev, videoFile: file }));
-      setVisibleComponents((prev) => ({ ...prev, videoCollection: true }));
       setIsVideoPopup(false);
       // Dispatch to dashboard
       window.dispatchEvent(
@@ -204,7 +203,10 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     // Dispatch to dashboard
     window.dispatchEvent(
       new CustomEvent("createComponent", {
-        detail: { componentType: "wikipediaLink", data: { text: wikiUrl.trim() } },
+        detail: {
+          componentType: "wikipediaLink",
+          data: { text: wikiUrl.trim() },
+        },
       })
     );
   };
@@ -216,7 +218,10 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     // Dispatch to dashboard
     window.dispatchEvent(
       new CustomEvent("createComponent", {
-        detail: { componentType: "wikipediaLink", data: { text: webLinkUrl.trim() } },
+        detail: {
+          componentType: "wikipediaLink",
+          data: { text: webLinkUrl.trim() },
+        },
       })
     );
   };
@@ -251,63 +256,146 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     return `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
 
-  const createVideoFromUrl = useCallback((url: string): VideoItem => {
-    const type = detectVideoType(url);
+  // changed: map social URLs to embeddable URLs when possible
+  const createVideoFromUrl = useCallback((inputUrl: string): VideoItem => {
+    const type = detectVideoType(inputUrl);
     const id = generateVideoId();
 
     let title = "Video";
     let description = "";
     let author = "";
     let platform = "";
+    let url = inputUrl;
+
+    // Helper to safely parse URL
+    let parsed: URL | null = null;
+    try {
+      parsed = new URL(inputUrl);
+    } catch (e) {
+      parsed = null;
+    }
 
     switch (type) {
-      case "youtube":
+      case "youtube": {
         title = "YouTube Video";
         description = "Watch on YouTube";
         author = "YouTube";
         platform = "YouTube";
+        // transform to embed URL if we can
+        const ytMatch =
+          inputUrl.match(
+            /(?:v=|\/embed\/|youtu\.be\/|watch\?v=)([A-Za-z0-9_-]{6,})/
+          ) || [];
+        const ytId = ytMatch[1] || null;
+        if (ytId) {
+          url = `https://www.youtube.com/embed/${ytId}`;
+        }
         break;
+      }
       case "vimeo":
         title = "Vimeo Video";
         description = "Watch on Vimeo";
         author = "Vimeo";
         platform = "Vimeo";
+        // Vimeo supports embed URLs; if the url already contains /video/ or an id keep it
+        if (parsed) {
+          const vMatch = inputUrl.match(
+            /vimeo\.com\/(?:channels\/[^\s\/]+\/)?(\d+)/
+          );
+          if (vMatch && vMatch[1]) {
+            url = `https://player.vimeo.com/video/${vMatch[1]}`;
+          } else {
+            url = inputUrl;
+          }
+        }
         break;
       case "instagram":
         title = "Instagram Post";
         description = "View on Instagram";
         author = "Instagram";
         platform = "Instagram";
+        // convert to Instagram embed (handles /p/ and /reel/)
+        if (parsed) {
+          const m = parsed.pathname.match(/\/(reel|p)\/([^\/\?]+)/);
+          if (m && m[1] && m[2]) {
+            url = `https://www.instagram.com/${m[1]}/${m[2]}/embed/`;
+          } else {
+            // fallback: attempt a generic embed of the page
+            url = `https://www.instagram.com${parsed.pathname}embed/`;
+          }
+        }
         break;
       case "facebook":
         title = "Facebook Video";
         description = "Watch on Facebook";
         author = "Facebook";
         platform = "Facebook";
+
+        // Try to create a canonical Facebook video href so plugins/video.php can render it.
+        // Handle URLs like:
+        //  - https://www.facebook.com/<page>/videos/123456789012345/
+        //  - https://www.facebook.com/watch/?v=123456789012345
+        //  - https://www.facebook.com/video.php?v=123456789012345
+        //  - short fb.watch links (fallback to original input)
+        {
+          let href = inputUrl;
+          // try to extract numeric id from /videos/<id>/
+          const videosMatch = inputUrl.match(/facebook\.com\/[^\/]+\/videos\/(\d+)/i);
+          const watchMatch = inputUrl.match(/[?&]v=(\d+)/);
+          const videoPhpMatch = inputUrl.match(/video\.php\?v=(\d+)/i);
+          if (videosMatch && videosMatch[1]) {
+            href = `https://www.facebook.com/watch/?v=${videosMatch[1]}`;
+          } else if (watchMatch && watchMatch[1]) {
+            href = `https://www.facebook.com/watch/?v=${watchMatch[1]}`;
+          } else if (videoPhpMatch && videoPhpMatch[1]) {
+            href = `https://www.facebook.com/watch/?v=${videoPhpMatch[1]}`;
+          } else {
+            // fallback: keep the original URL (some fb.watch or share URLs will redirect)
+            href = inputUrl;
+          }
+
+          url = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(
+            href
+          )}&show_text=false`;
+        }
         break;
       case "tiktok":
         title = "TikTok Video";
         description = "Watch on TikTok";
         author = "TikTok";
         platform = "TikTok";
+        // try to extract numeric video id for embed; fall back to generic embed wrapper
+        const ttMatch =
+          inputUrl.match(/video\/(\d+)/) ||
+          inputUrl.match(/\/@[^\/]+\/video\/(\d+)/);
+        if (ttMatch && ttMatch[1]) {
+          url = `https://www.tiktok.com/embed/v2/${ttMatch[1]}`;
+        } else {
+          // generic embed wrapper (iframe)
+          url = `https://www.tiktok.com/embed/${encodeURIComponent(inputUrl)}`;
+        }
         break;
       case "twitter":
         title = "Twitter Video";
         description = "View on Twitter";
         author = "Twitter";
         platform = "Twitter";
+        // use twitframe to render a tweet/video in an iframe
+        url = `https://twitframe.com/show?url=${encodeURIComponent(inputUrl)}`;
         break;
       case "direct":
         title = "Video File";
         description = "Play video";
         author = "Local";
         platform = "Direct";
+        url = inputUrl;
         break;
       default:
         title = "Video Link";
         description = "Open video";
         author = "External";
         platform = "Other";
+        url = inputUrl;
     }
 
     return {
@@ -339,7 +427,10 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
       // Dispatch to dashboard
       window.dispatchEvent(
         new CustomEvent("createComponent", {
-          detail: { componentType: "videoCollection", data: { text: url.trim() } },
+          detail: {
+            componentType: "videoCollection",
+            data: { text: url.trim() },
+          },
         })
       );
     }
@@ -367,21 +458,48 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
           {/* Main Icon List */}
           <div className="flex flex-col items-center gap-6 sm:gap-10">
             {/* Social Media Group Icon - Video Collection */}
-            <div
-              className="cursor-pointer hover:opacity-70 transition-opacity"
-              onClick={() => {
-                // const url = prompt(
-                //   "Enter video URL (YouTube, Vimeo, Instagram, Facebook, TikTok, Twitter, or direct video link):"
-                // );
-                // if (url && url.trim()) {
-                //   const video = createVideoFromUrl(url.trim());
-                //   addVideo(video);
-                // }
-
-                setIsVideoPopup(true);
-              }}
-            >
-              <SocialMediaIcon size={24} className="sm:w-8 sm:h-8" />
+            <div className=" bg-[#F0F5F8] transition-opacity grid grid-cols-2 p-[4px] rounded-md gap-1">
+              <Image
+                className="cursor-pointer"
+                src="/tiktok.svg"
+                height={15}
+                width={15}
+                alt="TikTok"
+                onClick={() => {
+                  setVideoModalHeading("Add TikTok Video");
+                  setIsVideoPopup(true);
+                }}
+              />
+              <Image
+                className="cursor-pointer"
+                src="/youtube.svg"
+                height={15}
+                width={15}
+                alt="YouTube"
+                onClick={() => {
+                  setVideoModalHeading("Add YouTube Video");
+                  setIsVideoPopup(true);
+                }}
+              />
+              <Image
+                className="cursor-pointer"
+                src="/insta.svg"
+                height={15}
+                width={15}
+                alt="Instagram"
+                onClick={() => {
+                  setVideoModalHeading("Add Instagram Video");
+                  setIsVideoPopup(true);
+                }}
+              />
+              <Image
+                className="cursor-pointer"
+                src="/plus.svg"
+                height={15}
+                width={15}
+                alt="Add Video"
+                onClick={() => setIsPlusPopup(true)}
+              />
             </div>
 
             {/* Gallery Icon - Image Collection */}
@@ -509,9 +627,23 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
         isOpen={isVideoPopup}
         onClose={() => setIsVideoPopup(false)}
         onSubmit={(submittedUrl) => {
-          setUrl(submittedUrl);
-          showVideo();
+          const trimmed = submittedUrl?.trim();
+          if (!trimmed) return;
+          // create a VideoItem from submitted url and add immediately to collection
+          const video = createVideoFromUrl(trimmed);
+          addVideo(video);
+          setIsVideoPopup(false);
+          // Dispatch to dashboard with the final (possibly embed) url
+          window.dispatchEvent(
+            new CustomEvent("createComponent", {
+              detail: {
+                componentType: "videoCollection",
+                data: { text: video.url, type: video.type },
+              },
+            })
+          );
         }}
+        heading={videoModalHeading}
       />
 
       <ImageModal
@@ -555,6 +687,18 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
         onClose={() => setIsTextPopup(false)}
         onSubmit={(submittedText) => {
           showText(submittedText);
+        }}
+      />
+
+      <PlusModal
+        isOpen={isPlusPopup}
+        onClose={() => setIsPlusPopup(false)}
+        onFacebookVideo={() => {
+          setVideoModalHeading("Add Facebook Video");
+          setIsVideoPopup(true);
+        }}
+        onDeviceImport={() => {
+          videoInputRef.current?.click();
         }}
       />
     </>
