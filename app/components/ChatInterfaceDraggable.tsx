@@ -1,4 +1,6 @@
 "use client";
+import { KnowledgeBase } from "@/app/types/workspace";
+import { chatApi } from "@/app/utils/chatApi";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { Handle, Position } from "reactflow";
@@ -6,6 +8,7 @@ import { Handle, Position } from "reactflow";
 interface ChatInterfaceProps {
   className?: string;
   attachedAssets?: ComponentInstance[];
+  knowledgeBase?: KnowledgeBase;
   inline?: boolean;
 }
 
@@ -16,22 +19,17 @@ interface ComponentInstance {
 }
 
 interface Message {
-  id: string;
-  text: string;
-  sender: "user" | "ai";
-  timestamp: Date;
-  type: "text" | "attachment" | "voice";
-  attachment?: {
-    name: string;
-    type: string;
-    size: number;
-    url: string;
-  };
+  id: number;
+  content: string;
+  role: "user" | "agent";
+  created_at: string;
+  user_id: number;
 }
 
 const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({
   className = "",
   attachedAssets = [],
+  knowledgeBase,
   inline = false,
 }) => {
   const [selectedChat, setSelectedChat] = useState(0);
@@ -39,33 +37,115 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isRecording, setIsRecording] = useState(false);
-  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [conversationId, setConversationId] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 30, y: 15 }); // Percentage values (50% from left, 20% from top)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  // Update attachedFiles when attachedAssets change
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    const filesFromAssets: File[] = [];
-    attachedAssets.forEach((asset) => {
-      if (asset.data?.files) {
-        filesFromAssets.push(...asset.data.files);
-      } else if (asset.data?.file) {
-        filesFromAssets.push(asset.data.file);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Load existing conversation if we have conversations from knowledgeBase
+  useEffect(() => {
+    // For now, we'll start with no existing conversation
+    // The conversation will be created when the first message is sent
+    console.log("Knowledge base loaded:", knowledgeBase?.name);
+  }, [knowledgeBase]);
+
+  // Load conversation messages
+  const loadConversation = async (convId: number) => {
+    try {
+      setIsLoading(true);
+      const conversation = await chatApi.getConversation(convId);
+      setMessages(conversation.messages || []);
+    } catch (error) {
+      console.error("Failed to load conversation:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Send message to chat agent
+  const sendMessage = async (messageText: string) => {
+    if (!knowledgeBase || !messageText.trim()) return;
+
+    const userMessage: Message = {
+      id: Date.now(),
+      content: messageText.trim(),
+      role: "user",
+      created_at: new Date().toISOString(),
+      user_id: 0, // Will be set by backend
+    };
+
+    // Add user message to UI immediately
+    setMessages((prev) => [...prev, userMessage]);
+    setMessage("");
+    setIsStreaming(true);
+
+    try {
+      const stream = await chatApi.sendMessage({
+        message: messageText.trim(),
+        knowledge_base_name: knowledgeBase.collection_name,
+        conversation_id: conversationId,
+      });
+
+      // Start streaming response
+      let agentMessage = "";
+      const agentMessageId = Date.now() + 1;
+
+      // Add empty agent message that will be updated as stream comes in
+      const initialAgentMessage: Message = {
+        id: agentMessageId,
+        content: "",
+        role: "agent",
+        created_at: new Date().toISOString(),
+        user_id: 0,
+      };
+      setMessages((prev) => [...prev, initialAgentMessage]);
+
+      // Process streaming response
+      for await (const chunk of chatApi.processStreamingResponse(stream)) {
+        switch (chunk.type) {
+          case "message":
+            agentMessage += chunk.content;
+            // Update the agent message in real time
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === agentMessageId
+                  ? { ...msg, content: agentMessage }
+                  : msg
+              )
+            );
+            break;
+          case "conversation_id":
+            if (chunk.conversationId && !conversationId) {
+              setConversationId(chunk.conversationId);
+            }
+            break;
+          case "done":
+            console.log("Streaming completed");
+            break;
+          case "error":
+            console.error("Streaming error:", chunk.content);
+            break;
+        }
       }
-    });
-    setAttachedFiles((prev) => {
-      const existingNames = prev.map((f) => f.name);
-      const newFiles = filesFromAssets.filter(
-        (f) => !existingNames.includes(f.name)
-      );
-      return [...prev, ...newFiles];
-    });
-  }, [attachedAssets]);
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      // Remove the user message on error
+      setMessages((prev) => prev.slice(0, -1));
+    } finally {
+      setIsStreaming(false);
+    }
+  };
 
   const handleMouseDown = React.useCallback(
     (e: React.MouseEvent) => {
@@ -386,39 +466,8 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({
   ];
 
   const handleSendMessage = () => {
-    if (message.trim() || attachedFiles.length > 0) {
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        text: message,
-        sender: "user",
-        timestamp: new Date(),
-        type: attachedFiles.length > 0 ? "attachment" : "text",
-        attachment:
-          attachedFiles.length > 0
-            ? {
-                name: attachedFiles[0].name,
-                type: attachedFiles[0].type,
-                size: attachedFiles[0].size,
-                url: URL.createObjectURL(attachedFiles[0]),
-              }
-            : undefined,
-      };
-
-      setMessages((prev) => [...prev, newMessage]);
-      setMessage("");
-      setAttachedFiles([]);
-
-      // Simulate AI response
-      setTimeout(() => {
-        const aiResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          text: "I received your message. How can I help you further?",
-          sender: "ai",
-          timestamp: new Date(),
-          type: "text",
-        };
-        setMessages((prev) => [...prev, aiResponse]);
-      }, 1000);
+    if (message.trim()) {
+      sendMessage(message);
     }
   };
 
@@ -429,47 +478,13 @@ const ChatInterfaceDraggable: React.FC<ChatInterfaceProps> = ({
     }
   };
 
+  // Simplified handlers for now
   const handleAttachmentClick = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.multiple = true;
-    input.accept = "image/*,video/*,audio/*,.pdf,.doc,.docx,.txt";
-    input.onchange = (e) => {
-      const files = Array.from((e.target as HTMLInputElement).files || []);
-      setAttachedFiles((prev) => [...prev, ...files]);
-    };
-    input.click();
-  };
-
-  const removeAttachment = (index: number) => {
-    setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
+    console.log("Attachment functionality not implemented yet");
   };
 
   const handleVoiceRecord = () => {
-    if (!isRecording) {
-      // Start recording
-      setIsRecording(true);
-      // In a real app, you would use the Web Audio API here
-      console.log("Starting voice recording...");
-
-      // Simulate recording for 3 seconds
-      setTimeout(() => {
-        setIsRecording(false);
-        // Simulate adding a voice message
-        const voiceMessage: Message = {
-          id: Date.now().toString(),
-          text: "Voice message recorded",
-          sender: "user",
-          timestamp: new Date(),
-          type: "voice",
-        };
-        setMessages((prev) => [...prev, voiceMessage]);
-      }, 3000);
-    } else {
-      // Stop recording
-      setIsRecording(false);
-      console.log("Stopping voice recording...");
-    }
+    console.log("Voice recording functionality not implemented yet");
   };
 
   const formatFileSize = (bytes: number) => {

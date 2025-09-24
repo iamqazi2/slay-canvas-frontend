@@ -142,6 +142,78 @@ class AuthenticatedFetch {
       method: "DELETE",
     });
   }
+
+  // STREAMING request - for Server-Sent Events / streaming responses
+  async stream(
+    endpoint: string,
+    data?: unknown,
+    options: FetchOptions = {}
+  ): Promise<ReadableStream<Uint8Array>> {
+    const { skipAuth = false, headers = {}, ...restOptions } = options;
+
+    const url = `${this.baseURL}${endpoint}`;
+
+    // Prepare headers
+    const requestHeaders: Record<string, string> = {
+      ...(headers as Record<string, string>),
+    };
+
+    // Only set Content-Type if body is not FormData
+    if (!(restOptions.body instanceof FormData) && data) {
+      requestHeaders["Content-Type"] = "application/json";
+    }
+
+    // Add authorization header if not skipped and token exists
+    if (!skipAuth) {
+      const token = getAccessToken();
+
+      if (token) {
+        requestHeaders["Authorization"] = `Bearer ${token}`;
+      }
+    }
+
+    let body: string | FormData | undefined;
+
+    if (data instanceof FormData) {
+      body = data;
+    } else if (data) {
+      body = JSON.stringify(data);
+    }
+
+    try {
+      const response = await fetch(url, {
+        ...restOptions,
+        method: "POST",
+        headers: requestHeaders,
+        body: body,
+      });
+
+      // Handle unauthorized responses
+      if (response.status === 401) {
+        removeAccessToken();
+        window.location.href = "/form";
+        throw new Error("Unauthorized - redirecting to login");
+      }
+
+      // Handle other error responses
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(
+          errorData?.message ||
+            `HTTP ${response.status}: ${response.statusText}`
+        );
+      }
+
+      if (!response.body) {
+        throw new Error("Response body is null");
+      }
+
+      return response.body;
+    } catch (error) {
+      console.error(`API Error for ${endpoint}:`, error);
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance

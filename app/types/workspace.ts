@@ -51,6 +51,17 @@ export interface KnowledgeBase {
   collection_name: string;
   is_active: boolean;
   created_at: string;
+  conversations?: Conversation[];
+}
+
+export interface Conversation {
+  id: number;
+  conversation_name: string;
+  user_id: number;
+  created_at: string;
+  updated_at: string;
+  project_id?: number;
+  knowledge_base_id?: number | null;
 }
 
 export interface Asset {

@@ -18,10 +18,10 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import {
   AudioPlayer,
-  ChatInterfaceDraggable,
   ImageCollection,
   PdfDocument,
   Sidebar,
+  SimpleChatInterface,
   TextCollection,
   VideoPreview,
   WikipediaLink,
@@ -29,7 +29,7 @@ import {
 import ChatNav from "../components/New-Navbar";
 import { useUserStore } from "../store/userStore";
 import { useWorkspaceStore } from "../store/workspaceStore";
-import { KnowledgeBase } from "../types/workspace";
+import { KnowledgeBase, WorkspaceDetailed } from "../types/workspace";
 import {
   assetsToComponentInstances,
   componentInstanceToAssetCreate,
@@ -203,13 +203,16 @@ const ChatNode = ({
   data: {
     attachedAssets: ComponentInstance[];
     position: { x: number; y: number };
+    knowledgeBase: KnowledgeBase;
+    workspace?: WorkspaceDetailed;
   };
 }) => {
   return (
     <div className="w-full h-full">
-      <ChatInterfaceDraggable
-        attachedAssets={data.attachedAssets}
-        inline={true}
+      <SimpleChatInterface
+        knowledgeBase={data.knowledgeBase}
+        workspace={data.workspace}
+        className="h-full"
       />
     </div>
   );
@@ -477,6 +480,7 @@ export default function Home() {
                 y: 300 + index * 100,
               },
               knowledgeBase: kb,
+              workspace: currentWorkspace,
             },
             style: { width: 800, height: 600 },
           };
@@ -489,7 +493,7 @@ export default function Home() {
     showChatInFlow,
     attachedAssets,
     knowledgeBases,
-    currentWorkspace?.assets,
+    currentWorkspace,
     setNodes,
   ]);
 
