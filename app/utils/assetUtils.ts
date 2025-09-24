@@ -27,6 +27,7 @@ export function assetToComponentInstance(asset: Asset): ComponentInstance {
     image: "imageCollection",
     pdf: "pdfDocument",
     link: "wikipediaLink",
+    social: "videoSocial", // Map social assets to videoSocial component
     text: "text",
     document: "pdfDocument",
     url: "wikipediaLink",
@@ -40,8 +41,8 @@ export function assetToComponentInstance(asset: Asset): ComponentInstance {
   switch (componentType) {
     case "wikipediaLink":
       data = {
-        text: asset.url || asset.content || asset.title,
-        url: asset.url,
+        text: asset.url || asset.file_path || asset.content || asset.title,
+        url: asset.url || asset.file_path,
         title: asset.title,
       };
       break;
@@ -53,34 +54,40 @@ export function assetToComponentInstance(asset: Asset): ComponentInstance {
       break;
     case "pdfDocument":
       data = {
-        url: asset.url,
+        url: asset.file_path || asset.url, // Use file_path for PDF URL
         title: asset.title,
         content: asset.content,
       };
       break;
     case "imageCollection":
-      // For images, we might need to handle URLs differently
       data = {
-        url: asset.url,
+        url: asset.file_path || asset.url, // Use file_path for image URL
         title: asset.title,
       };
       break;
     case "audioPlayer":
       data = {
-        url: asset.url,
+        url: asset.file_path || asset.url, // Use file_path for audio URL
         title: asset.title,
       };
       break;
     case "videoCollection":
       data = {
-        url: asset.url,
+        url: asset.file_path || asset.url, // Use file_path for video URL
+        title: asset.title,
+      };
+      break;
+    case "videoSocial":
+      data = {
+        text: asset.url || asset.file_path || asset.content,
+        url: asset.url || asset.file_path,
         title: asset.title,
       };
       break;
     default:
       data = {
         text: asset.content || asset.title,
-        url: asset.url,
+        url: asset.file_path || asset.url,
         title: asset.title,
       };
   }
@@ -109,6 +116,7 @@ export function assetsToComponentInstances(
 export function componentTypeToAssetType(componentType: string): string {
   const reverseMapping: Record<string, string> = {
     videoCollection: "video",
+    videoSocial: "social",
     audioPlayer: "audio",
     imageCollection: "image",
     pdfDocument: "pdf",
@@ -144,6 +152,11 @@ export function getAssetCreationStrategy(componentType: string): {
     case "audio":
     case "audioPlayer":
       return { endpoint: "file", assetType: "audio", isFile: true };
+    case "video":
+    case "videoCollection":
+      return { endpoint: "file", assetType: "document", isFile: true }; // Video files use document endpoint
+    case "videoSocial": // New type for social media videos
+      return { endpoint: "link", assetType: "social", isFile: false };
     case "document":
     case "pdfDocument":
       return { endpoint: "file", assetType: "document", isFile: true };

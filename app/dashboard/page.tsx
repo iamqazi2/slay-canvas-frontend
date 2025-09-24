@@ -56,14 +56,29 @@ const renderComponent = (instance: ComponentInstance) => {
 
   switch (type) {
     case "videoCollection":
-      return <VideoPreview key={id} file={data?.file} src={data?.text} />;
+      return (
+        <VideoPreview
+          key={id}
+          id={id}
+          file={data?.file}
+          src={data?.url || data?.text}
+        />
+      );
+    case "videoSocial":
+      return <VideoPreview key={id} id={id} src={data?.url || data?.text} />;
     case "audioPlayer":
       return (
         <AudioPlayer
           key={id}
           id={id}
           inline={true}
-          initialData={data?.file ? { file: data.file } : undefined}
+          initialData={
+            data?.file
+              ? { file: data.file }
+              : data?.url
+              ? { url: data.url, name: data.title }
+              : undefined
+          }
         />
       );
     case "imageCollection":
@@ -77,6 +92,8 @@ const renderComponent = (instance: ComponentInstance) => {
               ? { files: data.files }
               : data?.file
               ? { files: [data.file] }
+              : data?.url
+              ? { url: data.url, title: data.title || "Image Collection" }
               : undefined
           }
         />
@@ -87,7 +104,13 @@ const renderComponent = (instance: ComponentInstance) => {
           key={id}
           id={id}
           inline={true}
-          initialData={data?.file ? { file: data.file } : undefined}
+          initialData={
+            data?.file
+              ? { file: data.file }
+              : data?.url
+              ? { url: data.url, title: data.title || "PDF Document" }
+              : undefined
+          }
         />
       );
     case "wikipediaLink":
@@ -132,8 +155,13 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
       className="relative "
       style={{
         border:
-          data.type === "videoCollection" ? "1px solid #4596FF" : undefined,
-        borderRadius: data.type === "videoCollection" ? "24px" : undefined,
+          data.type === "videoCollection" || data.type === "videoSocial"
+            ? "1px solid #4596FF"
+            : undefined,
+        borderRadius:
+          data.type === "videoCollection" || data.type === "videoSocial"
+            ? "24px"
+            : undefined,
       }}
     >
       <Handle
@@ -291,25 +319,32 @@ export default function Home() {
     }
 
     try {
-      // Check if workspace has existing knowledge bases
-      const existingKBs = currentWorkspace.knowledge_bases || [];
+      // Create a new knowledge base
+      const kbResponse = await knowledgeBaseApi.createKnowledgeBase({
+        name: `Chat Session ${new Date().toLocaleDateString()}`,
+        description: `Knowledge base for chat session in ${currentWorkspace.name}`,
+        project_name: currentWorkspace.name,
+      });
 
-      if (existingKBs.length === 0) {
-        // Create a new knowledge base if none exist
-        const kbResponse = await knowledgeBaseApi.createKnowledgeBase({
-          name: `Chat Session ${new Date().toLocaleDateString()}`,
-          description: `Knowledge base for chat session in ${currentWorkspace.name}`,
-          project_name: currentWorkspace.name,
-        });
+      console.log("Created knowledge base:", kbResponse);
 
-        console.log("Created knowledge base:", kbResponse);
+      // Convert API response to KnowledgeBase format and add to local state
+      const newKnowledgeBase: KnowledgeBase = {
+        id: parseInt(kbResponse.id),
+        name: kbResponse.name,
+        description: `Knowledge base for chat session in ${currentWorkspace.name}`,
+        collection_name: kbResponse.collection_name,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      };
 
-        // Refresh workspace to get the new knowledge base
+      // Optimistically add the new KB to local state so it appears immediately
+      setKnowledgeBases((prev) => [...prev, newKnowledgeBase]);
+
+      // Optionally refresh workspace in background to sync with backend
+      setTimeout(() => {
         switchWorkspace(currentWorkspaceId!);
-      } else {
-        console.log("Workspace already has knowledge bases:", existingKBs);
-        // Knowledge bases are already displayed as nodes
-      }
+      }, 1000);
     } catch (error) {
       console.error("Failed to handle chat click:", error);
     }
@@ -377,6 +412,7 @@ export default function Home() {
     const getNodeDimensions = (type: string) => {
       switch (type) {
         case "videoCollection":
+        case "videoSocial":
           return { width: 400, height: 600 };
         case "imageCollection":
           return { width: 296, height: 224 };
@@ -588,12 +624,39 @@ export default function Home() {
           // Update the instance with the backend ID
           if (savedAsset) {
             console.log("✅ Asset saved successfully:", savedAsset);
+            const newBackendId = `asset-${savedAsset.id}`;
+
+            // Update component instances
             setComponentInstances((prev) =>
               prev.map((instance) =>
                 instance.id === newInstance.id
-                  ? { ...instance, id: `asset-${savedAsset.id}` }
+                  ? { ...instance, id: newBackendId }
                   : instance
               )
+            );
+
+            // Update nodes to reflect the new ID
+            setNodes((prevNodes) =>
+              prevNodes.map((node) =>
+                node.id === newInstance.id
+                  ? {
+                      ...node,
+                      id: newBackendId,
+                      data: { ...node.data, id: newBackendId },
+                    }
+                  : node
+              )
+            );
+
+            // Update edges to reflect the new ID
+            setEdges((prevEdges) =>
+              prevEdges.map((edge) => ({
+                ...edge,
+                source:
+                  edge.source === newInstance.id ? newBackendId : edge.source,
+                target:
+                  edge.target === newInstance.id ? newBackendId : edge.target,
+              }))
             );
           }
         } catch (error) {
@@ -608,15 +671,20 @@ export default function Home() {
     const handleRemoveComponent = async (event: CustomEvent) => {
       const { componentId } = event.detail;
       console.log(
-        "handleRemoveComponent called with componentId:",
+        "🗑️ handleRemoveComponent called with componentId:",
         componentId
+      );
+      console.log("🔍 Current workspace ID:", currentWorkspaceId);
+      console.log(
+        "🔍 Is backend asset:",
+        isBackendAsset({ id: componentId } as ComponentInstance)
       );
 
       // Remove from local state
       setComponentInstances((prev) => {
-        console.log("Current component instances before filter:", prev);
+        console.log("📋 Current component instances before filter:", prev);
         const filtered = prev.filter((instance) => instance.id !== componentId);
-        console.log("Filtered component instances:", filtered);
+        console.log("📋 Filtered component instances:", filtered);
         return filtered;
       });
 
@@ -640,12 +708,14 @@ export default function Home() {
       ) {
         try {
           const assetId = getAssetIdFromComponentId(componentId);
+          console.log("🔍 Extracted asset ID:", assetId);
           if (assetId) {
+            console.log("🔥 Calling deleteAsset API for asset ID:", assetId);
             await assetApi.deleteAsset(currentWorkspaceId, assetId);
-            console.log("Successfully deleted asset from backend:", assetId);
+            console.log("✅ Successfully deleted asset from backend:", assetId);
           }
         } catch (error) {
-          console.error("Failed to delete asset from backend:", error);
+          console.error("❌ Failed to delete asset from backend:", error);
           // Optionally show user notification here
         }
       }

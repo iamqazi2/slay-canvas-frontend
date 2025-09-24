@@ -1,6 +1,6 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
-import { EditIcon, DeleteIcon } from "./icons";
+import React, { useEffect, useRef, useState } from "react";
+import { DeleteIcon, EditIcon } from "./icons";
 
 interface ImageItem {
   id: string;
@@ -11,7 +11,7 @@ interface ImageItem {
 interface ImageCollectionProps {
   id?: string;
   className?: string;
-  initialData?: { files: File[] };
+  initialData?: { files: File[] } | { url: string; title: string };
   onClose?: () => void;
   inline?: boolean;
 }
@@ -198,15 +198,31 @@ const ImageCollection: React.FC<ImageCollectionProps> = ({
 
   // Handle initial data when component is created
   useEffect(() => {
-    if (initialData?.files && initialData.files.length > 0) {
-      const newImages = initialData.files
-        .filter((file) => file.type.startsWith("image/"))
-        .map((file) => ({
+    if (initialData) {
+      // Check if initialData has files (File array)
+      if (
+        "files" in initialData &&
+        initialData.files &&
+        initialData.files.length > 0
+      ) {
+        const newImages = initialData.files
+          .filter((file: File) => file.type.startsWith("image/"))
+          .map((file: File) => ({
+            id: Date.now().toString() + Math.random(),
+            title: file.name,
+            thumbnail: URL.createObjectURL(file),
+          }));
+        setImages(newImages);
+      }
+      // Check if initialData has url (URL string)
+      else if ("url" in initialData && initialData.url) {
+        const newImage = {
           id: Date.now().toString() + Math.random(),
-          title: file.name,
-          thumbnail: URL.createObjectURL(file),
-        }));
-      setImages(newImages);
+          title: initialData.title || "Image",
+          thumbnail: initialData.url,
+        };
+        setImages([newImage]);
+      }
     }
   }, [initialData]);
 

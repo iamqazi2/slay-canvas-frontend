@@ -1,12 +1,12 @@
 "use client";
-import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Mic } from "lucide-react";
-import { EditIcon, DeleteIcon } from "./icons";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { DeleteIcon, EditIcon } from "./icons";
 
 interface AudioPlayerProps {
   className?: string;
   id?: string;
-  initialData?: { file: File };
+  initialData?: { file: File } | { url: string; name?: string };
   onClose?: () => void;
   inline?: boolean;
 }
@@ -233,19 +233,35 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   // Handle initial data when component is created
   useEffect(() => {
-    if (initialData?.file) {
-      const file = initialData.file;
-      if (file.type.startsWith("audio/")) {
-        const newAudioUrl = URL.createObjectURL(file);
-        setAudioFile(newAudioUrl);
-        setFileName(file.name);
+    if (initialData) {
+      // Handle File object from local uploads
+      if ("file" in initialData && initialData.file) {
+        const file = initialData.file;
+        if (file.type.startsWith("audio/")) {
+          const newAudioUrl = URL.createObjectURL(file);
+          setAudioFile(newAudioUrl);
+          setFileName(file.name);
+          setIsPlaying(false);
+          setProgress(0);
+          setCurrentTime(0);
+          setDuration(0);
+
+          // Generate waveform from the new audio file
+          generateWaveformFromAudio(newAudioUrl);
+        }
+      }
+      // Handle URL from backend assets
+      else if ("url" in initialData && initialData.url) {
+        const audioUrl = initialData.url;
+        setAudioFile(audioUrl);
+        setFileName(initialData.name || "Audio File");
         setIsPlaying(false);
         setProgress(0);
         setCurrentTime(0);
         setDuration(0);
 
-        // Generate waveform from the new audio file
-        generateWaveformFromAudio(newAudioUrl);
+        // Generate waveform from the audio URL
+        generateWaveformFromAudio(audioUrl);
       }
     }
   }, [initialData]);

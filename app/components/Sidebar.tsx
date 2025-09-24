@@ -72,7 +72,6 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
   const [isWebLinkPopup, setIsWebLinkPopup] = useState(false);
   const [isTextPopup, setIsTextPopup] = useState(false);
   const [isPlusPopup, setIsPlusPopup] = useState(false);
-  const [url, setUrl] = useState("");
   const [wikiUrl, setWikiUrl] = useState("");
   const [webLinkUrl, setWebLinkUrl] = useState("");
   const [textContent, setTextContent] = useState("");
@@ -126,10 +125,10 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     if (file && file.type.startsWith("video/")) {
       setComponentData((prev) => ({ ...prev, videoFile: file }));
       setIsVideoPopup(false);
-      // Dispatch to dashboard
+      // Dispatch to dashboard - use videoCollection for actual video files
       window.dispatchEvent(
         new CustomEvent("createComponent", {
-          detail: { componentType: "videoCollection", data: { file } },
+          detail: { componentType: "videoCollection", data: { file } }, // Keep videoCollection for files
         })
       );
     }
@@ -271,7 +270,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     let parsed: URL | null = null;
     try {
       parsed = new URL(inputUrl);
-    } catch (e) {
+    } catch {
       parsed = null;
     }
 
@@ -420,23 +419,6 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     },
     [videos, dispatch]
   );
-
-  const showVideo = () => {
-    if (url && url.trim()) {
-      const video = createVideoFromUrl(url.trim());
-      addVideo(video);
-      setIsVideoPopup(false);
-      // Dispatch to dashboard
-      window.dispatchEvent(
-        new CustomEvent("createComponent", {
-          detail: {
-            componentType: "videoCollection",
-            data: { text: url.trim() },
-          },
-        })
-      );
-    }
-  };
 
   return (
     <>
@@ -635,11 +617,11 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
           const video = createVideoFromUrl(trimmed);
           addVideo(video);
           setIsVideoPopup(false);
-          // Dispatch to dashboard with the final (possibly embed) url
+          // Dispatch to dashboard with the final (possibly embed) url - use videoSocial for social media
           window.dispatchEvent(
             new CustomEvent("createComponent", {
               detail: {
-                componentType: "videoCollection",
+                componentType: "videoSocial", // Changed from videoCollection to videoSocial
                 data: { text: video.url, type: video.type },
               },
             })

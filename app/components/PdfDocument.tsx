@@ -1,11 +1,11 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
-import { EditIcon, DeleteIcon } from "./icons";
+import React, { useEffect, useRef, useState } from "react";
+import { DeleteIcon, EditIcon } from "./icons";
 
 interface PdfDocumentProps {
   className?: string;
   id?: string;
-  initialData?: { file: File };
+  initialData?: { file: File } | { url: string; title: string };
   onClose?: () => void;
   inline?: boolean;
 }
@@ -156,11 +156,20 @@ const PdfDocument: React.FC<PdfDocumentProps> = ({
 
   // Handle initial data when component is created
   useEffect(() => {
-    if (initialData?.file) {
-      const file = initialData.file;
-      setDocumentFile(file);
-      setDocumentName(file.name);
-      readDocumentContent(file);
+    if (initialData) {
+      // Check if initialData has file (File object)
+      if ("file" in initialData && initialData.file) {
+        const file = initialData.file;
+        setDocumentFile(file);
+        setDocumentName(file.name);
+        readDocumentContent(file);
+      }
+      // Check if initialData has url (URL string)
+      else if ("url" in initialData && initialData.url) {
+        setDocumentName(initialData.title || "Document");
+        // For URL-based PDFs, we'll just set the name and show it as a link
+        // The actual PDF viewing would need additional implementation
+      }
     }
   }, [initialData]);
 
