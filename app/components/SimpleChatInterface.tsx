@@ -5,8 +5,10 @@ import {
   WorkspaceDetailed,
 } from "@/app/types/workspace";
 import { chatApi } from "@/app/utils/chatApi";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
+import { Handle, Position } from "reactflow";
 
 interface Message {
   id: number;
@@ -16,16 +18,24 @@ interface Message {
   user_id: number;
 }
 
+interface ComponentInstance {
+  id: string;
+  type: string;
+  data?: { file?: File; files?: File[]; text?: string };
+}
+
 interface SimpleChatInterfaceProps {
   knowledgeBase: KnowledgeBase;
   workspace?: WorkspaceDetailed;
   className?: string;
+  attachedAssets?: ComponentInstance[];
 }
 
 export default function SimpleChatInterface({
   knowledgeBase,
   workspace,
   className = "",
+  attachedAssets = [],
 }: SimpleChatInterfaceProps) {
   const [selectedChat, setSelectedChat] = useState(0);
   const [selectedFilter, setSelectedFilter] = useState("All Attached Nodes");
@@ -306,6 +316,178 @@ export default function SimpleChatInterface({
     </svg>
   );
 
+  // Helper function to format file size
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
+  // Helper function to render asset preview
+  const renderAssetPreview = (asset: ComponentInstance) => {
+    const { type, data } = asset;
+
+    switch (type) {
+      case "image":
+        if (data?.file) {
+          const imageUrl = URL.createObjectURL(data.file);
+          return (
+            <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border">
+              <Image
+                src={imageUrl}
+                alt="Attached image"
+                width={32}
+                height={32}
+                className="object-cover rounded"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-gray-900 truncate">
+                  {data.file.name}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {formatFileSize(data.file.size)}
+                </p>
+              </div>
+            </div>
+          );
+        }
+        break;
+      case "document":
+      case "pdf":
+        if (data?.file) {
+          return (
+            <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border">
+              <div className="w-8 h-8 bg-red-100 rounded flex items-center justify-center">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z"
+                    fill="#ef4444"
+                  />
+                  <path
+                    d="M14 2V8H20"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-gray-900 truncate">
+                  {data.file.name}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {formatFileSize(data.file.size)}
+                </p>
+              </div>
+            </div>
+          );
+        }
+        break;
+      case "audio":
+        if (data?.file) {
+          return (
+            <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border">
+              <div className="w-8 h-8 bg-purple-100 rounded flex items-center justify-center">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12 1L18 7V21C18 21.5304 17.7893 22.0391 17.4142 22.4142C17.0391 22.7893 16.5304 23 16 23H8C7.46957 23 6.96086 22.7893 6.58579 22.4142C6.21071 22.0391 6 21.5304 6 21V3C6 2.46957 6.21071 1.96086 6.58579 1.58579C6.96086 1.21071 7.46957 1 8 1H12Z"
+                    fill="#8b5cf6"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-gray-900 truncate">
+                  {data.file.name}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {formatFileSize(data.file.size)}
+                </p>
+              </div>
+            </div>
+          );
+        }
+        break;
+      case "text":
+        if (data?.text) {
+          return (
+            <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border">
+              <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z"
+                    fill="#3b82f6"
+                  />
+                  <path
+                    d="M14 2V8H20"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-gray-900 truncate">
+                  Text Note
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {data.text.substring(0, 30)}...
+                </p>
+              </div>
+            </div>
+          );
+        }
+        break;
+      default:
+        return (
+          <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border">
+            <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M14 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V8L14 2Z"
+                  fill="#6b7280"
+                />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-gray-900 truncate">
+                {type}
+              </p>
+              <p className="text-xs text-gray-500">Unknown type</p>
+            </div>
+          </div>
+        );
+    }
+    return null;
+  };
+
   // Maximize Icon
   const MaximizeIcon: React.FC = () => (
     <svg
@@ -518,6 +700,20 @@ export default function SimpleChatInterface({
         <div className="flex-1 min-w-[300px] flex flex-col">
           {/* Filter Tags */}
           <div className="px-6 py-4 border-b border-gray-200 bg-white">
+            {/* Connected Assets Section */}
+            {attachedAssets && attachedAssets.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">
+                  Connected Assets ({attachedAssets.length})
+                </h3>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {attachedAssets.map((asset) => (
+                    <div key={asset.id}>{renderAssetPreview(asset)}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div
               className="flex gap-2 w-full overflow-x-auto"
               style={{ scrollbarWidth: "none" }}
@@ -625,6 +821,38 @@ export default function SimpleChatInterface({
           </div>
         </div>
       </div>
+
+      {/* ReactFlow Handles */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        style={{
+          background: "#F0F5F7",
+          width: "24px",
+          height: "24px",
+          border: "2px solid #4596FF",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          zIndex: 1000,
+          left: "-12px",
+          top: "50%",
+          transform: "translateY(-50%)",
+        }}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        style={{
+          background: "#F0F5F7",
+          width: "24px",
+          height: "24px",
+          border: "2px solid #4596FF",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          zIndex: 1000,
+          right: "-12px",
+          top: "50%",
+          transform: "translateY(-50%)",
+        }}
+      />
     </div>
   );
 }
