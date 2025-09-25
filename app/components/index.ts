@@ -2,7 +2,6 @@ export { default as AudioPlayer } from "./AudioPlayer";
 export { default as AudioUpload } from "./AudioUpload";
 export { default as Button } from "./Button";
 export { default as ChatInterface } from "./ChatInterface";
-export { default as ChatInterfaceDraggable } from "./ChatInterfaceDraggable";
 export { default as DocumentUpload } from "./DocumentUpload";
 export { default as FileUpload } from "./FileUpload";
 export { default as ImageCollection } from "./ImageCollection";
