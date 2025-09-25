@@ -5,9 +5,13 @@ import {
   setVideoCollection,
   setVideoUrl,
 } from "@/app/redux/slices/videoSlice";
+import { useUserStore } from "@/app/store/userStore";
+import { useWorkspaceStore } from "@/app/store/workspaceStore";
+import { collectionApi } from "@/app/utils/collectionApi";
 import Image from "next/image";
 import React, { useCallback, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { StoreTypes, VideoItem } from "../models/interfaces";
 import {
   FileIcon,
   FolderIcon,
@@ -27,7 +31,6 @@ import TextModal from "./modals/TextModal";
 import VideoModal from "./modals/VideoModal";
 import WebLinkModal from "./modals/WebLinkModal";
 import WikipediaModal from "./modals/WikipediaModal";
-import { StoreTypes, VideoItem } from "../models/interfaces";
 
 type SidebarProps = {
   onChatClick: () => void;
@@ -39,6 +42,10 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
   const audioInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
+
+  // Workspace and user stores
+  const { currentWorkspaceId } = useWorkspaceStore();
+  const { isAuthenticated } = useUserStore();
 
   // State for managing which components are visible and their data
   const [visibleComponents, setVisibleComponents] = useState<{
@@ -86,6 +93,62 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
   );
 
   const { videos } = videoProvider;
+
+  // Handle folder collection creation with backend API call
+  const handleCreateFolderCollection = async () => {
+    if (!currentWorkspaceId || !isAuthenticated) {
+      console.error("No workspace selected or user not authenticated");
+      // Still create local folder for UI purposes
+      window.dispatchEvent(
+        new CustomEvent("createComponent", {
+          detail: {
+            componentType: "folderCollection",
+            data: { name: "Collection" },
+          },
+        })
+      );
+      return;
+    }
+
+    try {
+      // Create collection in backend
+      const collection = await collectionApi.createCollection(
+        currentWorkspaceId,
+        {
+          name: "New Collection",
+          description: "Collection created from dashboard",
+          is_active: true,
+        }
+      );
+
+      console.log("Created backend collection:", collection);
+
+      // Dispatch to dashboard with collection ID
+      window.dispatchEvent(
+        new CustomEvent("createComponent", {
+          detail: {
+            componentType: "folderCollection",
+            data: {
+              name: collection.name,
+              collectionId: collection.id, // Pass backend collection ID
+              backendCollection: collection,
+            },
+          },
+        })
+      );
+    } catch (error) {
+      console.error("Failed to create collection:", error);
+      // Fallback to local creation
+      window.dispatchEvent(
+        new CustomEvent("createComponent", {
+          detail: {
+            componentType: "folderCollection",
+            data: { name: "Collection" },
+          },
+        })
+      );
+    }
+  };
 
   // File input handlers
   const handleImageFileChange = (files: File[]) => {
@@ -552,17 +615,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
             {/* Folder Icon - Folder Collection */}
             <div
               className="cursor-pointer hover:opacity-70 transition-opacity"
-              onClick={() => {
-                // Dispatch to dashboard
-                window.dispatchEvent(
-                  new CustomEvent("createComponent", {
-                    detail: {
-                      componentType: "folderCollection",
-                      data: { name: "Collection" },
-                    },
-                  })
-                );
-              }}
+              onClick={handleCreateFolderCollection}
             >
               <FolderIcon width={24} height={24} className="sm:w-8 sm:h-8" />
             </div>
