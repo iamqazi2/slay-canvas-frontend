@@ -619,8 +619,28 @@ export default function Home() {
             draggedCenterY >= folderTop &&
             draggedCenterY <= folderBottom
           ) {
-            // Add asset to collection
+            // Check if the asset is already linked to a knowledge base
             const draggedInstance = draggedNode.data as ComponentInstance;
+            const assetId = getAssetIdFromComponentId(draggedInstance.id);
+
+            if (assetId && currentWorkspace?.assets) {
+              const workspaceAsset = currentWorkspace.assets.find(
+                (asset) => asset.id === assetId
+              );
+
+              if (workspaceAsset?.knowledge_base_id) {
+                // Show user notification and prevent adding to collection
+                alert(
+                  "This asset is already linked to a knowledge base and cannot be added to a collection. Please unlink it from the knowledge base first."
+                );
+                console.warn(
+                  `Asset ${assetId} is already linked to knowledge base ${workspaceAsset.knowledge_base_id}, cannot add to collection`
+                );
+                return; // Exit early, don't add to collection
+              }
+            }
+
+            // Add asset to collection
             const folderInstance = folderNode.data as ComponentInstance;
 
             const assetItem: AssetItem = {
@@ -708,7 +728,14 @@ export default function Home() {
         }
       }
     },
-    [nodes, setNodes, setComponentInstances, setEdges, currentWorkspaceId]
+    [
+      nodes,
+      setNodes,
+      setComponentInstances,
+      setEdges,
+      currentWorkspaceId,
+      currentWorkspace,
+    ]
   );
 
   // Update nodes when componentInstances or showChatInFlow change
