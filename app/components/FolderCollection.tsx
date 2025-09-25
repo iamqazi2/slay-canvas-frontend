@@ -1,6 +1,7 @@
 "use client";
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { EditIcon, DeleteIcon, FolderIcon } from "./icons";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { DeleteIcon, EditIcon, FolderIcon } from "./icons";
+import NewFolderIcon from "./icons/NewFolder";
 import {
   AudioPlayer,
   ImageCollection,
@@ -9,7 +10,6 @@ import {
   VideoPreview,
   WikipediaLink,
 } from "./index";
-import NewFolderIcon from "./icons/NewFolder";
 
 interface AssetItem {
   id: string;
@@ -336,7 +336,14 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
   };
 
   const handleRemoveAsset = (assetId: string) => {
+    // Remove from local state immediately for UI responsiveness
     setAssets((prev) => prev.filter((a) => a.id !== assetId));
+
+    // Dispatch removeComponent event to trigger backend deletion
+    const removeEvent = new CustomEvent("removeComponent", {
+      detail: { componentId: assetId },
+    });
+    window.dispatchEvent(removeEvent);
   };
 
   const handleCloseComponent = () => {

@@ -1,4 +1,4 @@
-
+export { default as AudioPlayer } from "./AudioPlayer";
 export { default as ChatInterface } from "./ChatInterface";
 export { default as ChatInterfaceDraggable } from "./ChatInterfaceDraggable";
 export { default as DocumentUpload } from "./DocumentUpload";

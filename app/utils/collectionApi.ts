@@ -18,16 +18,6 @@ export interface CollectionCreate {
   is_active?: boolean;
 }
 
-export interface AssetToCollection {
-  type: string;
-  url?: string;
-  title?: string;
-  content?: string;
-  asset_metadata?: Record<string, unknown>;
-  is_active?: boolean;
-  collection_id?: number;
-}
-
 export interface Asset {
   id: number;
   type: string;
@@ -95,12 +85,12 @@ export const collectionApi = {
   // Link an existing asset to a collection
   async linkAssetToCollection(
     workspaceId: number,
-    collectionId: number,
-    assetData: AssetToCollection
+    assetId: number,
+    collectionId: number
   ): Promise<Asset> {
     return await apiClient.post<Asset>(
-      `/workspaces/${workspaceId}/collections/${collectionId}/assets/link/`,
-      assetData
+      `/workspaces/${workspaceId}/assets/${assetId}/link-to-collection/${collectionId}`,
+      {} // No body needed for the new endpoint
     );
   },
 };

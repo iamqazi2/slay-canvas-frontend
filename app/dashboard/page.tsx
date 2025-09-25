@@ -8,6 +8,7 @@ import ReactFlow, {
   Background,
   Connection,
   Controls,
+  Edge,
   Handle,
   MiniMap,
   Node,
@@ -31,7 +32,11 @@ import FolderCollection from "../components/FolderCollection";
 import ChatNav from "../components/New-Navbar";
 import { useUserStore } from "../store/userStore";
 import { useWorkspaceStore } from "../store/workspaceStore";
-import { KnowledgeBase, WorkspaceDetailed } from "../types/workspace";
+import {
+  Collection,
+  KnowledgeBase,
+  WorkspaceDetailed,
+} from "../types/workspace";
 import {
   assetsToComponentInstances,
   componentInstanceToAssetCreate,
@@ -39,7 +44,7 @@ import {
   getAssetIdFromComponentId,
   isBackendAsset,
 } from "../utils/assetUtils";
-import { Collection, collectionApi } from "../utils/collectionApi";
+import { collectionApi } from "../utils/collectionApi";
 
 interface AssetItem {
   id: string;
@@ -60,11 +65,11 @@ interface ComponentInstance {
     title?: string;
     name?: string;
     assets?: AssetItem[];
-    collectionId?: number; // Backend collection ID
-    backendCollection?: Collection; // Full backend collection object
+    collectionId?: number;
   };
   name?: string;
   assets?: AssetItem[];
+  backendCollection?: Collection;
 }
 
 const renderComponent = (instance: ComponentInstance) => {
@@ -161,6 +166,11 @@ const renderComponent = (instance: ComponentInstance) => {
         />
       );
     case "folderCollection":
+      console.log("Rendering FolderCollection with data:", {
+        name: data?.name || data?.title,
+        assets: data?.assets,
+        fullData: data,
+      });
       return (
         <FolderCollection
           key={id}
@@ -327,9 +337,6 @@ export default function Home() {
   const [attachedAssets, setAttachedAssets] = useState<ComponentInstance[]>([]);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
 
-  // Temporary: Mark as used to prevent lint error while KB functionality is commented out
-  console.log("Knowledge bases count:", knowledgeBases.length);
-
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
@@ -364,11 +371,81 @@ export default function Home() {
 
   // Load workspace assets when currentWorkspace changes
   useEffect(() => {
-    if (currentWorkspace && currentWorkspace.assets) {
-      const workspaceAssets = assetsToComponentInstances(
-        currentWorkspace.assets
-      );
-      setComponentInstances(workspaceAssets);
+    if (currentWorkspace) {
+      let allComponentInstances: ComponentInstance[] = [];
+
+      // Load assets (excluding those that are already in collections)
+      if (currentWorkspace.assets) {
+        const standaloneAssets = currentWorkspace.assets.filter(
+          (asset) => !asset.collection_id
+        );
+        const workspaceAssets = assetsToComponentInstances(standaloneAssets);
+        allComponentInstances = [...allComponentInstances, ...workspaceAssets];
+      }
+
+      // Load collections as folder collections
+      if (currentWorkspace.collections && currentWorkspace.assets) {
+        const workspaceCollections = currentWorkspace.collections.map(
+          (collection): ComponentInstance => {
+            // Find assets that belong to this collection
+            const collectionAssets = currentWorkspace.assets
+              .filter((asset) => asset.collection_id === collection.id)
+              .map((asset): AssetItem => {
+                // Convert backend asset type to component type
+                const getComponentType = (backendType: string): string => {
+                  switch (backendType) {
+                    case "image":
+                      return "imageCollection";
+                    case "audio":
+                      return "audioPlayer";
+                    case "video":
+                    case "social":
+                      return "videoCollection";
+                    case "document":
+                      return "pdfDocument";
+                    case "wiki":
+                      return "wikipediaLink";
+                    case "text":
+                      return "text";
+                    default:
+                      return "text";
+                  }
+                };
+
+                return {
+                  id: `asset-${asset.id}`,
+                  type: getComponentType(asset.type),
+                  title: asset.title,
+                  data: {
+                    text: asset.content || asset.url || asset.file_path,
+                  },
+                };
+              });
+
+            console.log(
+              `Collection ${collection.id} (${collection.name}) has ${collectionAssets.length} assets:`,
+              collectionAssets
+            );
+
+            return {
+              id: `collection-${collection.id}`,
+              type: "folderCollection",
+              data: {
+                name: collection.name,
+                collectionId: collection.id,
+                assets: collectionAssets,
+              },
+              backendCollection: collection,
+            };
+          }
+        );
+        allComponentInstances = [
+          ...allComponentInstances,
+          ...workspaceCollections,
+        ];
+      }
+
+      setComponentInstances(allComponentInstances);
 
       // Load knowledge bases from workspace
       if (currentWorkspace.knowledge_bases) {
@@ -494,27 +571,6 @@ export default function Home() {
     [nodes, setEdges, setAttachedAssets, currentWorkspaceId]
   );
 
-  // Helper function to convert component type to backend asset type
-  const getBackendAssetType = (componentType: string): string => {
-    switch (componentType) {
-      case "imageCollection":
-        return "image";
-      case "audioPlayer":
-        return "audio";
-      case "videoCollection":
-      case "videoSocial":
-        return "social";
-      case "pdfDocument":
-        return "document";
-      case "wikipediaLink":
-        return "wiki";
-      case "text":
-        return "text";
-      default:
-        return "text";
-    }
-  };
-
   const onNodeDragStop = useCallback(
     async (event: React.MouseEvent, node: Node) => {
       // Check if dragged node is over a folderCollection node
@@ -598,23 +654,23 @@ export default function Home() {
             // Call backend API to link asset to collection
             if (currentWorkspaceId && folderInstance.data?.collectionId) {
               try {
-                // Convert component instance to asset data for backend
-                const assetData = {
-                  type: getBackendAssetType(draggedInstance.type),
-                  title: assetItem.title,
-                  url: draggedInstance.data?.url || draggedInstance.data?.text,
-                  content:
-                    draggedInstance.data?.content || draggedInstance.data?.text,
-                  is_active: true,
-                };
-
-                await collectionApi.linkAssetToCollection(
-                  currentWorkspaceId,
-                  folderInstance.data.collectionId,
-                  assetData
-                );
-
-                console.log("Successfully linked asset to collection");
+                // Get asset ID from component instance
+                const assetId = getAssetIdFromComponentId(draggedInstance.id);
+                if (assetId) {
+                  await collectionApi.linkAssetToCollection(
+                    currentWorkspaceId,
+                    assetId,
+                    folderInstance.data.collectionId
+                  );
+                  console.log(
+                    `Successfully linked asset ${assetId} to collection ${folderInstance.data.collectionId}`
+                  );
+                } else {
+                  console.warn(
+                    "Could not extract asset ID from component ID:",
+                    draggedInstance.id
+                  );
+                }
               } catch (error) {
                 console.error("Failed to link asset to collection:", error);
                 // Could show user notification here
@@ -779,6 +835,42 @@ export default function Home() {
                 : { width: dimensions.width, height: dimensions.height },
           };
         }),
+        // Knowledge base (chat) nodes
+        ...knowledgeBases.map((kb, index) => {
+          const kbNodeId = `kb-${kb.id}`;
+          const existingKbNode = currentNodes.find((n) => n.id === kbNodeId);
+
+          // Find assets linked to this knowledge base
+          const linkedAssets = componentInstances.filter((instance) => {
+            // Extract asset ID from component instance ID (asset-15 -> 15)
+            const assetId = getAssetIdFromComponentId(instance.id);
+            if (!assetId || !currentWorkspace?.assets) return false;
+
+            // Find the corresponding asset in workspace data
+            const workspaceAsset = currentWorkspace.assets.find(
+              (a) => a.id === assetId
+            );
+            return workspaceAsset?.knowledge_base_id === kb.id;
+          });
+
+          return {
+            id: kbNodeId,
+            type: "chat",
+            position: existingKbNode
+              ? existingKbNode.position
+              : { x: 400 + index * 300, y: 300 + index * 100 },
+            data: {
+              attachedAssets: linkedAssets,
+              position: existingKbNode?.position || {
+                x: 400 + index * 300,
+                y: 300 + index * 100,
+              },
+              knowledgeBase: kb,
+              workspace: currentWorkspace,
+            },
+            style: { width: 800, height: 600 },
+          };
+        }),
         ...(showChatInFlow
           ? [
               (() => {
@@ -801,7 +893,42 @@ export default function Home() {
       ];
       return newNodes;
     });
-  }, [componentInstances, showChatInFlow, attachedAssets, setNodes]);
+  }, [
+    componentInstances,
+    showChatInFlow,
+    attachedAssets,
+    knowledgeBases,
+    currentWorkspace,
+    setNodes,
+  ]);
+
+  // Create edges for existing asset-knowledge base relationships
+  useEffect(() => {
+    if (!currentWorkspace?.assets || knowledgeBases.length === 0) return;
+
+    const existingEdges: Edge[] = [];
+
+    currentWorkspace.assets.forEach((asset) => {
+      if (asset.knowledge_base_id) {
+        // Create edge from asset to knowledge base
+        const assetNodeId = `asset-${asset.id}`;
+        const kbNodeId = `kb-${asset.knowledge_base_id}`;
+
+        existingEdges.push({
+          id: `${assetNodeId}-${kbNodeId}`,
+          source: assetNodeId,
+          target: kbNodeId,
+          type: "default",
+          style: { stroke: "#4596FF", strokeDasharray: "5,5" },
+        });
+      }
+    });
+
+    if (existingEdges.length > 0) {
+      console.log("Creating edges for existing relationships:", existingEdges);
+      setEdges(existingEdges);
+    }
+  }, [currentWorkspace?.assets, knowledgeBases, setEdges]);
 
   // Listen for component creation events
   useEffect(() => {
@@ -820,6 +947,14 @@ export default function Home() {
 
       // Add to local state immediately for UI responsiveness
       setComponentInstances((prev) => [...prev, newInstance]);
+
+      // Skip backend asset creation for folderCollection since it's handled separately
+      if (componentType === "folderCollection") {
+        console.log(
+          "🔄 Skipping asset creation for folderCollection - handled by collection API"
+        );
+        return;
+      }
 
       // Save to backend if we have a current workspace
       if (currentWorkspaceId) {
@@ -983,21 +1118,54 @@ export default function Home() {
         prev.filter((asset) => asset.id !== componentId)
       );
 
-      // Delete from backend if it's a backend asset
-      if (
-        currentWorkspaceId &&
-        isBackendAsset({ id: componentId } as ComponentInstance)
-      ) {
+      // Delete from backend if it's a backend asset or collection
+      if (currentWorkspaceId) {
         try {
-          const assetId = getAssetIdFromComponentId(componentId);
-          console.log("🔍 Extracted asset ID:", assetId);
-          if (assetId) {
-            console.log("🔥 Calling deleteAsset API for asset ID:", assetId);
-            await assetApi.deleteAsset(currentWorkspaceId, assetId);
-            console.log("✅ Successfully deleted asset from backend:", assetId);
+          if (componentId.startsWith("collection-")) {
+            // Handle collection deletion
+            const collectionId = parseInt(
+              componentId.replace("collection-", ""),
+              10
+            );
+            if (!isNaN(collectionId)) {
+              console.log(
+                "🔥 Calling deleteCollection API for collection ID:",
+                collectionId
+              );
+              await collectionApi.deleteCollection(
+                currentWorkspaceId,
+                collectionId
+              );
+              console.log(
+                "✅ Successfully deleted collection from backend:",
+                collectionId
+              );
+
+              // Refresh workspace data to ensure UI is in sync
+              console.log(
+                "🔄 Refreshing workspace data after collection deletion"
+              );
+              switchWorkspace(currentWorkspaceId);
+            }
+          } else if (componentId.startsWith("asset-")) {
+            // Handle asset deletion (both standalone and within collections)
+            const assetId = getAssetIdFromComponentId(componentId);
+            console.log("🔍 Extracted asset ID:", assetId);
+            if (assetId) {
+              console.log("🔥 Calling deleteAsset API for asset ID:", assetId);
+              await assetApi.deleteAsset(currentWorkspaceId, assetId);
+              console.log(
+                "✅ Successfully deleted asset from backend:",
+                assetId
+              );
+
+              // Refresh workspace data to ensure UI is in sync
+              console.log("🔄 Refreshing workspace data after asset deletion");
+              switchWorkspace(currentWorkspaceId);
+            }
           }
         } catch (error) {
-          console.error("❌ Failed to delete asset from backend:", error);
+          console.error("❌ Failed to delete from backend:", error);
           // Optionally show user notification here
         }
       }
