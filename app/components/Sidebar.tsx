@@ -1,5 +1,5 @@
 "use client";
-import { StoreTypes, VideoItem } from "@/app/models/interfaces";
+
 import {
   setHasContent,
   setVideoCollection,
@@ -27,6 +27,7 @@ import TextModal from "./modals/TextModal";
 import VideoModal from "./modals/VideoModal";
 import WebLinkModal from "./modals/WebLinkModal";
 import WikipediaModal from "./modals/WikipediaModal";
+import { StoreTypes, VideoItem } from "../models/interfaces";
 
 type SidebarProps = {
   onChatClick: () => void;
@@ -72,6 +73,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
   const [isWebLinkPopup, setIsWebLinkPopup] = useState(false);
   const [isTextPopup, setIsTextPopup] = useState(false);
   const [isPlusPopup, setIsPlusPopup] = useState(false);
+  const [url, setUrl] = useState("");
   const [wikiUrl, setWikiUrl] = useState("");
   const [webLinkUrl, setWebLinkUrl] = useState("");
   const [textContent, setTextContent] = useState("");
@@ -270,7 +272,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     let parsed: URL | null = null;
     try {
       parsed = new URL(inputUrl);
-    } catch {
+    } catch (e) {
       parsed = null;
     }
 
@@ -547,14 +549,19 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
               <FileIcon width={24} height={24} className="sm:w-8 sm:h-8" />
             </div>
 
-            {/* Folder Icon - Video Collection */}
+            {/* Folder Icon - Folder Collection */}
             <div
               className="cursor-pointer hover:opacity-70 transition-opacity"
               onClick={() => {
-                setVisibleComponents((prev) => ({
-                  ...prev,
-                  videoCollection: true,
-                }));
+                // Dispatch to dashboard
+                window.dispatchEvent(
+                  new CustomEvent("createComponent", {
+                    detail: {
+                      componentType: "folderCollection",
+                      data: { name: "Collection" },
+                    },
+                  })
+                );
               }}
             >
               <FolderIcon width={24} height={24} className="sm:w-8 sm:h-8" />
@@ -617,11 +624,11 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
           const video = createVideoFromUrl(trimmed);
           addVideo(video);
           setIsVideoPopup(false);
-          // Dispatch to dashboard with the final (possibly embed) url - use videoSocial for social media
+          // Dispatch to dashboard with the final (possibly embed) url
           window.dispatchEvent(
             new CustomEvent("createComponent", {
               detail: {
-                componentType: "videoSocial", // Changed from videoCollection to videoSocial
+                componentType: "videoCollection",
                 data: { text: video.url, type: video.type },
               },
             })

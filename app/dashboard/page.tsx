@@ -2,22 +2,11 @@
 import { assetApi } from "@/app/utils/assetApi";
 import { knowledgeBaseApi } from "@/app/utils/knowledgeBaseApi";
 import { useCallback, useEffect, useState } from "react";
-import ReactFlow, {
-  addEdge,
-  Background,
-  Connection,
-  Controls,
-  Edge,
-  Handle,
-  MiniMap,
-  Node,
-  Position,
-  useEdgesState,
-  useNodesState,
-} from "reactflow";
+
 import "reactflow/dist/style.css";
 import {
-  AudioPlayer,
+  ChatInterfaceDraggable,
+  // FolderCollection,
   ImageCollection,
   PdfDocument,
   Sidebar,
@@ -37,6 +26,30 @@ import {
   getAssetIdFromComponentId,
   isBackendAsset,
 } from "../utils/assetUtils";
+import ReactFlow, {
+  Node,
+  Edge,
+  addEdge,
+  Connection,
+  useNodesState,
+  useEdgesState,
+  Controls,
+  Background,
+  MiniMap,
+  Handle,
+  Position,
+  NodeResizer,
+} from "reactflow";
+import "reactflow/dist/style.css";
+import FolderCollection from "../components/FolderCollection";
+import AudioPlayer from "../components/AudioPlayer";
+
+interface AssetItem {
+  id: string;
+  type: string;
+  title: string;
+  data?: { file?: File; files?: File[]; text?: string };
+}
 
 interface ComponentInstance {
   id: string;
@@ -49,6 +62,18 @@ interface ComponentInstance {
     content?: string;
     title?: string;
   };
+  name?: string;
+  assets?: AssetItem[];
+}
+
+interface Workspace {
+  id: string;
+  name: string;
+  componentInstances: ComponentInstance[];
+  nodes: Node[];
+  edges: Edge[];
+  attachedAssets: ComponentInstance[];
+  showChatInFlow: boolean;
 }
 
 const renderComponent = (instance: ComponentInstance) => {
@@ -56,16 +81,17 @@ const renderComponent = (instance: ComponentInstance) => {
 
   switch (type) {
     case "videoCollection":
-      return (
-        <VideoPreview
-          key={id}
-          id={id}
-          file={data?.file}
-          src={data?.url || data?.text}
-        />
-      );
+    // return (
+    //   <VideoPreview
+    //     key={id}
+    //     id={id}
+    //     file={data?.file}
+    //     src={data?.url || data?.text}
+    //   />
+    // );
     case "videoSocial":
       return <VideoPreview key={id} id={id} src={data?.url || data?.text} />;
+    // return <VideoPreview key={id} file={data?.file} src={data?.text} />;
     case "audioPlayer":
       return (
         <AudioPlayer
@@ -143,6 +169,10 @@ const renderComponent = (instance: ComponentInstance) => {
           }
         />
       );
+    case "folderCollection":
+      return (
+        <FolderCollection key={id} id={id} inline={true} initialData={data} />
+      );
     default:
       return null;
   }
@@ -150,6 +180,39 @@ const renderComponent = (instance: ComponentInstance) => {
 
 // Custom Node Components
 const AssetNode = ({ data }: { data: ComponentInstance }) => {
+  const handleDragStart = (e: React.DragEvent) => {
+    // Set drag data for the asset
+    const dragData = {
+      id: data.id,
+      type: data.type,
+      title: getAssetTitle(data),
+      data: data.data,
+    };
+    e.dataTransfer.setData("application/json", JSON.stringify(dragData));
+    e.dataTransfer.effectAllowed = "copy";
+  };
+
+  const getAssetTitle = (instance: ComponentInstance): string => {
+    switch (instance.type) {
+      case "imageCollection":
+        return "Image Collection";
+      case "audioPlayer":
+        return "Audio Player";
+      case "videoCollection":
+        return "Video Collection";
+      case "pdfDocument":
+        return "PDF Document";
+      case "wikipediaLink":
+        return "Wikipedia Link";
+      case "text":
+        return "Text Content";
+      case "folderCollection":
+        return instance.data?.name || "Collection";
+      default:
+        return "Asset";
+    }
+  };
+
   return (
     <div
       className="relative "
@@ -158,21 +221,35 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
           data.type === "videoCollection" || data.type === "videoSocial"
             ? "1px solid #4596FF"
             : undefined,
-        borderRadius:
-          data.type === "videoCollection" || data.type === "videoSocial"
-            ? "24px"
-            : undefined,
+        // borderRadius:
+        //   data.type === "videoCollection" || data.type === "videoSocial"
+        //     ? "24px"
+        //     : undefined,
+        //   data.type === "videoCollection" ? "1px solid #4596FF" : undefined,
+        borderRadius: data.type === "videoCollection" ? "24px" : undefined,
       }}
+      draggable={data.type !== "folderCollection"}
+      onDragStart={handleDragStart}
     >
+      {data.type === "folderCollection" && (
+        <NodeResizer
+          color="#fff"
+          isVisible={true}
+          minWidth={300}
+          minHeight={200}
+        />
+      )}
+
       <Handle
         type="target"
         position={Position.Left}
         style={{
-          background: "#4596FF",
+          background: "#F0F5F7",
           width: "24px",
           height: "24px",
-          border: "3px solid white",
-          left: "-12px",
+          border: "1px solid rgba(69, 150, 255, 0.1)",
+          boxShadow: "0 0 8px rgba(69, 150, 255, 0.3)",
+          left: "-28px",
           top: "55%",
           transform: "translateY(-50%)",
           zIndex: 1000,
@@ -182,11 +259,12 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
         type="source"
         position={Position.Right}
         style={{
-          background: "#4596FF",
+          background: "#F0F5F7",
           width: "24px",
           height: "24px",
-          border: "3px solid white",
-          right: "-12px",
+          border: "1px solid rgba(69, 150, 255, 0.1)",
+          boxShadow: "0 0 8px rgba(69, 150, 255, 0.3)",
+          right: "-28px",
           top: "55%",
           transform: "translateY(-50%)",
           zIndex: 1000,
@@ -227,7 +305,7 @@ const nodeTypes = {
 export default function Home() {
   // Workspace store
   const {
-    workspaces,
+    // workspaces,
     currentWorkspace,
     currentWorkspaceId,
     isLoading: workspaceLoading,
@@ -254,6 +332,19 @@ export default function Home() {
 
   const [isWorkspaceSidebarOpen, setIsWorkspaceSidebarOpen] =
     useState<boolean>(false);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([
+    {
+      id: "default",
+      name: "Workspace 1",
+      componentInstances: [],
+      nodes: [],
+      edges: [],
+      attachedAssets: [],
+      showChatInFlow: false,
+    },
+  ]);
+  // const [currentWorkspaceId, setCurrentWorkspaceId] =
+  //   useState<string>("default");
 
   // Load workspaces on component mount
   useEffect(() => {
@@ -411,6 +502,101 @@ export default function Home() {
     [nodes, setEdges, setAttachedAssets, currentWorkspaceId]
   );
 
+  const onNodeDragStop = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      // Check if dragged node is over a folderCollection node
+      const draggedNode = node;
+      if (
+        draggedNode.type === "asset" &&
+        (draggedNode.data as ComponentInstance)?.type !== "folderCollection"
+      ) {
+        const folderNodes = nodes.filter(
+          (n) =>
+            n.type === "asset" &&
+            (n.data as ComponentInstance)?.type === "folderCollection"
+        );
+        for (const folderNode of folderNodes) {
+          const folderLeft = folderNode.position.x;
+          const folderTop = folderNode.position.y;
+          const folderWidth = folderNode.width || 400;
+          const folderHeight = folderNode.height || 300;
+          const folderRight = folderLeft + folderWidth;
+          const folderBottom = folderTop + folderHeight;
+
+          const draggedLeft = draggedNode.position.x;
+          const draggedTop = draggedNode.position.y;
+          const draggedWidth = draggedNode.width || 300;
+          const draggedHeight = draggedNode.height || 200;
+          const draggedCenterX = draggedLeft + draggedWidth / 2;
+          const draggedCenterY = draggedTop + draggedHeight / 2;
+
+          if (
+            draggedCenterX >= folderLeft &&
+            draggedCenterX <= folderRight &&
+            draggedCenterY >= folderTop &&
+            draggedCenterY <= folderBottom
+          ) {
+            // Add asset to collection
+            const draggedInstance = draggedNode.data as ComponentInstance;
+            const assetItem: AssetItem = {
+              id: draggedInstance.id,
+              type: draggedInstance.type,
+              title:
+                draggedInstance.type === "imageCollection"
+                  ? "Image Collection"
+                  : draggedInstance.type === "audioPlayer"
+                  ? "Audio Player"
+                  : draggedInstance.type === "videoCollection"
+                  ? "Video Collection"
+                  : draggedInstance.type === "pdfDocument"
+                  ? "PDF Document"
+                  : draggedInstance.type === "wikipediaLink"
+                  ? "Wikipedia Link"
+                  : draggedInstance.type === "text"
+                  ? "Text Content"
+                  : "Asset",
+              data: draggedInstance.data,
+            };
+            setComponentInstances((prev) =>
+              prev.map((inst) => {
+                if (inst.id === folderNode.id) {
+                  const assets = inst.data?.assets || [];
+                  const exists = assets.find(
+                    (a) => a.id === draggedInstance.id
+                  );
+                  if (!exists) {
+                    return {
+                      ...inst,
+                      data: {
+                        ...inst.data,
+                        assets: [...assets, assetItem],
+                      },
+                    };
+                  }
+                }
+                return inst;
+              })
+            );
+            // Remove the dragged node
+            setNodes((nds) => nds.filter((n) => n.id !== draggedNode.id));
+            setComponentInstances((prev) =>
+              prev.filter((inst) => inst.id !== draggedInstance.id)
+            );
+            setEdges((eds) =>
+              eds.filter(
+                (edge) =>
+                  edge.source !== draggedNode.id &&
+                  edge.target !== draggedNode.id
+              )
+            );
+            break;
+          }
+        }
+      }
+    },
+    [nodes, setNodes, setComponentInstances, setEdges]
+  );
+
   // Update nodes when componentInstances or showChatInFlow change
   useEffect(() => {
     const getNodeDimensions = (type: string) => {
@@ -428,103 +614,147 @@ export default function Home() {
           return { width: 300, height: 145 };
         case "text":
           return { width: 300, height: 200 };
+        case "folderCollection":
+          // For resizable nodes, use initial dimensions
+          return { width: 400, height: 300 };
         default:
           return { width: 300, height: 200 };
       }
     };
 
-    setNodes((currentNodes) => {
-      const newNodes: Node[] = [
-        // Asset nodes
-        ...componentInstances.map((instance, index) => {
-          const dimensions = getNodeDimensions(instance.type);
-          // Find existing node to preserve position
-          const existingNode = currentNodes.find((n) => n.id === instance.id);
-          return {
-            id: instance.id,
-            type: "asset",
-            position: existingNode
-              ? existingNode.position
-              : { x: 100 + index * 200, y: 100 },
-            data: instance,
-            style: { width: dimensions.width, height: dimensions.height },
-          };
-        }),
-        // Knowledge base (chat) nodes
-        ...knowledgeBases.map((kb, index) => {
-          const kbNodeId = `kb-${kb.id}`;
-          const existingKbNode = currentNodes.find((n) => n.id === kbNodeId);
+    //   setNodes((currentNodes) => {
+    //     const newNodes: Node[] = [
+    //       // Asset nodes
+    //       ...componentInstances.map((instance, index) => {
+    //         const dimensions = getNodeDimensions(instance.type);
+    //         // Find existing node to preserve position
+    //         const existingNode = currentNodes.find((n) => n.id === instance.id);
+    //         return {
+    //           id: instance.id,
+    //           type: "asset",
+    //           position: existingNode
+    //             ? existingNode.position
+    //             : { x: 100 + index * 200, y: 100 },
+    //           data: instance,
+    //           style: { width: dimensions.width, height: dimensions.height },
+    //         };
+    //       }),
+    //       // Knowledge base (chat) nodes
+    //       ...knowledgeBases.map((kb, index) => {
+    //         const kbNodeId = `kb-${kb.id}`;
+    //         const existingKbNode = currentNodes.find((n) => n.id === kbNodeId);
 
-          // Find assets linked to this knowledge base
-          const linkedAssets = componentInstances.filter((instance) => {
-            // Extract asset ID from component instance ID (asset-15 -> 15)
-            const assetId = getAssetIdFromComponentId(instance.id);
-            if (!assetId || !currentWorkspace?.assets) return false;
+    //         // Find assets linked to this knowledge base
+    //         const linkedAssets = componentInstances.filter((instance) => {
+    //           // Extract asset ID from component instance ID (asset-15 -> 15)
+    //           const assetId = getAssetIdFromComponentId(instance.id);
+    //           if (!assetId || !currentWorkspace?.assets) return false;
 
-            // Find the corresponding asset in workspace data
-            const workspaceAsset = currentWorkspace.assets.find(
-              (a) => a.id === assetId
-            );
-            return workspaceAsset?.knowledge_base_id === kb.id;
-          });
+    //           // Find the corresponding asset in workspace data
+    //           const workspaceAsset = currentWorkspace.assets.find(
+    //             (a) => a.id === assetId
+    //           );
+    //           return workspaceAsset?.knowledge_base_id === kb.id;
+    //         });
 
-          return {
-            id: kbNodeId,
-            type: "chat",
-            position: existingKbNode
-              ? existingKbNode.position
-              : { x: 400 + index * 300, y: 300 + index * 100 },
-            data: {
-              attachedAssets: linkedAssets,
-              position: existingKbNode?.position || {
-                x: 400 + index * 300,
-                y: 300 + index * 100,
-              },
-              knowledgeBase: kb,
-              workspace: currentWorkspace,
-            },
-            style: { width: 800, height: 600 },
-          };
-        }),
-      ];
-      return newNodes;
-    });
-  }, [
-    componentInstances,
-    showChatInFlow,
-    attachedAssets,
-    knowledgeBases,
-    currentWorkspace,
-    setNodes,
-  ]);
+    //         return {
+    //           id: kbNodeId,
+    //           type: "chat",
+    //           position: existingKbNode
+    //             ? existingKbNode.position
+    //             : { x: 400 + index * 300, y: 300 + index * 100 },
+    //           data: {
+    //             attachedAssets: linkedAssets,
+    //             position: existingKbNode?.position || {
+    //               x: 400 + index * 300,
+    //               y: 300 + index * 100,
+    //             },
+    //             knowledgeBase: kb,
+    //             workspace: currentWorkspace,
+    //           },
+    //           style: { width: 800, height: 600 },
+    //         };
+    //       }),
+    //     ];
+    //     return newNodes;
+    //   });
+    // }, [
+    //   componentInstances,
+    //   showChatInFlow,
+    //   attachedAssets,
+    //   knowledgeBases,
+    //   currentWorkspace,
+    //   setNodes,
+    // ]);
 
-  // Create edges for existing asset-knowledge base relationships
-  useEffect(() => {
-    if (!currentWorkspace?.assets || knowledgeBases.length === 0) return;
+    // Create edges for existing asset-knowledge base relationships
+    // useEffect(() => {
+    //   if (!currentWorkspace?.assets || knowledgeBases.length === 0) return;
 
-    const existingEdges: Edge[] = [];
+    //   const existingEdges: Edge[] = [];
 
-    currentWorkspace.assets.forEach((asset) => {
-      if (asset.knowledge_base_id) {
-        // Create edge from asset to knowledge base
-        const assetNodeId = `asset-${asset.id}`;
-        const kbNodeId = `kb-${asset.knowledge_base_id}`;
+    //   currentWorkspace.assets.forEach((asset) => {
+    //     if (asset.knowledge_base_id) {
+    //       // Create edge from asset to knowledge base
+    //       const assetNodeId = `asset-${asset.id}`;
+    //       const kbNodeId = `kb-${asset.knowledge_base_id}`;
 
-        existingEdges.push({
-          id: `${assetNodeId}-${kbNodeId}`,
-          source: assetNodeId,
-          target: kbNodeId,
-          type: "default",
-          style: { stroke: "#4596FF", strokeDasharray: "5,5" },
-        });
-      }
-    });
+    //       existingEdges.push({
+    //         id: `${assetNodeId}-${kbNodeId}`,
+    //         source: assetNodeId,
+    //         target: kbNodeId,
+    //         type: "default",
+    //         style: { stroke: "#4596FF", strokeDasharray: "5,5" },
+    //       });
+    //     }
+    //   });
 
-    if (existingEdges.length > 0) {
-      console.log("Creating edges for existing relationships:", existingEdges);
-      setEdges(existingEdges);
-    }
-  }, [currentWorkspace?.assets, knowledgeBases, setEdges]);
+    //   if (existingEdges.length > 0) {
+    //     console.log("Creating edges for existing relationships:", existingEdges);
+    //     setEdges(existingEdges);
+    //   }
+    // }, [currentWorkspace?.assets, knowledgeBases, setEdges]);
+    const newNodes: Node[] = [
+      ...componentInstances.map((instance, index) => {
+        const dimensions = getNodeDimensions(instance.type);
+        // Find existing node to preserve position and size
+        const existingNode = nodes.find((n) => n.id === instance.id);
+        return {
+          id: instance.id,
+          type: "asset",
+          position: existingNode
+            ? existingNode.position
+            : { x: 100 + index * 200, y: 100 },
+          data: instance,
+          width: existingNode?.width || dimensions.width,
+          height: existingNode?.height || dimensions.height,
+          style:
+            instance.type === "folderCollection"
+              ? {}
+              : { width: dimensions.width, height: dimensions.height },
+        };
+      }),
+      ...(showChatInFlow
+        ? [
+            (() => {
+              const chatPosition = nodes.find((n) => n.id === "chat-node")
+                ?.position || {
+                x: 400,
+                y: 300,
+              };
+              return {
+                id: "chat-node",
+                type: "chat",
+                position: chatPosition,
+                data: { attachedAssets, position: chatPosition },
+                style: { width: 800, height: 600 },
+              };
+            })(),
+          ]
+        : []),
+    ];
+    setNodes(newNodes);
+  }, [componentInstances, showChatInFlow, attachedAssets, setNodes]);
 
   // Listen for component creation events
   useEffect(() => {
@@ -726,6 +956,17 @@ export default function Home() {
       }
     };
 
+    const handleUpdateComponent = (event: CustomEvent) => {
+      const { componentId, data } = event.detail;
+      setComponentInstances((prev) =>
+        prev.map((instance) =>
+          instance.id === componentId
+            ? { ...instance, data: { ...instance.data, ...data } }
+            : instance
+        )
+      );
+    };
+
     window.addEventListener(
       "createComponent",
       handleCreateComponent as unknown as EventListener
@@ -733,6 +974,10 @@ export default function Home() {
     window.addEventListener(
       "removeComponent",
       handleRemoveComponent as unknown as EventListener
+    );
+    window.addEventListener(
+      "updateComponent",
+      handleUpdateComponent as EventListener
     );
 
     return () => {
@@ -743,6 +988,10 @@ export default function Home() {
       window.removeEventListener(
         "removeComponent",
         handleRemoveComponent as unknown as EventListener
+      );
+      window.removeEventListener(
+        "updateComponent",
+        handleUpdateComponent as EventListener
       );
     };
   }, [setNodes, setEdges, setAttachedAssets, currentWorkspaceId]);
@@ -932,6 +1181,7 @@ export default function Home() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            onNodeDragStop={onNodeDragStop}
             nodeTypes={nodeTypes}
             defaultViewport={{ x: 0, y: 0, zoom: 1 }}
             defaultEdgeOptions={{

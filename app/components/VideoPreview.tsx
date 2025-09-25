@@ -1,8 +1,8 @@
 "use client";
 
+import React, { useEffect, useMemo, useState } from "react";
 import { VideoItem } from "@/app/models/interfaces";
 import Image from "next/image";
-import React, { useEffect, useMemo, useState } from "react";
 import DeleteIcon from "./icons/DeleteIcon";
 import EditIcon from "./icons/EditIcon";
 
@@ -13,8 +13,7 @@ type VideoPreviewProps = {
   type?: VideoItem["type"] | string | null;
   className?: string;
   style?: React.CSSProperties;
-  id?: string; // Add id prop for delete functionality
-  onClose?: () => void; // Add onClose prop
+  onClose?: () => void;
 };
 
 export default function VideoPreview({
@@ -24,7 +23,6 @@ export default function VideoPreview({
   type,
   className,
   style,
-  id,
   onClose,
 }: VideoPreviewProps) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
@@ -54,34 +52,6 @@ export default function VideoPreview({
 
     return null;
   }, [src, type, embedPlatforms]);
-
-  // Delete handler
-  const handleDelete = () => {
-    console.log("VideoPreview handleDelete called with id:", id);
-
-    // Clean up object URL if it exists
-    if (objectUrl) {
-      URL.revokeObjectURL(objectUrl);
-    }
-
-    // Check if this is a sidebar component or has onClose prop
-    if (onClose) {
-      onClose();
-      return;
-    }
-
-    // Remove this component instance
-    if (id) {
-      console.log(
-        "VideoPreview dispatching removeComponent event with id:",
-        id
-      );
-      const removeEvent = new CustomEvent("removeComponent", {
-        detail: { componentId: id },
-      });
-      window.dispatchEvent(removeEvent);
-    }
-  };
 
   // Platform styling configuration
   const platformConfig = useMemo(() => {
@@ -143,7 +113,7 @@ export default function VideoPreview({
           URL.revokeObjectURL(url);
           setObjectUrl(null);
         };
-      } catch {
+      } catch (err) {
         setObjectUrl(null);
       }
     }
@@ -324,12 +294,10 @@ export default function VideoPreview({
               <>
                 <EditIcon size={20} color="white" />
                 <button
-                  onClick={handleDelete}
+                  onClick={onClose}
                   style={{
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: 0,
+                    ...actionButtonStyle,
+                    background: "rgba(255, 255, 255, 0.2)",
                   }}
                 >
                   <DeleteIcon size={20} color="white" />
@@ -339,12 +307,10 @@ export default function VideoPreview({
               <>
                 <EditIcon size={20} color="white" />
                 <button
-                  onClick={handleDelete}
+                  onClick={onClose}
                   style={{
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: 0,
+                    ...actionButtonStyle,
+                    background: "rgba(255, 255, 255, 0.2)",
                   }}
                 >
                   <DeleteIcon size={20} color="white" />
@@ -391,12 +357,10 @@ export default function VideoPreview({
             <>
               <EditIcon size={20} color="white" />
               <button
-                onClick={handleDelete}
+                onClick={onClose}
                 style={{
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: 0,
+                  ...actionButtonStyle,
+                  background: "rgba(255, 255, 255, 0.2)",
                 }}
               >
                 <DeleteIcon size={20} color="white" />
@@ -406,12 +370,10 @@ export default function VideoPreview({
             <>
               <EditIcon size={20} color="white" />
               <button
-                onClick={handleDelete}
+                onClick={onClose}
                 style={{
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: 0,
+                  ...actionButtonStyle,
+                  background: "rgba(255, 255, 255, 0.2)",
                 }}
               >
                 <DeleteIcon size={20} color="white" />
