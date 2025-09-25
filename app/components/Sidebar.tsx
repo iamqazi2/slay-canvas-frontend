@@ -260,8 +260,9 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     }
   };
 
-  const showWikipedia = () => {
-    setComponentData((prev) => ({ ...prev, textContent: wikiUrl.trim() }));
+  const showWikipedia = (url?: string) => {
+    const finalUrl = url || wikiUrl.trim();
+    setComponentData((prev) => ({ ...prev, textContent: finalUrl }));
     setVisibleComponents((prev) => ({ ...prev, wikipediaLink: true }));
     setIsWikipediaPopup(false);
     // Dispatch to dashboard
@@ -269,7 +270,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
       new CustomEvent("createComponent", {
         detail: {
           componentType: "wikipediaLink",
-          data: { text: wikiUrl.trim() },
+          data: { text: finalUrl },
         },
       })
     );
@@ -677,12 +678,17 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
           const video = createVideoFromUrl(trimmed);
           addVideo(video);
           setIsVideoPopup(false);
-          // Dispatch to dashboard with the final (possibly embed) url
+          // Dispatch to dashboard with the correct component type for social media
           window.dispatchEvent(
             new CustomEvent("createComponent", {
               detail: {
-                componentType: "videoCollection",
-                data: { text: video.url, type: video.type },
+                componentType: "videoSocial", // Changed from videoCollection to videoSocial
+                data: {
+                  url: video.url, // Use url instead of text
+                  text: video.url, // Keep text as fallback
+                  title: video.title,
+                  type: video.type,
+                },
               },
             })
           );
@@ -701,7 +707,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
         onClose={() => setIsWikipediaPopup(false)}
         onSubmit={(submittedUrl) => {
           setWikiUrl(submittedUrl);
-          showWikipedia();
+          showWikipedia(submittedUrl);
         }}
       />
 

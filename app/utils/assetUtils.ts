@@ -27,6 +27,7 @@ export function assetToComponentInstance(asset: Asset): ComponentInstance {
     image: "imageCollection",
     pdf: "pdfDocument",
     link: "wikipediaLink",
+    wiki: "wikipediaLink", // Map wiki assets to wikipediaLink component
     social: "videoSocial", // Map social assets to videoSocial component
     text: "text",
     document: "pdfDocument",
