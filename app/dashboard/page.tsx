@@ -50,7 +50,14 @@ interface AssetItem {
   id: string;
   type: string;
   title: string;
-  data?: { file?: File; files?: File[]; text?: string };
+  data?: {
+    file?: File;
+    files?: File[];
+    text?: string;
+    url?: string;
+    title?: string;
+    content?: string;
+  };
 }
 
 interface ComponentInstance {
@@ -416,9 +423,46 @@ export default function Home() {
                   id: `asset-${asset.id}`,
                   type: getComponentType(asset.type),
                   title: asset.title,
-                  data: {
-                    text: asset.content || asset.url || asset.file_path,
-                  },
+                  data: (() => {
+                    // Structure data based on component type
+                    switch (getComponentType(asset.type)) {
+                      case "imageCollection":
+                        return {
+                          url: asset.file_path || asset.url,
+                          title: asset.title,
+                        };
+                      case "audioPlayer":
+                        return {
+                          url: asset.file_path || asset.url,
+                          title: asset.title,
+                        };
+                      case "videoCollection":
+                        return {
+                          url: asset.file_path || asset.url || asset.content,
+                          text: asset.content || asset.url || asset.file_path,
+                        };
+                      case "pdfDocument":
+                        return {
+                          url: asset.file_path || asset.url,
+                          title: asset.title,
+                          content: asset.content,
+                        };
+                      case "wikipediaLink":
+                        return {
+                          text: asset.url || asset.content,
+                          url: asset.url,
+                        };
+                      case "text":
+                        return {
+                          text: asset.content,
+                          content: asset.content,
+                        };
+                      default:
+                        return {
+                          text: asset.content || asset.url || asset.file_path,
+                        };
+                    }
+                  })(),
                 };
               });
 

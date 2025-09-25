@@ -17,7 +17,14 @@ interface AssetItem {
   id: string;
   type: string;
   title: string;
-  data?: { file?: File; files?: File[]; text?: string };
+  data?: {
+    file?: File;
+    files?: File[];
+    text?: string;
+    url?: string;
+    title?: string;
+    content?: string;
+  };
 }
 
 interface FolderCollectionProps {
@@ -87,7 +94,14 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
               id={asset.id}
               inline={true}
               initialData={
-                asset.data?.file ? { file: asset.data.file } : undefined
+                asset.data?.file
+                  ? { file: asset.data.file }
+                  : asset.data?.url
+                  ? {
+                      url: asset.data.url,
+                      name: asset.data.title || asset.title,
+                    }
+                  : undefined
               }
               onClose={() => handleRemoveAsset(asset.id)}
             />
@@ -103,6 +117,11 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
                   ? { files: asset.data.files }
                   : asset.data?.file
                   ? { files: [asset.data.file] }
+                  : asset.data?.url
+                  ? {
+                      url: asset.data.url,
+                      title: asset.data.title || asset.title,
+                    }
                   : undefined
               }
               onClose={() => handleRemoveAsset(asset.id)}
@@ -115,7 +134,14 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
               id={asset.id}
               inline={true}
               initialData={
-                asset.data?.file ? { file: asset.data.file } : undefined
+                asset.data?.file
+                  ? { file: asset.data.file }
+                  : asset.data?.url
+                  ? {
+                      url: asset.data.url,
+                      title: asset.data.title || asset.title,
+                    }
+                  : undefined
               }
               onClose={() => handleRemoveAsset(asset.id)}
             />
@@ -139,7 +165,11 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
               id={asset.id}
               inline={true}
               initialData={
-                asset.data?.text ? { text: asset.data.text } : undefined
+                asset.data?.text
+                  ? { text: asset.data.text }
+                  : asset.data?.content
+                  ? { text: asset.data.content }
+                  : undefined
               }
               onClose={() => handleRemoveAsset(asset.id)}
             />
