@@ -169,11 +169,10 @@ export default function SimpleChatInterface({
     setMessages((prev) => [...prev, userMessage]);
     setMessage("");
     setIsStreaming(true);
-
     try {
       const stream = await chatApi.sendMessage({
         message: messageText.trim(),
-        knowledge_base_name: knowledgeBase.collection_name,
+        knowledge_base_name: knowledgeBase.name,
         conversation_id: conversationId,
       });
 
@@ -191,12 +190,19 @@ export default function SimpleChatInterface({
       };
       setMessages((prev) => [...prev, initialAgentMessage]);
 
+      function sleep(ms: number) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+
       // Process streaming response
       for await (const chunk of chatApi.processStreamingResponse(stream)) {
         switch (chunk.type) {
           case "message":
             agentMessage += chunk.content;
-            // Update the agent message in real time
+
+            // Delay right here, inside the same case
+            await sleep(50);
+
             setMessages((prev) =>
               prev.map((msg) =>
                 msg.id === agentMessageId
@@ -795,24 +801,9 @@ export default function SimpleChatInterface({
                   ))}
 
                   {isStreaming && (
-                    <div className="flex justify-center items-center">
+                    <div   className={`rounded-2xl px-4 py-3 bg-gray-100 text-gray-900`}>
                       <Loader2 className="animate-spin text-gray-500" />
                     </div>
-                    // <div className="flex justify-start">
-                    //   <div className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg">
-                    //     <div className="flex space-x-1">
-                    //       <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" />
-                    //       <div
-                    //         className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
-                    //         style={{ animationDelay: "0.1s" }}
-                    //       />
-                    //       <div
-                    //         className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
-                    //         style={{ animationDelay: "0.2s" }}
-                    //       />
-                    //     </div>
-                    //   </div>
-                    // </div>
                   )}
 
                   <div ref={messagesEndRef} />
