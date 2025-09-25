@@ -523,45 +523,59 @@ export default function Home() {
       if (targetIsKB || sourceIsKB) {
         setEdges((eds) => addEdge(params, eds));
 
-        // Determine which asset and which KB are being connected
-        const assetNodeId = targetIsKB ? params.source : params.target;
+        // Determine which asset/collection and which KB are being connected
+        const nodeId = targetIsKB ? params.source : params.target;
         const kbNodeId = targetIsKB ? params.target : params.source;
 
-        if (assetNodeId && kbNodeId) {
-          const assetNode = nodes.find((n) => n.id === assetNodeId);
+        if (nodeId && kbNodeId) {
+          const node = nodes.find((n) => n.id === nodeId);
 
-          if (assetNode && assetNode.data) {
-            const assetData = assetNode.data as ComponentInstance;
-            setAttachedAssets((prev) => {
-              const exists = prev.find((a) => a.id === assetData.id);
-              if (!exists) {
-                return [...prev, assetData];
-              }
-              return prev;
-            });
+          if (node && node.data) {
+            const nodeData = node.data as ComponentInstance;
 
             // Extract KB ID from node ID (kb-4 -> 4)
             const kbId = parseInt(kbNodeId.replace("kb-", ""));
 
-            // Link asset to knowledge base if we have both IDs
             if (currentWorkspaceId) {
-              const assetId = getAssetIdFromComponentId(assetData.id);
-              if (assetId) {
-                try {
-                  await knowledgeBaseApi.linkAssetToKnowledgeBase(
-                    currentWorkspaceId,
-                    assetId,
-                    kbId
-                  );
-                  console.log(
-                    `Linked asset ${assetId} to knowledge base ${kbId}`
-                  );
-                } catch (error) {
-                  console.error(
-                    "Failed to link asset to knowledge base:",
-                    error
-                  );
+              try {
+                // Check if this is a collection or individual asset
+                if (nodeData.type === "folderCollection") {
+                  // Handle collection linking
+                  const collectionId = nodeData.data?.collectionId;
+                  if (collectionId) {
+                    await knowledgeBaseApi.linkCollectionToKnowledgeBase(
+                      currentWorkspaceId,
+                      collectionId,
+                      kbId
+                    );
+                    console.log(
+                      `Linked collection ${collectionId} to knowledge base ${kbId}`
+                    );
+                  }
+                } else {
+                  // Handle individual asset linking
+                  setAttachedAssets((prev) => {
+                    const exists = prev.find((a) => a.id === nodeData.id);
+                    if (!exists) {
+                      return [...prev, nodeData];
+                    }
+                    return prev;
+                  });
+
+                  const assetId = getAssetIdFromComponentId(nodeData.id);
+                  if (assetId) {
+                    await knowledgeBaseApi.linkAssetToKnowledgeBase(
+                      currentWorkspaceId,
+                      assetId,
+                      kbId
+                    );
+                    console.log(
+                      `Linked asset ${assetId} to knowledge base ${kbId}`
+                    );
+                  }
                 }
+              } catch (error) {
+                console.error("Failed to link to knowledge base:", error);
               }
             }
           }
@@ -908,6 +922,7 @@ export default function Home() {
 
     const existingEdges: Edge[] = [];
 
+    // Create edges for individual assets linked to knowledge bases
     currentWorkspace.assets.forEach((asset) => {
       if (asset.knowledge_base_id) {
         // Create edge from asset to knowledge base
@@ -924,11 +939,35 @@ export default function Home() {
       }
     });
 
+    // Create edges for collections linked to knowledge bases
+    if (currentWorkspace.collections) {
+      currentWorkspace.collections.forEach((collection) => {
+        if (collection.knowledge_base_id) {
+          // Create edge from collection to knowledge base
+          const collectionNodeId = `collection-${collection.id}`;
+          const kbNodeId = `kb-${collection.knowledge_base_id}`;
+
+          existingEdges.push({
+            id: `${collectionNodeId}-${kbNodeId}`,
+            source: collectionNodeId,
+            target: kbNodeId,
+            type: "default",
+            style: { stroke: "#4596FF", strokeDasharray: "5,5" },
+          });
+        }
+      });
+    }
+
     if (existingEdges.length > 0) {
       console.log("Creating edges for existing relationships:", existingEdges);
       setEdges(existingEdges);
     }
-  }, [currentWorkspace?.assets, knowledgeBases, setEdges]);
+  }, [
+    currentWorkspace?.assets,
+    currentWorkspace?.collections,
+    knowledgeBases,
+    setEdges,
+  ]);
 
   // Listen for component creation events
   useEffect(() => {
