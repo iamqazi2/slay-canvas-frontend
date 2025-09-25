@@ -259,6 +259,10 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
       <Handle
         type="target"
         position={Position.Left}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
         style={{
           background: "#F0F5F7",
           width: "24px",
@@ -274,6 +278,10 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
       <Handle
         type="source"
         position={Position.Right}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
         style={{
           background: "#F0F5F7",
           width: "24px",
