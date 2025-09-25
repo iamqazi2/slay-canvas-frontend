@@ -4,6 +4,7 @@ export { default as TextField } from "./TextField";
 export { default as TextArea } from "./TextArea";
 export { default as Select } from "./Select";
 export { default as FileUpload } from "./FileUpload";
+export { default as FolderCollection } from "./FolderCollection";
 export { default as ImageUpload } from "./ImageUpload";
 export { default as AudioUpload } from "./AudioUpload";
 export { default as DocumentUpload } from "./DocumentUpload";

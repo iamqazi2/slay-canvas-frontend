@@ -340,7 +340,9 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
         {
           let href = inputUrl;
           // try to extract numeric id from /videos/<id>/
-          const videosMatch = inputUrl.match(/facebook\.com\/[^\/]+\/videos\/(\d+)/i);
+          const videosMatch = inputUrl.match(
+            /facebook\.com\/[^\/]+\/videos\/(\d+)/i
+          );
           const watchMatch = inputUrl.match(/[?&]v=(\d+)/);
           const videoPhpMatch = inputUrl.match(/video\.php\?v=(\d+)/i);
           if (videosMatch && videosMatch[1]) {
@@ -563,14 +565,19 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
               <FileIcon width={24} height={24} className="sm:w-8 sm:h-8" />
             </div>
 
-            {/* Folder Icon - Video Collection */}
+            {/* Folder Icon - Folder Collection */}
             <div
               className="cursor-pointer hover:opacity-70 transition-opacity"
               onClick={() => {
-                setVisibleComponents((prev) => ({
-                  ...prev,
-                  videoCollection: true,
-                }));
+                // Dispatch to dashboard
+                window.dispatchEvent(
+                  new CustomEvent("createComponent", {
+                    detail: {
+                      componentType: "folderCollection",
+                      data: { name: "Collection" },
+                    },
+                  })
+                );
               }}
             >
               <FolderIcon width={24} height={24} className="sm:w-8 sm:h-8" />

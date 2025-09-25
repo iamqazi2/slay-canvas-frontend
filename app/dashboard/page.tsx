@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   AudioPlayer,
   ChatInterfaceDraggable,
+  FolderCollection,
   ImageCollection,
   PdfDocument,
   Sidebar,
@@ -23,13 +24,27 @@ import ReactFlow, {
   MiniMap,
   Handle,
   Position,
+  NodeResizer,
 } from "reactflow";
 import "reactflow/dist/style.css";
+
+interface AssetItem {
+  id: string;
+  type: string;
+  title: string;
+  data?: { file?: File; files?: File[]; text?: string };
+}
 
 interface ComponentInstance {
   id: string;
   type: string;
-  data?: { file?: File; files?: File[]; text?: string };
+  data?: {
+    file?: File;
+    files?: File[];
+    text?: string;
+    name?: string;
+    assets?: AssetItem[];
+  };
 }
 
 interface Workspace {
@@ -99,6 +114,10 @@ const renderComponent = (instance: ComponentInstance) => {
           initialData={data?.text ? { text: data.text } : undefined}
         />
       );
+    case "folderCollection":
+      return (
+        <FolderCollection key={id} id={id} inline={true} initialData={data} />
+      );
     default:
       return null;
   }
@@ -106,6 +125,39 @@ const renderComponent = (instance: ComponentInstance) => {
 
 // Custom Node Components
 const AssetNode = ({ data }: { data: ComponentInstance }) => {
+  const handleDragStart = (e: React.DragEvent) => {
+    // Set drag data for the asset
+    const dragData = {
+      id: data.id,
+      type: data.type,
+      title: getAssetTitle(data),
+      data: data.data,
+    };
+    e.dataTransfer.setData("application/json", JSON.stringify(dragData));
+    e.dataTransfer.effectAllowed = "copy";
+  };
+
+  const getAssetTitle = (instance: ComponentInstance): string => {
+    switch (instance.type) {
+      case "imageCollection":
+        return "Image Collection";
+      case "audioPlayer":
+        return "Audio Player";
+      case "videoCollection":
+        return "Video Collection";
+      case "pdfDocument":
+        return "PDF Document";
+      case "wikipediaLink":
+        return "Wikipedia Link";
+      case "text":
+        return "Text Content";
+      case "folderCollection":
+        return instance.data?.name || "Collection";
+      default:
+        return "Asset";
+    }
+  };
+
   return (
     <div
       className="relative "
@@ -114,16 +166,28 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
           data.type === "videoCollection" ? "1px solid #4596FF" : undefined,
         borderRadius: data.type === "videoCollection" ? "24px" : undefined,
       }}
+      draggable={data.type !== "folderCollection"}
+      onDragStart={handleDragStart}
     >
+      {data.type === "folderCollection" && (
+        <NodeResizer
+          color="#fff"
+          isVisible={true}
+          minWidth={300}
+          minHeight={200}
+        />
+      )}
+
       <Handle
         type="target"
         position={Position.Left}
         style={{
-          background: "#4596FF",
+          background: "#F0F5F7",
           width: "24px",
           height: "24px",
-          border: "3px solid white",
-          left: "-12px",
+          border: "1px solid rgba(69, 150, 255, 0.1)",
+          boxShadow: "0 0 8px rgba(69, 150, 255, 0.3)",
+          left: "-28px",
           top: "55%",
           transform: "translateY(-50%)",
           zIndex: 1000,
@@ -133,11 +197,12 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
         type="source"
         position={Position.Right}
         style={{
-          background: "#4596FF",
+          background: "#F0F5F7",
           width: "24px",
           height: "24px",
-          border: "3px solid white",
-          right: "-12px",
+          border: "1px solid rgba(69, 150, 255, 0.1)",
+          boxShadow: "0 0 8px rgba(69, 150, 255, 0.3)",
+          right: "-28px",
           top: "55%",
           transform: "translateY(-50%)",
           zIndex: 1000,
@@ -287,6 +352,101 @@ export default function Home() {
     [nodes, showChatInFlow, setEdges, setAttachedAssets]
   );
 
+  const onNodeDragStop = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      // Check if dragged node is over a folderCollection node
+      const draggedNode = node;
+      if (
+        draggedNode.type === "asset" &&
+        (draggedNode.data as ComponentInstance)?.type !== "folderCollection"
+      ) {
+        const folderNodes = nodes.filter(
+          (n) =>
+            n.type === "asset" &&
+            (n.data as ComponentInstance)?.type === "folderCollection"
+        );
+        for (const folderNode of folderNodes) {
+          const folderLeft = folderNode.position.x;
+          const folderTop = folderNode.position.y;
+          const folderWidth = folderNode.width || 400;
+          const folderHeight = folderNode.height || 300;
+          const folderRight = folderLeft + folderWidth;
+          const folderBottom = folderTop + folderHeight;
+
+          const draggedLeft = draggedNode.position.x;
+          const draggedTop = draggedNode.position.y;
+          const draggedWidth = draggedNode.width || 300;
+          const draggedHeight = draggedNode.height || 200;
+          const draggedCenterX = draggedLeft + draggedWidth / 2;
+          const draggedCenterY = draggedTop + draggedHeight / 2;
+
+          if (
+            draggedCenterX >= folderLeft &&
+            draggedCenterX <= folderRight &&
+            draggedCenterY >= folderTop &&
+            draggedCenterY <= folderBottom
+          ) {
+            // Add asset to collection
+            const draggedInstance = draggedNode.data as ComponentInstance;
+            const assetItem: AssetItem = {
+              id: draggedInstance.id,
+              type: draggedInstance.type,
+              title:
+                draggedInstance.type === "imageCollection"
+                  ? "Image Collection"
+                  : draggedInstance.type === "audioPlayer"
+                  ? "Audio Player"
+                  : draggedInstance.type === "videoCollection"
+                  ? "Video Collection"
+                  : draggedInstance.type === "pdfDocument"
+                  ? "PDF Document"
+                  : draggedInstance.type === "wikipediaLink"
+                  ? "Wikipedia Link"
+                  : draggedInstance.type === "text"
+                  ? "Text Content"
+                  : "Asset",
+              data: draggedInstance.data,
+            };
+            setComponentInstances((prev) =>
+              prev.map((inst) => {
+                if (inst.id === folderNode.id) {
+                  const assets = inst.data?.assets || [];
+                  const exists = assets.find(
+                    (a) => a.id === draggedInstance.id
+                  );
+                  if (!exists) {
+                    return {
+                      ...inst,
+                      data: {
+                        ...inst.data,
+                        assets: [...assets, assetItem],
+                      },
+                    };
+                  }
+                }
+                return inst;
+              })
+            );
+            // Remove the dragged node
+            setNodes((nds) => nds.filter((n) => n.id !== draggedNode.id));
+            setComponentInstances((prev) =>
+              prev.filter((inst) => inst.id !== draggedInstance.id)
+            );
+            setEdges((eds) =>
+              eds.filter(
+                (edge) =>
+                  edge.source !== draggedNode.id &&
+                  edge.target !== draggedNode.id
+              )
+            );
+            break;
+          }
+        }
+      }
+    },
+    [nodes, setNodes, setComponentInstances, setEdges]
+  );
+
   // Update nodes when componentInstances or showChatInFlow change
   useEffect(() => {
     const getNodeDimensions = (type: string) => {
@@ -303,6 +463,9 @@ export default function Home() {
           return { width: 300, height: 145 };
         case "text":
           return { width: 300, height: 200 };
+        case "folderCollection":
+          // For resizable nodes, use initial dimensions
+          return { width: 400, height: 300 };
         default:
           return { width: 300, height: 200 };
       }
@@ -311,7 +474,7 @@ export default function Home() {
     const newNodes: Node[] = [
       ...componentInstances.map((instance, index) => {
         const dimensions = getNodeDimensions(instance.type);
-        // Find existing node to preserve position
+        // Find existing node to preserve position and size
         const existingNode = nodes.find((n) => n.id === instance.id);
         return {
           id: instance.id,
@@ -320,7 +483,12 @@ export default function Home() {
             ? existingNode.position
             : { x: 100 + index * 200, y: 100 },
           data: instance,
-          style: { width: dimensions.width, height: dimensions.height },
+          width: existingNode?.width || dimensions.width,
+          height: existingNode?.height || dimensions.height,
+          style:
+            instance.type === "folderCollection"
+              ? {}
+              : { width: dimensions.width, height: dimensions.height },
         };
       }),
       ...(showChatInFlow
@@ -383,6 +551,17 @@ export default function Home() {
       );
     };
 
+    const handleUpdateComponent = (event: CustomEvent) => {
+      const { componentId, data } = event.detail;
+      setComponentInstances((prev) =>
+        prev.map((instance) =>
+          instance.id === componentId
+            ? { ...instance, data: { ...instance.data, ...data } }
+            : instance
+        )
+      );
+    };
+
     window.addEventListener(
       "createComponent",
       handleCreateComponent as EventListener
@@ -390,6 +569,10 @@ export default function Home() {
     window.addEventListener(
       "removeComponent",
       handleRemoveComponent as EventListener
+    );
+    window.addEventListener(
+      "updateComponent",
+      handleUpdateComponent as EventListener
     );
 
     return () => {
@@ -400,6 +583,10 @@ export default function Home() {
       window.removeEventListener(
         "removeComponent",
         handleRemoveComponent as EventListener
+      );
+      window.removeEventListener(
+        "updateComponent",
+        handleUpdateComponent as EventListener
       );
     };
   }, [setNodes, setEdges, setAttachedAssets]);
@@ -558,6 +745,7 @@ export default function Home() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            onNodeDragStop={onNodeDragStop}
             nodeTypes={nodeTypes}
             defaultViewport={{ x: 0, y: 0, zoom: 1 }}
             defaultEdgeOptions={{

@@ -13,6 +13,7 @@ type VideoPreviewProps = {
   type?: VideoItem["type"] | string | null;
   className?: string;
   style?: React.CSSProperties;
+  onClose?: () => void;
 };
 
 export default function VideoPreview({
@@ -22,6 +23,7 @@ export default function VideoPreview({
   type,
   className,
   style,
+  onClose,
 }: VideoPreviewProps) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
@@ -291,12 +293,28 @@ export default function VideoPreview({
             {detectedPlatform === "direct" ? (
               <>
                 <EditIcon size={20} color="white" />
-                <DeleteIcon size={20} color="white" />
+                <button
+                  onClick={onClose}
+                  style={{
+                    ...actionButtonStyle,
+                    background: "rgba(255, 255, 255, 0.2)",
+                  }}
+                >
+                  <DeleteIcon size={20} color="white" />
+                </button>
               </>
             ) : (
               <>
                 <EditIcon size={20} color="white" />
-                <DeleteIcon size={20} color="white" />
+                <button
+                  onClick={onClose}
+                  style={{
+                    ...actionButtonStyle,
+                    background: "rgba(255, 255, 255, 0.2)",
+                  }}
+                >
+                  <DeleteIcon size={20} color="white" />
+                </button>
               </>
             )}
           </div>
@@ -338,12 +356,28 @@ export default function VideoPreview({
           {detectedPlatform === "direct" ? (
             <>
               <EditIcon size={20} color="white" />
-              <DeleteIcon size={20} color="white" />
+              <button
+                onClick={onClose}
+                style={{
+                  ...actionButtonStyle,
+                  background: "rgba(255, 255, 255, 0.2)",
+                }}
+              >
+                <DeleteIcon size={20} color="white" />
+              </button>
             </>
           ) : (
             <>
               <EditIcon size={20} color="white" />
-              <DeleteIcon size={20} color="white" />
+              <button
+                onClick={onClose}
+                style={{
+                  ...actionButtonStyle,
+                  background: "rgba(255, 255, 255, 0.2)",
+                }}
+              >
+                <DeleteIcon size={20} color="white" />
+              </button>
             </>
           )}
         </div>
