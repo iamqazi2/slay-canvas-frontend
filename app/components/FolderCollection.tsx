@@ -1,5 +1,7 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useWorkspaceStore } from "../store/workspaceStore";
+import { collectionApi } from "../utils/collectionApi";
 import { DeleteIcon, EditIcon, FolderIcon } from "./icons";
 import NewFolderIcon from "./icons/NewFolder";
 import {
@@ -33,6 +35,7 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
   onClose,
   inline = false,
 }) => {
+  const { currentWorkspaceId } = useWorkspaceStore();
   const [name, setName] = useState(initialData?.name || "Collection");
   const [assets, setAssets] = useState<AssetItem[]>(initialData?.assets || []);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -41,6 +44,10 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+
+  // Use refs to track initial values without causing re-renders
+  const initialNameRef = useRef<string>(initialData?.name || "Collection");
+  const initializedRef = useRef<boolean>(false);
 
   const renderAssetComponent = (asset: AssetItem) => {
     const getAssetWidth = (type: string) => {
@@ -269,13 +276,17 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
     handleTouchEnd,
   ]);
 
-  // Handle initial data
+  // Handle initial data - only update once when component first receives data
   useEffect(() => {
-    if (initialData?.name) {
-      setName(initialData.name);
-    }
-    if (initialData?.assets) {
-      setAssets(initialData.assets);
+    if (!initializedRef.current && initialData) {
+      if (initialData.name) {
+        setName(initialData.name);
+        initialNameRef.current = initialData.name;
+      }
+      if (initialData.assets) {
+        setAssets(initialData.assets);
+      }
+      initializedRef.current = true;
     }
   }, [initialData]);
 
@@ -325,8 +336,36 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
     }, 0);
   };
 
-  const handleNameSave = () => {
+  const handleNameSave = async () => {
     setIsEditingName(false);
+
+    // Only call API if name actually changed from the initial value
+    if (name !== initialNameRef.current) {
+      // Get collection ID from the component ID
+      const collectionId = id?.startsWith("collection-")
+        ? parseInt(id.replace("collection-", ""), 10)
+        : null;
+
+      // Call API to rename collection if we have the necessary data
+      if (collectionId && currentWorkspaceId) {
+        try {
+          await collectionApi.renameCollection(
+            currentWorkspaceId,
+            collectionId,
+            name
+          );
+          console.log(
+            `Successfully renamed collection ${collectionId} to "${name}"`
+          );
+          // Update the initial name ref to the new name
+          initialNameRef.current = name;
+        } catch (error) {
+          console.error("Failed to rename collection:", error);
+          // Revert the name change on error
+          setName(initialNameRef.current);
+        }
+      }
+    }
   };
 
   const handleNameKeyPress = (e: React.KeyboardEvent) => {

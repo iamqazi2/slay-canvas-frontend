@@ -82,6 +82,20 @@ export const collectionApi = {
     );
   },
 
+  // Rename a collection
+  async renameCollection(
+    workspaceId: number,
+    collectionId: number,
+    newName: string
+  ): Promise<Collection> {
+    return await apiClient.patch<Collection>(
+      `/workspaces/${workspaceId}/collections/${collectionId}/rename?new_name=${encodeURIComponent(
+        newName
+      )}`,
+      {}
+    );
+  },
+
   // Link an existing asset to a collection
   async linkAssetToCollection(
     workspaceId: number,
