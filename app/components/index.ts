@@ -1,6 +1,4 @@
 export { default as AudioPlayer } from "./AudioPlayer";
-export { default as AudioUpload } from "./AudioUpload";
-export { default as Button } from "./Button";
 export { default as ChatInterface } from "./ChatInterface";
 export { default as DocumentUpload } from "./DocumentUpload";
 export { default as FileUpload } from "./FileUpload";
@@ -21,6 +19,5 @@ export { default as Sidebar } from "./Sidebar";
 export { default as SimpleChatInterface } from "./SimpleChatInterface";
 export { default as TextArea } from "./TextArea";
 export { default as TextCollection } from "./TextCollection";
-export { default as TextField } from "./TextField";
 export { default as VideoPreview } from "./VideoPreview";
 export { default as WikipediaLink } from "./WikipediaLink";

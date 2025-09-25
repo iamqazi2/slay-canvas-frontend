@@ -34,7 +34,10 @@ export class ChatApi {
     request: ChatAgentRequest
   ): Promise<ReadableStream<Uint8Array>> {
     try {
-      return await apiClient.stream("/agent/chat-agent", request);
+      return await apiClient.stream(
+        `/agent/knowledge-bases/${request.knowledge_base_name}/selective-search`,
+        { ...request, document_titles: [] }
+      );
     } catch (error) {
       console.error("Error sending message:", error);
       throw error;

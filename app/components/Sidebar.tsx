@@ -1,13 +1,17 @@
 "use client";
-import { StoreTypes, VideoItem } from "@/app/models/interfaces";
+
 import {
   setHasContent,
   setVideoCollection,
   setVideoUrl,
 } from "@/app/redux/slices/videoSlice";
+import { useUserStore } from "@/app/store/userStore";
+import { useWorkspaceStore } from "@/app/store/workspaceStore";
+import { collectionApi } from "@/app/utils/collectionApi";
 import Image from "next/image";
 import React, { useCallback, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { StoreTypes, VideoItem } from "../models/interfaces";
 import {
   FileIcon,
   FolderIcon,
@@ -38,6 +42,10 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
   const audioInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
+
+  // Workspace and user stores
+  const { currentWorkspaceId } = useWorkspaceStore();
+  const { isAuthenticated } = useUserStore();
 
   // State for managing which components are visible and their data
   const [visibleComponents, setVisibleComponents] = useState<{
@@ -72,6 +80,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
   const [isWebLinkPopup, setIsWebLinkPopup] = useState(false);
   const [isTextPopup, setIsTextPopup] = useState(false);
   const [isPlusPopup, setIsPlusPopup] = useState(false);
+  const [url, setUrl] = useState("");
   const [wikiUrl, setWikiUrl] = useState("");
   const [webLinkUrl, setWebLinkUrl] = useState("");
   const [textContent, setTextContent] = useState("");
@@ -84,6 +93,62 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
   );
 
   const { videos } = videoProvider;
+
+  // Handle folder collection creation with backend API call
+  const handleCreateFolderCollection = async () => {
+    if (!currentWorkspaceId || !isAuthenticated) {
+      console.error("No workspace selected or user not authenticated");
+      // Still create local folder for UI purposes
+      window.dispatchEvent(
+        new CustomEvent("createComponent", {
+          detail: {
+            componentType: "folderCollection",
+            data: { name: "Collection" },
+          },
+        })
+      );
+      return;
+    }
+
+    try {
+      // Create collection in backend
+      const collection = await collectionApi.createCollection(
+        currentWorkspaceId,
+        {
+          name: "New Collection",
+          description: "Collection created from dashboard",
+          is_active: true,
+        }
+      );
+
+      console.log("Created backend collection:", collection);
+
+      // Dispatch to dashboard with collection ID
+      window.dispatchEvent(
+        new CustomEvent("createComponent", {
+          detail: {
+            componentType: "folderCollection",
+            data: {
+              name: collection.name,
+              collectionId: collection.id, // Pass backend collection ID
+              backendCollection: collection,
+            },
+          },
+        })
+      );
+    } catch (error) {
+      console.error("Failed to create collection:", error);
+      // Fallback to local creation
+      window.dispatchEvent(
+        new CustomEvent("createComponent", {
+          detail: {
+            componentType: "folderCollection",
+            data: { name: "Collection" },
+          },
+        })
+      );
+    }
+  };
 
   // File input handlers
   const handleImageFileChange = (files: File[]) => {
@@ -195,8 +260,9 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     }
   };
 
-  const showWikipedia = () => {
-    setComponentData((prev) => ({ ...prev, textContent: wikiUrl.trim() }));
+  const showWikipedia = (url?: string) => {
+    const finalUrl = url || wikiUrl.trim();
+    setComponentData((prev) => ({ ...prev, textContent: finalUrl }));
     setVisibleComponents((prev) => ({ ...prev, wikipediaLink: true }));
     setIsWikipediaPopup(false);
     // Dispatch to dashboard
@@ -204,7 +270,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
       new CustomEvent("createComponent", {
         detail: {
           componentType: "wikipediaLink",
-          data: { text: wikiUrl.trim() },
+          data: { text: finalUrl },
         },
       })
     );
@@ -270,7 +336,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     let parsed: URL | null = null;
     try {
       parsed = new URL(inputUrl);
-    } catch {
+    } catch (e) {
       parsed = null;
     }
 
@@ -547,15 +613,10 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
               <FileIcon width={24} height={24} className="sm:w-8 sm:h-8" />
             </div>
 
-            {/* Folder Icon - Video Collection */}
+            {/* Folder Icon - Folder Collection */}
             <div
               className="cursor-pointer hover:opacity-70 transition-opacity"
-              onClick={() => {
-                setVisibleComponents((prev) => ({
-                  ...prev,
-                  videoCollection: true,
-                }));
-              }}
+              onClick={handleCreateFolderCollection}
             >
               <FolderIcon width={24} height={24} className="sm:w-8 sm:h-8" />
             </div>
@@ -617,12 +678,17 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
           const video = createVideoFromUrl(trimmed);
           addVideo(video);
           setIsVideoPopup(false);
-          // Dispatch to dashboard with the final (possibly embed) url - use videoSocial for social media
+          // Dispatch to dashboard with the correct component type for social media
           window.dispatchEvent(
             new CustomEvent("createComponent", {
               detail: {
                 componentType: "videoSocial", // Changed from videoCollection to videoSocial
-                data: { text: video.url, type: video.type },
+                data: {
+                  url: video.url, // Use url instead of text
+                  text: video.url, // Keep text as fallback
+                  title: video.title,
+                  type: video.type,
+                },
               },
             })
           );
@@ -641,7 +707,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
         onClose={() => setIsWikipediaPopup(false)}
         onSubmit={(submittedUrl) => {
           setWikiUrl(submittedUrl);
-          showWikipedia();
+          showWikipedia(submittedUrl);
         }}
       />
 
