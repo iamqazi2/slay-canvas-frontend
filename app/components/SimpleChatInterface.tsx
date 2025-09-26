@@ -1,5 +1,7 @@
 "use client";
 import {
+  Asset,
+  Collection,
   Conversation,
   KnowledgeBase,
   WorkspaceDetailed,
@@ -8,7 +10,7 @@ import { chatApi } from "@/app/utils/chatApi";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Handle, Position } from "reactflow";
 
 interface Message {
@@ -43,7 +45,9 @@ export default function SimpleChatInterface({
   initialConversationId,
 }: SimpleChatInterfaceProps) {
   const [selectedChat, setSelectedChat] = useState(-1); // -1 means no selection
-  const [selectedFilter, setSelectedFilter] = useState("All Attached Nodes");
+  const [selectedFilters, setSelectedFilters] = useState<Set<string>>(
+    new Set(["All Attached Nodes"])
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -55,10 +59,134 @@ export default function SimpleChatInterface({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  // Helper functions for dynamic filter generation
+  const getAvailableAssets = useCallback((): Asset[] => {
+    return workspace?.assets?.filter((asset) => asset.is_active) || [];
+  }, [workspace?.assets]);
+
+  const getAvailableCollections = useCallback((): Collection[] => {
+    return (
+      workspace?.collections?.filter((collection) => collection.is_active) || []
+    );
+  }, [workspace?.collections]);
+
+  const generateFilterOptions = useCallback((): string[] => {
+    const options = ["All Attached Nodes"];
+
+    // Add collections first
+    const collections = getAvailableCollections();
+    collections.forEach((collection) => {
+      options.push(collection.name);
+    });
+
+    // Add individual assets that are not in any collection
+    const assets = getAvailableAssets();
+    const assetsWithoutCollection = assets.filter(
+      (asset) => !asset.collection_id
+    );
+    assetsWithoutCollection.forEach((asset) => {
+      options.push(asset.title);
+    });
+
+    return options;
+  }, [getAvailableAssets, getAvailableCollections]);
+
+  const getAssetsForFilter = useCallback(
+    (filterName: string): string[] => {
+      if (filterName === "All Attached Nodes") {
+        // Return all asset titles
+        return getAvailableAssets().map((asset) => asset.title);
+      }
+
+      // Check if it's a collection name
+      const collection = getAvailableCollections().find(
+        (col) => col.name === filterName
+      );
+      if (collection) {
+        // Return all assets in this collection
+        return getAvailableAssets()
+          .filter((asset) => asset.collection_id === collection.id)
+          .map((asset) => asset.title);
+      }
+
+      // It's an individual asset name
+      return [filterName];
+    },
+    [getAvailableAssets, getAvailableCollections]
+  );
+
+  const getAssetsForSelectedFilters = useCallback((): string[] => {
+    const allAssets = new Set<string>();
+
+    // If "All Attached Nodes" is selected, return all assets
+    if (selectedFilters.has("All Attached Nodes")) {
+      return getAvailableAssets().map((asset) => asset.title);
+    }
+
+    // Otherwise, combine assets from all selected filters
+    selectedFilters.forEach((filter) => {
+      const assets = getAssetsForFilter(filter);
+      assets.forEach((asset) => allAssets.add(asset));
+    });
+
+    return Array.from(allAssets);
+  }, [selectedFilters, getAssetsForFilter, getAvailableAssets]);
+
+  const toggleFilter = useCallback((filterName: string) => {
+    setSelectedFilters((prev) => {
+      const newFilters = new Set(prev);
+
+      if (filterName === "All Attached Nodes") {
+        // If toggling "All Attached Nodes", clear everything else
+        if (newFilters.has(filterName)) {
+          newFilters.delete(filterName);
+        } else {
+          return new Set(["All Attached Nodes"]);
+        }
+      } else {
+        // Remove "All Attached Nodes" if selecting individual items
+        newFilters.delete("All Attached Nodes");
+
+        if (newFilters.has(filterName)) {
+          newFilters.delete(filterName);
+        } else {
+          newFilters.add(filterName);
+        }
+
+        // If no filters left, default back to "All Attached Nodes"
+        if (newFilters.size === 0) {
+          newFilters.add("All Attached Nodes");
+        }
+      }
+
+      return newFilters;
+    });
+  }, []);
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Update selected filters if any are no longer available
+  useEffect(() => {
+    const availableFilters = generateFilterOptions();
+    setSelectedFilters((prev) => {
+      const validFilters = new Set<string>();
+      prev.forEach((filter) => {
+        if (availableFilters.includes(filter)) {
+          validFilters.add(filter);
+        }
+      });
+
+      // If no valid filters left, default to "All Attached Nodes"
+      if (validFilters.size === 0) {
+        validFilters.add("All Attached Nodes");
+      }
+
+      return validFilters;
+    });
+  }, [generateFilterOptions]);
 
   // Load existing conversation if we have conversations from knowledgeBase
   useEffect(() => {
@@ -170,10 +298,14 @@ export default function SimpleChatInterface({
     setMessage("");
     setIsStreaming(true);
     try {
+      // Get the assets to include based on selected filters
+      const selectedAssets = getAssetsForSelectedFilters();
+
       const stream = await chatApi.sendMessage({
         message: messageText.trim(),
         knowledge_base_name: knowledgeBase.name,
         conversation_id: conversationId,
+        document_titles: selectedAssets,
       });
 
       // Start streaming response
@@ -563,14 +695,7 @@ export default function SimpleChatInterface({
     created_at: conv.created_at,
   }));
 
-  const filterTags = [
-    "All Attached Nodes",
-    "Dhruv's Video Collection",
-    "Wikipedia",
-    "Recording",
-    "Mind map",
-    "Research",
-  ];
+  const filterTags = generateFilterOptions();
 
   const handleSendMessage = () => {
     if (message.trim()) {
@@ -739,20 +864,6 @@ export default function SimpleChatInterface({
         <div className="flex-1 min-w-[300px] flex flex-col">
           {/* Filter Tags */}
           <div className="px-6 py-4 border-b border-gray-200 bg-white">
-            {/* Connected Assets Section */}
-            {attachedAssets && attachedAssets.length > 0 && (
-              <div className="mb-4">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">
-                  Connected Assets ({attachedAssets.length})
-                </h3>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {attachedAssets.map((asset) => (
-                    <div key={asset.id}>{renderAssetPreview(asset)}</div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <div
               className="flex gap-2 w-full overflow-x-auto"
               style={{ scrollbarWidth: "none" }}
@@ -761,11 +872,11 @@ export default function SimpleChatInterface({
                 <button
                   key={index}
                   className={`px-4 py-2 min-w-fit rounded-full text-sm font-medium transition-colors ${
-                    selectedFilter === tag
+                    selectedFilters.has(tag)
                       ? "bg-[#4596FF] text-white"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
-                  onClick={() => setSelectedFilter(tag)}
+                  onClick={() => toggleFilter(tag)}
                 >
                   {tag}
                 </button>
@@ -801,7 +912,9 @@ export default function SimpleChatInterface({
                   ))}
 
                   {isStreaming && (
-                    <div   className={`rounded-2xl px-4 py-3 bg-gray-100 text-gray-900`}>
+                    <div
+                      className={`rounded-2xl px-4 py-3 bg-gray-100 text-gray-900`}
+                    >
                       <Loader2 className="animate-spin text-gray-500" />
                     </div>
                   )}
