@@ -1,5 +1,6 @@
 export interface StoreTypes {
   videCollectionSlice: VideoCollectTypes;
+  loadingSlice: LoadingTypes;
 }
 
 export interface VideoCollectTypes {
@@ -18,4 +19,9 @@ export interface VideoItem {
   duration?: string;
   author?: string;
   platform?: string;
+}
+
+export interface LoadingTypes {
+  isLoading: boolean;
+  count: number;
 }

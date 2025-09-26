@@ -30,6 +30,8 @@ import {
 import AudioPlayer from "../components/AudioPlayer";
 import FolderCollection from "../components/FolderCollection";
 import ChatNav from "../components/New-Navbar";
+import DeleteWorkspaceModal from "../components/modals/DeleteWorkspaceModal";
+import EditWorkspaceModal from "../components/modals/EditWorkspaceModal";
 import { useUserStore } from "../store/userStore";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import {
@@ -45,6 +47,7 @@ import {
   isBackendAsset,
 } from "../utils/assetUtils";
 import { collectionApi } from "../utils/collectionApi";
+import { DeleteIcon, EditIcon } from "../components/icons";
 
 interface AssetItem {
   id: string;
@@ -337,6 +340,8 @@ export default function Home() {
     error: workspaceError,
     fetchWorkspaces,
     createWorkspace,
+    updateWorkspace,
+    deleteWorkspace,
     switchWorkspace,
     clearError,
   } = useWorkspaceStore();
@@ -359,6 +364,14 @@ export default function Home() {
     useState<boolean>(false);
   // const [currentWorkspaceId, setCurrentWorkspaceId] =
   //   useState<string>("default");
+
+  // Modal states
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [selectedWorkspace, setSelectedWorkspace] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
 
   // Load workspaces on component mount
   useEffect(() => {
@@ -524,6 +537,45 @@ export default function Home() {
     if (newWorkspace) {
       // Switch to the new workspace
       switchWorkspace(newWorkspace.id);
+    }
+  };
+
+  // Modal handlers
+  const handleEditWorkspace = (workspace: { id: number; name: string }) => {
+    setSelectedWorkspace(workspace);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteWorkspace = (workspace: { id: number; name: string }) => {
+    setSelectedWorkspace(workspace);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmEdit = async (newName: string) => {
+    if (!selectedWorkspace) return;
+
+    const success = await updateWorkspace(selectedWorkspace.id, {
+      name: newName,
+    });
+
+    if (success) {
+      setIsEditModalOpen(false);
+      setSelectedWorkspace(null);
+      // Refresh workspaces list
+      fetchWorkspaces();
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedWorkspace) return;
+
+    const success = await deleteWorkspace(selectedWorkspace.id);
+
+    if (success) {
+      setIsDeleteModalOpen(false);
+      setSelectedWorkspace(null);
+      // Refresh workspaces list
+      fetchWorkspaces();
     }
   };
 
@@ -1448,37 +1500,52 @@ export default function Home() {
                 workspaces.map((ws, index) => (
                   <div
                     key={ws.id}
-                    onClick={() => switchWorkspace(ws.id)}
                     className={`relative p-4 rounded-xl cursor-pointer transition-all duration-200 group ${
                       ws.id === currentWorkspaceId
                         ? "bg-gradient-to-r from-[#8E5EFF]/10 to-[#4596FF]/10 border-2 border-[#8E5EFF] shadow-lg"
                         : "bg-gray-50 hover:bg-gray-100 border-2 border-transparent hover:border-gray-200 shadow-sm hover:shadow-md"
                     }`}
                   >
-                    {/* Workspace Icon */}
+                    {/* Workspace Icon and Content */}
                     <div className="flex items-center space-x-4">
                       <div
-                        className={`w-12 h-12 rounded-lg flex items-center justify-center shadow-md ${
-                          ws.id === currentWorkspaceId
-                            ? "bg-gradient-to-r from-[#8E5EFF] to-[#4596FF]"
-                            : "bg-gradient-to-r from-[#8E5EFF]/70 to-[#4596FF]/70 group-hover:from-[#8E5EFF] group-hover:to-[#4596FF]"
-                        } transition-all duration-200`}
+                        className="flex-1"
+                        onClick={() => switchWorkspace(ws.id)}
                       >
-                        <span className="text-white font-bold text-lg">
-                          {index + 1}
-                        </span>
-                      </div>
-
-                      <div className="flex-1">
                         <h4
-                          className={`font-semibold ${
+                          className={`font-semibold truncate ${
                             ws.id === currentWorkspaceId
                               ? "text-gray-800"
                               : "text-gray-700 group-hover:text-gray-800"
                           } transition-colors duration-200`}
+                          title={ws.name}
                         >
                           {ws.name}
                         </h4>
+                      </div>
+
+                      {/* Action Icons */}
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditWorkspace({ id: ws.id, name: ws.name });
+                          }}
+                          className="p-1 hover:bg-gray-200 rounded transition-colors"
+                          title="Edit workspace"
+                        >
+                          <EditIcon size={16} color="#6B7280" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteWorkspace({ id: ws.id, name: ws.name });
+                          }}
+                          className="p-1 hover:bg-red-100 rounded transition-colors"
+                          title="Delete workspace"
+                        >
+                          <DeleteIcon size={16} color="#EF4444" />
+                        </button>
                       </div>
 
                       {/* Active Indicator */}
@@ -1526,6 +1593,29 @@ export default function Home() {
             <MiniMap />
           </ReactFlow>
         </div>
+
+        {/* Workspace Modals */}
+        <EditWorkspaceModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedWorkspace(null);
+          }}
+          onSubmit={handleConfirmEdit}
+          workspaceName={selectedWorkspace?.name || ""}
+          isLoading={workspaceLoading}
+        />
+
+        <DeleteWorkspaceModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => {
+            setIsDeleteModalOpen(false);
+            setSelectedWorkspace(null);
+          }}
+          onConfirm={handleConfirmDelete}
+          workspaceName={selectedWorkspace?.name || ""}
+          isLoading={workspaceLoading}
+        />
       </div>
     </div>
   );

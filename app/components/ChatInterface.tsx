@@ -33,10 +33,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
 
   // Logo Component
   const LogoIcon: React.FC<{ size?: number }> = ({ size = 24 }) => (
-    <div className="flex items-center justify-center rounded-full bg-white" style={{ width: size, height: size }}>
-      <svg width={size * 0.6} height={size * 0.6} viewBox="0 0 46 46" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12.8048 29.1955L12.6621 28.9615V33.5877V28.963L12.8048 29.1955Z" fill="#1E1E1E" />
-        <path d="M16.9337 33.3713L16.9199 33.3636L16.9337 33.3713Z" fill="#1E1E1E" />
+    <div
+      className="flex items-center justify-center rounded-full bg-white"
+      style={{ width: size, height: size }}
+    >
+      <svg
+        width={size * 0.6}
+        height={size * 0.6}
+        viewBox="0 0 46 46"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M12.8048 29.1955L12.6621 28.9615V33.5877V28.963L12.8048 29.1955Z"
+          fill="#1E1E1E"
+        />
+        <path
+          d="M16.9337 33.3713L16.9199 33.3636L16.9337 33.3713Z"
+          fill="#1E1E1E"
+        />
         <path
           d="M16.9316 33.3707L16.9202 33.3636L16.8974 33.3493C15.2312 32.2986 13.8306 30.877 12.8048 29.1954L12.6621 28.9629V33.5876H16.9316V33.3707Z"
           fill="#1E1E1E"
@@ -55,7 +70,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
 
   // Search Icon
   const SearchIcon: React.FC = () => (
-    <svg width="16" height="16" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 14 14"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
         d="M12.4993 12.5L8.88824 8.88885M1.66602 5.87959C1.66602 6.43284 1.77499 6.98068 1.98671 7.49182C2.19843 8.00296 2.50875 8.46739 2.89996 8.8586C3.29117 9.24981 3.75561 9.56014 4.26675 9.77186C4.77789 9.98358 5.32572 10.0926 5.87898 10.0926C6.43223 10.0926 6.98007 9.98358 7.49121 9.77186C8.00235 9.56014 8.46678 9.24981 8.85799 8.8586C9.2492 8.46739 9.55953 8.00296 9.77125 7.49182C9.98297 6.98068 10.0919 6.43284 10.0919 5.87959C10.0919 5.32633 9.98297 4.7785 9.77125 4.26736C9.55953 3.75622 9.2492 3.29178 8.85799 2.90057C8.46678 2.50936 8.00235 2.19904 7.49121 1.98732C6.98007 1.7756 6.43223 1.66663 5.87898 1.66663C5.32572 1.66663 4.77789 1.7756 4.26675 1.98732C3.75561 2.19904 3.29117 2.50936 2.89996 2.90057C2.50875 3.29178 2.19843 3.75622 1.98671 4.26736C1.77499 4.7785 1.66602 5.32633 1.66602 5.87959Z"
         stroke="#4596FF"
@@ -68,7 +89,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
 
   // Chat Icon
   const ChatIcon: React.FC<{ fill: string }> = ({ fill }) => (
-    <svg width="16" height="16" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 14 14"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
         d="M12.9737 0.666504H1.69167C1.41966 0.666504 1.15878 0.776251 0.966437 0.971601C0.774092 1.16695 0.666034 1.4319 0.666034 1.70817V12.1248C0.664851 12.3235 0.720179 12.5182 0.825367 12.6857C0.930555 12.8532 1.08113 12.9862 1.25898 13.0688C1.39451 13.1329 1.54217 13.1663 1.69167 13.1665C1.93244 13.1659 2.1652 13.0787 2.34872 12.9204L2.35449 12.9159L4.44808 11.0832H12.9737C13.2457 11.0832 13.5066 10.9734 13.6989 10.7781C13.8913 10.5827 13.9993 10.3178 13.9993 10.0415V1.70817C13.9993 1.4319 13.8913 1.16695 13.6989 0.971601C13.5066 0.776251 13.2457 0.666504 12.9737 0.666504ZM12.9737 10.0415H4.25577C4.13264 10.0416 4.01364 10.0866 3.92052 10.1685L1.69167 12.1248V1.70817H12.9737V10.0415Z"
         fill={fill}
@@ -78,7 +105,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
 
   // More Options Icon
   const MoreIcon: React.FC<{ fill: string }> = ({ fill }) => (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <circle cx="8" cy="2" r="1.5" fill={fill} />
       <circle cx="8" cy="8" r="1.5" fill={fill} />
       <circle cx="8" cy="14" r="1.5" fill={fill} />
@@ -87,7 +120,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
 
   // Attachment Icon
   const AttachmentIcon: React.FC = () => (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 20 20"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
         d="M18.5 9.5L10.5 17.5C9.11929 18.8807 6.88071 18.8807 5.5 17.5C4.11929 16.1193 4.11929 13.8807 5.5 12.5L13.5 4.5C14.3284 3.67157 15.6716 3.67157 16.5 4.5C17.3284 5.32843 17.3284 6.67157 16.5 7.5L8.5 15.5"
         stroke="#fff"
@@ -100,7 +139,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
 
   // Microphone Icon
   const MicrophoneIcon: React.FC = () => (
-    <svg width="17" height="25" viewBox="0 0 17 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width="17"
+      height="25"
+      viewBox="0 0 17 25"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
         d="M8.33333 15.6251C10.7045 15.6251 12.6263 13.5269 12.6263 10.9376V4.68762C12.6263 2.09834 10.7045 0.00012207 8.33333 0.00012207C5.96212 0.00012207 4.0404 2.09834 4.0404 4.68762V10.9376C4.0404 13.5269 5.96212 15.6251 8.33333 15.6251ZM16.6667 10.8818C16.6667 10.7591 16.5758 10.6586 16.4646 10.6586H14.9495C14.8384 10.6586 14.7475 10.7591 14.7475 10.8818C14.7475 14.7964 11.8763 17.9689 8.33333 17.9689C4.7904 17.9689 1.91919 14.7964 1.91919 10.8818C1.91919 10.7591 1.82828 10.6586 1.71717 10.6586H0.20202C0.0909091 10.6586 0 10.7591 0 10.8818C0 15.5888 3.19697 19.4728 7.32323 20.0224V22.8796H3.65404C3.30808 22.8796 3.0303 23.2786 3.0303 23.7724V24.7769C3.0303 24.8997 3.10101 25.0001 3.18687 25.0001H13.4798C13.5657 25.0001 13.6364 24.8997 13.6364 24.7769V23.7724C13.6364 23.2786 13.3586 22.8796 13.0126 22.8796H9.24242V20.0364C13.4167 19.5342 16.6667 15.6279 16.6667 10.8818Z"
         fill="#1E1E1E"
@@ -110,7 +155,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
 
   // Send Icon
   const SendIcon: React.FC = () => (
-    <svg width="24" height="20" viewBox="0 0 24 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width="24"
+      height="20"
+      viewBox="0 0 24 20"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
         d="M12.7585 1.23588C12.6327 1.36303 12.5328 1.51412 12.4647 1.68048C12.3966 1.84684 12.3615 2.0252 12.3615 2.20533C12.3615 2.38547 12.3966 2.56382 12.4647 2.73018C12.5328 2.89655 12.6327 3.04764 12.7585 3.17479L18.55 9.04738L2.01575 9.04738C1.65778 9.04738 1.31447 9.19158 1.06134 9.44825C0.80822 9.70492 0.666016 10.053 0.666016 10.416C0.666016 10.779 0.80822 11.1271 1.06134 11.3838C1.31447 11.6405 1.65778 11.7847 2.01575 11.7847L18.55 11.7847L12.7585 17.6595C12.5049 17.9167 12.3625 18.2654 12.3625 18.629C12.3625 18.9926 12.5049 19.3413 12.7585 19.5984C13.0121 19.8556 13.356 20 13.7146 20C14.0732 20 14.4171 19.8556 14.6706 19.5984L22.769 11.3866C22.8949 11.2595 22.9947 11.1084 23.0628 10.942C23.1309 10.7757 23.166 10.5973 23.166 10.4172C23.166 10.237 23.1309 10.0587 23.0628 9.89231C22.9947 9.72595 22.8949 9.57486 22.769 9.44771L14.6706 1.23588C14.5452 1.10829 14.3962 1.00705 14.2322 0.937971C14.0681 0.868895 13.8922 0.833334 13.7146 0.833334C13.5369 0.833334 13.361 0.868895 13.197 0.937971C13.0329 1.00705 12.8839 1.10829 12.7585 1.23588Z"
         fill="white"
@@ -120,7 +171,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
 
   // Maximize Icon
   const MaximizeIcon: React.FC = () => (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
         d="M3 3H7M3 3V7M3 3L7 7M13 3H9M13 3V7M13 3L9 7M3 13H7M3 13V9M3 13L7 9M13 13H9M13 13V9M13 13L9 9"
         stroke="#6B7280"
@@ -246,13 +303,27 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
     const isUser = message.sender === "user";
 
     return (
-      <div className={`flex ${isUser ? "justify-end items-end" : "justify-start"} mb-4`}>
+      <div
+        className={`flex ${
+          isUser ? "justify-end items-end" : "justify-start"
+        } mb-4`}
+      >
         <div className={`max-w-[70%] ${isUser ? "order-2" : "order-1"}`}>
-          <div className={`rounded-md px-4 py-3 text-[#1E1E1E] ${isUser ? "bg-[#4596FF1A]" : "bg-white"}`}>
+          <div
+            className={`rounded-md px-4 py-3 text-[#1E1E1E] ${
+              isUser ? "bg-[#4596FF1A]" : "bg-white"
+            }`}
+          >
             {message.type === "attachment" && message.attachment && (
               <div className="mb-2">
                 <div className="flex items-center gap-2 p-2 bg-white/20 rounded-lg">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
                     <path
                       d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"
                       stroke="currentColor"
@@ -269,8 +340,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
                     />
                   </svg>
                   <div>
-                    <p className="text-sm font-medium">{message.attachment.name}</p>
-                    <p className="text-xs opacity-75">{formatFileSize(message.attachment.size)}</p>
+                    <p className="text-sm font-medium">
+                      {message.attachment.name}
+                    </p>
+                    <p className="text-xs opacity-75">
+                      {formatFileSize(message.attachment.size)}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -278,7 +353,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
             {message.type === "voice" && (
               <div className="mb-2">
                 <div className="flex items-center gap-2 p-2 bg-white/20 rounded-lg">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
                     <path
                       d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
                       stroke="currentColor"
@@ -319,17 +400,32 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
                     <p className="text-xs opacity-75">0:03</p>
                   </div>
                   <button className="ml-auto p-1 hover:bg-white/20 rounded">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
                       <polygon points="5,3 19,12 5,21" fill="currentColor" />
                     </svg>
                   </button>
                 </div>
               </div>
             )}
-            {message.text && <p className="text-sm whitespace-pre-wrap">{message.text}</p>}
+            {message.text && (
+              <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+            )}
           </div>
-          <p className={`text-xs text-gray-500 mt-1 ${isUser ? "text-right" : "text-left"}`}>
-            {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          <p
+            className={`text-xs text-gray-500 mt-1 ${
+              isUser ? "text-right" : "text-left"
+            }`}
+          >
+            {message.timestamp.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </p>
         </div>
         {isUser && (
@@ -338,7 +434,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
               isUser ? "bg-blue-500 order-2 ml-2" : "bg-gray-300 order-2 mr-2"
             }`}
           >
-            {isUser ? <span className="text-white text-xs font-medium">U</span> : <LogoIcon size={16} />}
+            {isUser ? (
+              <span className="text-white text-xs font-medium">U</span>
+            ) : (
+              <LogoIcon size={16} />
+            )}
           </div>
         )}
       </div>
@@ -354,14 +454,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <LogoIcon size={32} />
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                 <MoreIcon fill={`#1E1E1E`} />
-              </button>
+              </button> */}
             </div>
           </div>
 
           {/* Search Bar */}
-          <div className="p-4">
+          {/* <div className="p-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <SearchIcon />
@@ -374,13 +474,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
                 className="w-full pl-10 pr-4 py-3 border placeholder:text-[#4596FF99] border-[#4596FF] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1279FF] focus:border-transparent"
               />
             </div>
-          </div>
+          </div> */}
 
           {/* Recent Chats Section */}
           <div className="flex-1 px-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-gray-700">Recent Chats</h3>
-              <button className="text-sm text-[#1279FF] font-medium">New Chat +</button>
+              <h3 className="text-sm font-medium text-gray-700">
+                Recent Chats
+              </h3>
+              <button className="text-sm text-[#1279FF] font-medium">
+                New Chat +
+              </button>
             </div>
 
             <div className="space-y-2">
@@ -388,18 +492,28 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
                 <div
                   key={index}
                   className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
-                    selectedChat === index ? "bg-[#4596FF99] border border-blue-200" : "hover:bg-gray-50"
+                    selectedChat === index
+                      ? "bg-[#4596FF99] border border-blue-200"
+                      : "hover:bg-gray-50"
                   }`}
                   onClick={() => setSelectedChat(index)}
                 >
                   <div className="flex items-center gap-3">
-                    <ChatIcon fill={`${selectedChat === index ? "#fff" : "#1E1E1E"}`} />
-                    <span className={`text-sm truncate ${selectedChat === index ? "text-white" : "text-[#424242]"}`}>
+                    <ChatIcon
+                      fill={`${selectedChat === index ? "#fff" : "#1E1E1E"}`}
+                    />
+                    <span
+                      className={`text-sm truncate ${
+                        selectedChat === index ? "text-white" : "text-[#424242]"
+                      }`}
+                    >
                       {chat}
                     </span>
                   </div>
                   <button className="p-1 hover:bg-gray-200 rounded transition-colors">
-                    <MoreIcon fill={`${selectedChat === index ? "#fff" : "#1E1E1E"}`} />
+                    <MoreIcon
+                      fill={`${selectedChat === index ? "#fff" : "#1E1E1E"}`}
+                    />
                   </button>
                 </div>
               ))}
@@ -407,7 +521,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
           </div>
 
           {/* Bottom Section */}
-          <div className="p-4 border-t border-gray-200" onClick={() => router.push("/")}>
+          <div
+            className="p-4 border-t border-gray-200"
+            onClick={() => router.push("/")}
+          >
             <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">
               <MaximizeIcon />
               <span>Minimize the Chat</span>
@@ -424,7 +541,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
                 <button
                   key={index}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    selectedFilter === tag ? "bg-[#4596FF] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    selectedFilter === tag
+                      ? "bg-[#4596FF] text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                   onClick={() => setSelectedFilter(tag)}
                 >
@@ -443,11 +562,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
                     <LogoIcon size={80} />
                   </div>
 
-                  <h2 className="text-2xl text-center font-medium text-gray-800 mb-4">How can we assist you today?</h2>
+                  <h2 className="text-2xl text-center font-medium text-gray-800 mb-4">
+                    How can we assist you today?
+                  </h2>
 
                   <p className="text-gray-500 leading-relaxed">
-                    Get expert guidance powered by AI agents specializing in Sales, Marketing, and Negotiation. Choose
-                    the agent that suits your needs and start your conversation with ease.
+                    Get expert guidance powered by AI agents specializing in
+                    Sales, Marketing, and Negotiation. Choose the agent that
+                    suits your needs and start your conversation with ease.
                   </p>
                 </div>
               </div>
@@ -468,16 +590,30 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
             {attachedFiles.length > 0 && (
               <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">Attached Files:</span>
-                  <button onClick={() => setAttachedFiles([])} className="text-sm text-red-600 hover:text-red-800">
+                  <span className="text-sm font-medium text-gray-700">
+                    Attached Files:
+                  </span>
+                  <button
+                    onClick={() => setAttachedFiles([])}
+                    className="text-sm text-red-600 hover:text-red-800"
+                  >
                     Clear All
                   </button>
                 </div>
                 <div className="space-y-2">
                   {attachedFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-white rounded border">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 bg-white rounded border"
+                    >
                       <div className="flex items-center gap-2">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
                           <path
                             d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"
                             stroke="currentColor"
@@ -493,11 +629,24 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
                             strokeLinejoin="round"
                           />
                         </svg>
-                        <span className="text-sm text-gray-700">{file.name}</span>
-                        <span className="text-xs text-gray-500">({formatFileSize(file.size)})</span>
+                        <span className="text-sm text-gray-700">
+                          {file.name}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          ({formatFileSize(file.size)})
+                        </span>
                       </div>
-                      <button onClick={() => removeAttachment(index)} className="text-red-500 hover:text-red-700 p-1">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <button
+                        onClick={() => removeAttachment(index)}
+                        className="text-red-500 hover:text-red-700 p-1"
+                      >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
                           <path
                             d="M18 6L6 18M6 6l12 12"
                             stroke="currentColor"
@@ -546,10 +695,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
                     onClick={handleSendMessage}
                     disabled={!message.trim() && attachedFiles.length === 0}
                     className={`p-2 rounded-lg transition-colors ${
-                      message.trim() || attachedFiles.length > 0 ? "opacity-100" : "opacity-50 cursor-not-allowed"
+                      message.trim() || attachedFiles.length > 0
+                        ? "opacity-100"
+                        : "opacity-50 cursor-not-allowed"
                     }`}
                     style={{
-                      background: "linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%)",
+                      background:
+                        "linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%)",
                     }}
                   >
                     <SendIcon />

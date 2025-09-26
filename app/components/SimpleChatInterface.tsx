@@ -6,12 +6,15 @@ import {
   KnowledgeBase,
   WorkspaceDetailed,
 } from "@/app/types/workspace";
+import { apiClient } from "@/app/utils/apiClient";
 import { chatApi } from "@/app/utils/chatApi";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Handle, Position } from "reactflow";
+import ConversationLoadingSpinner from "./ConversationLoadingSpinner";
+import DeleteIcon from "./icons/DeleteIcon";
 
 interface Message {
   id: number;
@@ -56,8 +59,9 @@ export default function SimpleChatInterface({
   const [isStreaming, setIsStreaming] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
 
   // Helper functions for dynamic filter generation
   const getAvailableAssets = useCallback((): Asset[] => {
@@ -165,7 +169,10 @@ export default function SimpleChatInterface({
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop =
+        messagesContainerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   // Update selected filters if any are no longer available
@@ -710,6 +717,29 @@ export default function SimpleChatInterface({
     }
   };
 
+  // Delete knowledge base
+  const deleteKnowledgeBase = async () => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete the knowledge base "${knowledgeBase.name}"? This action cannot be undone.`
+    );
+    if (!confirmDelete) return;
+
+    try {
+      await apiClient.delete(`/agent/knowledge-bases/${knowledgeBase.name}`);
+      // Show success message
+      alert("Knowledge base deleted successfully");
+      // Navigate to dashboard and refresh to update the UI
+      router.push("/dashboard");
+      // Refresh the page to update the knowledge bases list
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    } catch (error) {
+      console.error("Failed to delete knowledge base:", error);
+      alert("Failed to delete knowledge base");
+    }
+  };
+
   // Message Component
   const MessageComponent: React.FC<{ message: Message }> = ({ message }) => {
     const isUser = message.role === "user";
@@ -718,8 +748,8 @@ export default function SimpleChatInterface({
       <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
         <div className={`max-w-[80%] ${isUser ? "order-2" : "order-1"}`}>
           <div
-            className={`rounded-2xl px-4 py-3 ${
-              isUser ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-900"
+            className={`rounded-2xl shadow-md border-[1px] border-black/10 px-4 py-3 ${
+              isUser ? "bg-[#4596FF]/20 text-black" : "bg-white text-black"
             }`}
           >
             <div className="text-sm whitespace-pre-wrap leading-relaxed">
@@ -742,53 +772,45 @@ export default function SimpleChatInterface({
 
   return (
     <div className={`flex flex-col h-full ${className}`}>
-      {/* Top Header */}
-      <div
-        className="px-4 sm:px-6 py-3 sm:py-4 text-white rounded-t-xl"
-        style={{
-          background:
-            "radial-gradient(50% 97.57% at 50% 50%, #4596FF 0%, #8E5EFF 100%)",
-        }}
-      >
-        <div className="flex items-center gap-3">
-          <LogoHeaderIcon size={22} />
-          <h1 className="text-lg sm:text-xl font-semibold">
-            Chat with {knowledgeBase.name}
-          </h1>
+      {pathname !== "/chat" && (
+        <div
+          className="px-4 sm:px-6 py-3 sm:py-4 text-white rounded-t-xl"
+          style={{
+            background:
+              "radial-gradient(50% 97.57% at 50% 50%, #4596FF 0%, #8E5EFF 100%)",
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <LogoHeaderIcon size={22} />
+              <h1 className="text-lg sm:text-xl font-semibold">
+                Chat with Slay Canvas
+              </h1>
+            </div>
+            <button
+              onClick={deleteKnowledgeBase}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              title="Delete Knowledge Base"
+            >
+              <DeleteIcon size={20} color="white" />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="flex h-full">
+      <div className="flex h-full min-h-0">
         {/* Left Sidebar */}
-        <div className="w-[200px] min-w-[180px] max-w-[220px] bg-white border-r border-gray-200 flex flex-col">
+        <div className="w-[200px] min-w-[180px] max-w-[220px] bg-white border-r border-gray-200 flex flex-col min-h-0">
           {/* Top Section */}
           <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center ">
               <LogoIcon size={28} />
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <MoreIcon fill="#1E1E1E" />
-              </button>
-            </div>
-          </div>
-
-          {/* Search Bar */}
-          <div className="p-4">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <SearchIcon />
-              </div>
-              <input
-                type="text"
-                placeholder="Search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border placeholder:text-[#4596FF99] border-[#4596FF] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1279FF] focus:border-transparent text-sm"
-              />
+              <span className="text-sm"> SlayCanvas ChatBot</span>
             </div>
           </div>
 
           {/* Recent Chats Section */}
-          <div className="flex-1 px-4 overflow-y-auto">
+          <div className="flex-1 pt-4 px-4 overflow-y-auto">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xs font-medium text-gray-700">
                 Recent Chats
@@ -802,12 +824,6 @@ export default function SimpleChatInterface({
             </div>
 
             <div className="space-y-1">
-              {isLoading && (
-                <div className="text-xs text-gray-500 text-center py-2">
-                  Loading conversations...
-                </div>
-              )}
-
               {recentChats.length === 0 && !isLoading && (
                 <div className="text-xs text-gray-500 text-center py-4">
                   No conversations yet. Start a new chat!
@@ -838,30 +854,31 @@ export default function SimpleChatInterface({
                         : chat.name}
                     </span>
                   </div>
-                  <button className="p-1 hover:bg-gray-200 rounded transition-colors">
+                  {/* <button className="p-1 hover:bg-gray-200 rounded transition-colors">
                     <MoreIcon
                       fill={selectedChat === index ? "#fff" : "#1E1E1E"}
                     />
-                  </button>
+                  </button> */}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Bottom Section */}
-          <div
-            className="p-4 border-t border-gray-200"
-            onClick={() => router.push(`/chat?kb=${knowledgeBase.name}`)}
-          >
-            <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">
-              <MaximizeIcon />
-              <span>Maximize the Chat</span>
-            </button>
-          </div>
+          {pathname !== "/chat" && (
+            <div
+              className="p-4 border-t border-gray-200"
+              onClick={() => router.push(`/chat?kb=${knowledgeBase.name}`)}
+            >
+              <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">
+                <MaximizeIcon />
+                <span>Maximize the Chat</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 min-w-[300px] flex flex-col">
+        <div className="flex-1 min-w-[300px] flex flex-col min-h-0">
           {/* Filter Tags */}
           <div className="px-6 py-4 border-b border-gray-200 bg-white">
             <div
@@ -885,8 +902,15 @@ export default function SimpleChatInterface({
           </div>
 
           {/* Chat Messages Area */}
-          <div className="flex-1 overflow-y-auto bg-gradient-to-b from-white to-[#F1F5F8]">
-            {messages.length === 0 ? (
+          <div
+            ref={messagesContainerRef}
+            className="flex-1 overflow-y-auto bg-gradient-to-b from-white to-[#F1F5F8] min-h-0"
+          >
+            {isLoading ? (
+              <div className="h-full flex items-center justify-center">
+                <ConversationLoadingSpinner />
+              </div>
+            ) : messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center px-6 py-8">
                 <div className="text-center flex flex-col items-center justify-center max-w-lg">
                   <div className="mb-8">
@@ -905,21 +929,21 @@ export default function SimpleChatInterface({
                 </div>
               </div>
             ) : (
-              <div className="px-6 py-4">
-                <div className="space-y-4 pb-4">
+              <div className="px-6 py-2">
+                <div className="space-y-4 bg-gray pb-4">
                   {messages.map((message) => (
                     <MessageComponent key={message.id} message={message} />
                   ))}
 
                   {isStreaming && (
-                    <div
-                      className={`rounded-2xl px-4 py-3 bg-gray-100 text-gray-900`}
-                    >
-                      <Loader2 className="animate-spin text-gray-500" />
+                    <div className="flex items-center gap-1 justify-start">
+                      <Loader2
+                        size={10}
+                        className="animate-spin text-gray-500"
+                      />
+                      <span className="text-[10px]">Generating...</span>
                     </div>
                   )}
-
-                  <div ref={messagesEndRef} />
                 </div>
               </div>
             )}
@@ -937,6 +961,7 @@ export default function SimpleChatInterface({
                   className="w-full px-3 py-2.5 pr-16 focus:outline-none focus:border-transparent resize-none text-sm"
                   rows={1}
                   style={{ minHeight: "40px", maxHeight: "100px" }}
+                  disabled={isStreaming}
                 />
 
                 <div className="absolute right-2 bottom-1 flex items-center gap-1">
