@@ -8,7 +8,7 @@ import { chatApi } from "@/app/utils/chatApi";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Handle, Position } from "reactflow";
 
 interface Message {
@@ -22,7 +22,13 @@ interface Message {
 interface ComponentInstance {
   id: string;
   type: string;
-  data?: { file?: File; files?: File[]; text?: string };
+  data?: {
+    file?: File;
+    files?: File[];
+    text?: string;
+    title?: string;
+    collection?: string; // Collection name if asset belongs to a collection
+  };
 }
 
 interface SimpleChatInterfaceProps {
@@ -43,7 +49,6 @@ export default function SimpleChatInterface({
   initialConversationId,
 }: SimpleChatInterfaceProps) {
   const [selectedChat, setSelectedChat] = useState(-1); // -1 means no selection
-  const [selectedFilter, setSelectedFilter] = useState("All Attached Nodes");
   const [searchQuery, setSearchQuery] = useState("");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -54,6 +59,63 @@ export default function SimpleChatInterface({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  // Generate dynamic filter options based on attached assets and available assets/collections
+  const filterOptions = useMemo(() => {
+    const options = ["All Attached Nodes"];
+
+    // Group attached assets by collection
+    const assetsGroupedByCollection: { [key: string]: ComponentInstance[] } =
+      {};
+    const individualAssets: ComponentInstance[] = [];
+
+    attachedAssets.forEach((asset) => {
+      if (asset.data?.collection) {
+        if (!assetsGroupedByCollection[asset.data.collection]) {
+          assetsGroupedByCollection[asset.data.collection] = [];
+        }
+        assetsGroupedByCollection[asset.data.collection].push(asset);
+      } else {
+        individualAssets.push(asset);
+      }
+    });
+
+    // Add collection names as options
+    Object.keys(assetsGroupedByCollection).forEach((collectionName) => {
+      options.push(collectionName);
+    });
+
+    // Add individual asset names
+    individualAssets.forEach((asset) => {
+      const assetName =
+        asset.data?.title ||
+        asset.data?.file?.name ||
+        `${asset.type} ${asset.id}`;
+      options.push(assetName);
+    });
+
+    return options;
+  }, [attachedAssets]);
+  const [selectedFilters, setSelectedFilters] = useState<string[]>(
+    filterOptions.length > 0 ? [filterOptions[0]] : ["All Attached Nodes"]
+  );
+
+  // Update selectedFilters when filterOptions change
+  useEffect(() => {
+    if (filterOptions.length > 0) {
+      // Keep existing filters that are still valid, add default if none are valid
+      setSelectedFilters((prevFilters) => {
+        const validFilters = prevFilters.filter((filter) =>
+          filterOptions.includes(filter)
+        );
+        if (validFilters.length === 0) {
+          return [filterOptions[0]];
+        } else {
+          return validFilters;
+        }
+      });
+    }
+  }, [filterOptions]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -169,11 +231,16 @@ export default function SimpleChatInterface({
     setMessages((prev) => [...prev, userMessage]);
     setMessage("");
     setIsStreaming(true);
+
+    // Get document titles for the selected filters
+    const documentTitles = getDocumentTitlesForFilters(selectedFilters);
+
     try {
       const stream = await chatApi.sendMessage({
         message: messageText.trim(),
         knowledge_base_name: knowledgeBase.name,
         conversation_id: conversationId,
+        document_titles: documentTitles,
       });
 
       // Start streaming response
@@ -563,14 +630,82 @@ export default function SimpleChatInterface({
     created_at: conv.created_at,
   }));
 
-  const filterTags = [
-    "All Attached Nodes",
-    "Dhruv's Video Collection",
-    "Wikipedia",
-    "Recording",
-    "Mind map",
-    "Research",
-  ];
+  // Get document titles for the selected filters
+  const getDocumentTitlesForFilters = (filterNames: string[]): string[] => {
+    const allTitles = new Set<string>(); // Use Set to avoid duplicates
+
+    filterNames.forEach((filterName) => {
+      if (filterName === "All Attached Nodes") {
+        // Add all asset titles/names
+        attachedAssets.forEach((asset) => {
+          const title =
+            asset.data?.title ||
+            asset.data?.file?.name ||
+            `${asset.type}_${asset.id}`;
+          allTitles.add(title);
+        });
+        return;
+      }
+
+      // Check if it's a collection name
+      const collectionAssets = attachedAssets.filter(
+        (asset) => asset.data?.collection === filterName
+      );
+      if (collectionAssets.length > 0) {
+        collectionAssets.forEach((asset) => {
+          const title =
+            asset.data?.title ||
+            asset.data?.file?.name ||
+            `${asset.type}_${asset.id}`;
+          allTitles.add(title);
+        });
+        return;
+      }
+
+      // It's an individual asset name
+      const asset = attachedAssets.find((asset) => {
+        const assetName =
+          asset.data?.title ||
+          asset.data?.file?.name ||
+          `${asset.type} ${asset.id}`;
+        return assetName === filterName;
+      });
+
+      if (asset) {
+        const assetTitle =
+          asset.data?.title ||
+          asset.data?.file?.name ||
+          `${asset.type}_${asset.id}`;
+        allTitles.add(assetTitle);
+      }
+    });
+
+    return Array.from(allTitles);
+  };
+
+  // Handle filter toggle (add/remove from selection)
+  const handleFilterToggle = (filterName: string) => {
+    if (filterName === "All Attached Nodes") {
+      // If "All Attached Nodes" is clicked, make it the only selection
+      setSelectedFilters(["All Attached Nodes"]);
+      return;
+    }
+
+    setSelectedFilters((prev) => {
+      // Remove "All Attached Nodes" if it's selected and we're selecting something specific
+      const filtered = prev.filter((f) => f !== "All Attached Nodes");
+
+      if (filtered.includes(filterName)) {
+        // Remove the filter if it's already selected
+        const newFilters = filtered.filter((f) => f !== filterName);
+        // If no filters left, default to "All Attached Nodes"
+        return newFilters.length === 0 ? ["All Attached Nodes"] : newFilters;
+      } else {
+        // Add the filter to selection
+        return [...filtered, filterName];
+      }
+    });
+  };
 
   const handleSendMessage = () => {
     if (message.trim()) {
@@ -739,17 +874,14 @@ export default function SimpleChatInterface({
         <div className="flex-1 min-w-[300px] flex flex-col">
           {/* Filter Tags */}
           <div className="px-6 py-4 border-b border-gray-200 bg-white">
-            {/* Connected Assets Section */}
-            {attachedAssets && attachedAssets.length > 0 && (
+            {/* Active Assets Counter */}
+            {attachedAssets.length > 0 && (
               <div className="mb-4">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">
-                  Connected Assets ({attachedAssets.length})
-                </h3>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {attachedAssets.map((asset) => (
-                    <div key={asset.id}>{renderAssetPreview(asset)}</div>
-                  ))}
-                </div>
+                <p className="text-xs text-gray-500">
+                  {selectedFilters.includes("All Attached Nodes")
+                    ? "All attached assets are active"
+                    : `Filtering by: ${selectedFilters.join(", ")}`}
+                </p>
               </div>
             )}
 
@@ -757,17 +889,21 @@ export default function SimpleChatInterface({
               className="flex gap-2 w-full overflow-x-auto"
               style={{ scrollbarWidth: "none" }}
             >
-              {filterTags.map((tag, index) => (
+              {filterOptions.map((tag, index) => (
                 <button
                   key={index}
                   className={`px-4 py-2 min-w-fit rounded-full text-sm font-medium transition-colors ${
-                    selectedFilter === tag
+                    selectedFilters.includes(tag)
                       ? "bg-[#4596FF] text-white"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
-                  onClick={() => setSelectedFilter(tag)}
+                  onClick={() => handleFilterToggle(tag)}
                 >
                   {tag}
+                  {selectedFilters.includes(tag) &&
+                    tag !== "All Attached Nodes" && (
+                      <span className="ml-2 text-xs">✓</span>
+                    )}
                 </button>
               ))}
             </div>
@@ -801,7 +937,9 @@ export default function SimpleChatInterface({
                   ))}
 
                   {isStreaming && (
-                    <div   className={`rounded-2xl px-4 py-3 bg-gray-100 text-gray-900`}>
+                    <div
+                      className={`rounded-2xl px-4 py-3 bg-gray-100 text-gray-900`}
+                    >
                       <Loader2 className="animate-spin text-gray-500" />
                     </div>
                   )}

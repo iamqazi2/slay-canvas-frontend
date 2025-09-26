@@ -23,6 +23,7 @@ export interface ChatAgentRequest {
   message: string;
   knowledge_base_name: string;
   conversation_id?: number | null;
+  document_titles?: string[];
 }
 
 export class ChatApi {
@@ -36,7 +37,7 @@ export class ChatApi {
     try {
       return await apiClient.stream(
         `/agent/knowledge-bases/${request.knowledge_base_name}/selective-search`,
-        { ...request, document_titles: [] }
+        { ...request, document_titles: request.document_titles || [] }
       );
     } catch (error) {
       console.error("Error sending message:", error);

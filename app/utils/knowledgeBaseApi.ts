@@ -3,7 +3,7 @@
 import { apiClient } from "./apiClient";
 
 export interface CreateKnowledgeBaseRequest {
-  name: string;
+  name?: string;
   description?: string;
   project_name: string;
   chunk_size?: number;

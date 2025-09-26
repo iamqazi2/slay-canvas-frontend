@@ -33,6 +33,7 @@ import ChatNav from "../components/New-Navbar";
 import { useUserStore } from "../store/userStore";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import {
+  Asset,
   Collection,
   KnowledgeBase,
   WorkspaceDetailed,
@@ -73,6 +74,7 @@ interface ComponentInstance {
     name?: string;
     assets?: AssetItem[];
     collectionId?: number;
+    collection?: string; // Collection name if asset belongs to a collection
   };
   name?: string;
   assets?: AssetItem[];
@@ -196,18 +198,6 @@ const renderComponent = (instance: ComponentInstance) => {
 
 // Custom Node Components
 const AssetNode = ({ data }: { data: ComponentInstance }) => {
-  const handleDragStart = (e: React.DragEvent) => {
-    // Set drag data for the asset
-    const dragData = {
-      id: data.id,
-      type: data.type,
-      title: getAssetTitle(data),
-      data: data.data,
-    };
-    e.dataTransfer.setData("application/json", JSON.stringify(dragData));
-    e.dataTransfer.effectAllowed = "copy";
-  };
-
   const getAssetTitle = (instance: ComponentInstance): string => {
     switch (instance.type) {
       case "imageCollection":
@@ -227,6 +217,18 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
       default:
         return "Asset";
     }
+  };
+
+  const handleDragStart = (e: React.DragEvent) => {
+    // Set drag data for the asset
+    const dragData = {
+      id: data.id,
+      type: data.type,
+      title: getAssetTitle(data),
+      data: data.data,
+    };
+    e.dataTransfer.setData("application/json", JSON.stringify(dragData));
+    e.dataTransfer.effectAllowed = "copy";
   };
 
   return (
@@ -603,13 +605,122 @@ export default function Home() {
                     console.log(
                       `Linked collection ${collectionId} to knowledge base ${kbId}`
                     );
+
+                    // Refresh workspace to update attached assets
+                    switchWorkspace(currentWorkspaceId);
+
+                    // Add all assets in this collection to attachedAssets
+                    const collectionAssets = nodeData.data?.assets || [];
+                    const collectionName =
+                      nodeData.data?.name ||
+                      nodeData.data?.title ||
+                      "Collection";
+
+                    setAttachedAssets((prev) => {
+                      const newAssets = collectionAssets
+                        .map((assetItem: AssetItem) => {
+                          // Convert AssetItem to ComponentInstance format
+                          const enrichedAsset: ComponentInstance = {
+                            id: assetItem.id,
+                            type: assetItem.type,
+                            data: {
+                              ...assetItem.data,
+                              title: assetItem.title,
+                              collection: collectionName,
+                            },
+                          };
+                          return enrichedAsset;
+                        })
+                        .filter((asset: ComponentInstance) => {
+                          // Only add if not already exists
+                          return !prev.find((a) => a.id === asset.id);
+                        });
+
+                      return [...prev, ...newAssets];
+                    });
                   }
                 } else {
                   // Handle individual asset linking
                   setAttachedAssets((prev) => {
                     const exists = prev.find((a) => a.id === nodeData.id);
                     if (!exists) {
-                      return [...prev, nodeData];
+                      // Helper functions inline to avoid dependency issues
+                      const getAssetTitleFromWorkspaceInline = (
+                        assetId: string
+                      ): string | undefined => {
+                        if (!currentWorkspace?.assets) return undefined;
+                        const numericAssetId =
+                          getAssetIdFromComponentId(assetId);
+                        if (!numericAssetId) return undefined;
+                        const asset = currentWorkspace.assets.find(
+                          (a: Asset) => a.id === numericAssetId
+                        );
+                        return asset?.title;
+                      };
+
+                      const getCollectionNameForAssetInline = (
+                        assetId: string
+                      ): string | undefined => {
+                        if (
+                          !currentWorkspace?.assets ||
+                          !currentWorkspace?.collections
+                        )
+                          return undefined;
+                        const numericAssetId =
+                          getAssetIdFromComponentId(assetId);
+                        if (!numericAssetId) return undefined;
+                        const asset = currentWorkspace.assets.find(
+                          (a: Asset) => a.id === numericAssetId
+                        );
+                        if (!asset || !asset.collection_id) return undefined;
+                        const collection = currentWorkspace.collections.find(
+                          (c: Collection) => c.id === asset.collection_id
+                        );
+                        return collection?.name;
+                      };
+
+                      const getAssetTitleInline = (
+                        instance: ComponentInstance
+                      ): string => {
+                        switch (instance.type) {
+                          case "imageCollection":
+                            return "Image Collection";
+                          case "audioPlayer":
+                            return "Audio Player";
+                          case "videoCollection":
+                            return "Video Collection";
+                          case "pdfDocument":
+                            return "PDF Document";
+                          case "wikipediaLink":
+                            return "Wikipedia Link";
+                          case "text":
+                            return "Text Content";
+                          case "folderCollection":
+                            return (
+                              instance.data?.name ||
+                              instance.data?.title ||
+                              "Collection"
+                            );
+                          default:
+                            return "Asset";
+                        }
+                      };
+
+                      // Enrich asset data with collection and title information
+                      const enrichedAsset: ComponentInstance = {
+                        ...nodeData,
+                        data: {
+                          ...nodeData.data,
+                          title:
+                            getAssetTitleFromWorkspaceInline(nodeData.id) ||
+                            nodeData.data?.title ||
+                            getAssetTitleInline(nodeData),
+                          collection: getCollectionNameForAssetInline(
+                            nodeData.id
+                          ),
+                        },
+                      };
+                      return [...prev, enrichedAsset];
                     }
                     return prev;
                   });
@@ -624,6 +735,9 @@ export default function Home() {
                     console.log(
                       `Linked asset ${assetId} to knowledge base ${kbId}`
                     );
+
+                    // Refresh workspace to update attached assets
+                    switchWorkspace(currentWorkspaceId);
                   }
                 }
               } catch (error) {
@@ -634,7 +748,14 @@ export default function Home() {
         }
       }
     },
-    [nodes, setEdges, setAttachedAssets, currentWorkspaceId]
+    [
+      nodes,
+      setEdges,
+      setAttachedAssets,
+      currentWorkspaceId,
+      currentWorkspace,
+      switchWorkspace,
+    ]
   );
 
   const onNodeDragStop = useCallback(
@@ -737,6 +858,32 @@ export default function Home() {
               })
             );
 
+            // Also update nodes state to ensure UI re-renders
+            setNodes((prev) =>
+              prev.map((node) => {
+                if (node.id === folderNode.id) {
+                  const currentData = node.data as ComponentInstance;
+                  const assets = currentData.data?.assets || [];
+                  const exists = assets.find(
+                    (a) => a.id === draggedInstance.id
+                  );
+                  if (!exists) {
+                    return {
+                      ...node,
+                      data: {
+                        ...currentData,
+                        data: {
+                          ...currentData.data,
+                          assets: [...assets, assetItem],
+                        },
+                      },
+                    };
+                  }
+                }
+                return node;
+              })
+            );
+
             // Call backend API to link asset to collection
             if (currentWorkspaceId && folderInstance.data?.collectionId) {
               try {
@@ -751,6 +898,12 @@ export default function Home() {
                   console.log(
                     `Successfully linked asset ${assetId} to collection ${folderInstance.data.collectionId}`
                   );
+
+                  // Refresh workspace data to ensure UI is in sync
+                  console.log(
+                    "🔄 Refreshing workspace data after asset added to collection"
+                  );
+                  switchWorkspace(currentWorkspaceId);
                 } else {
                   console.warn(
                     "Could not extract asset ID from component ID:",
@@ -934,16 +1087,134 @@ export default function Home() {
           const existingKbNode = currentNodes.find((n) => n.id === kbNodeId);
 
           // Find assets linked to this knowledge base
-          const linkedAssets = componentInstances.filter((instance) => {
-            // Extract asset ID from component instance ID (asset-15 -> 15)
-            const assetId = getAssetIdFromComponentId(instance.id);
-            if (!assetId || !currentWorkspace?.assets) return false;
+          const linkedAssets = componentInstances
+            .filter((instance) => {
+              // Extract asset ID from component instance ID (asset-15 -> 15)
+              const assetId = getAssetIdFromComponentId(instance.id);
+              if (!assetId || !currentWorkspace?.assets) return false;
 
-            // Find the corresponding asset in workspace data
-            const workspaceAsset = currentWorkspace.assets.find(
-              (a) => a.id === assetId
+              // Find the corresponding asset in workspace data
+              const workspaceAsset = currentWorkspace.assets.find(
+                (a) => a.id === assetId
+              );
+              return workspaceAsset?.knowledge_base_id === kb.id;
+            })
+            .map((instance) => {
+              // Enrich individual assets with collection information
+              const assetId = getAssetIdFromComponentId(instance.id);
+              if (
+                assetId &&
+                currentWorkspace?.assets &&
+                currentWorkspace?.collections
+              ) {
+                const workspaceAsset = currentWorkspace.assets.find(
+                  (a) => a.id === assetId
+                );
+                if (workspaceAsset?.collection_id) {
+                  const collection = currentWorkspace.collections.find(
+                    (c) => c.id === workspaceAsset.collection_id
+                  );
+                  if (collection) {
+                    return {
+                      ...instance,
+                      data: {
+                        ...instance.data,
+                        title:
+                          workspaceAsset.title ||
+                          instance.data?.title ||
+                          instance.type,
+                        collection: collection.name,
+                      },
+                    };
+                  }
+                }
+                // For standalone assets (not in collections), ensure they have proper titles
+                if (workspaceAsset && !workspaceAsset.collection_id) {
+                  return {
+                    ...instance,
+                    data: {
+                      ...instance.data,
+                      title:
+                        workspaceAsset.title ||
+                        instance.data?.title ||
+                        instance.type,
+                      url:
+                        workspaceAsset.url ||
+                        workspaceAsset.file_path ||
+                        instance.data?.url,
+                      content: workspaceAsset.content || instance.data?.content,
+                    },
+                  };
+                }
+              }
+              return instance;
+            });
+
+          // Also add assets from collections that are linked to this KB
+          const collectionAssets: ComponentInstance[] = [];
+          if (currentWorkspace?.collections && currentWorkspace?.assets) {
+            currentWorkspace.collections.forEach((collection) => {
+              // Check if this collection is linked to the current knowledge base
+              const collectionInKB = currentWorkspace.assets.some(
+                (asset) =>
+                  asset.collection_id === collection.id &&
+                  asset.knowledge_base_id === kb.id
+              );
+
+              if (collectionInKB) {
+                // Get all assets in this collection and add them as individual items
+                const assetsInCollection = currentWorkspace.assets.filter(
+                  (asset) => asset.collection_id === collection.id
+                );
+
+                assetsInCollection.forEach((asset) => {
+                  // Convert backend asset type to component type
+                  const getComponentType = (backendType: string): string => {
+                    switch (backendType) {
+                      case "image":
+                        return "imageCollection";
+                      case "audio":
+                        return "audioPlayer";
+                      case "video":
+                      case "social":
+                        return "videoCollection";
+                      case "document":
+                        return "pdfDocument";
+                      case "wiki":
+                        return "wikipediaLink";
+                      case "text":
+                        return "text";
+                      default:
+                        return "text";
+                    }
+                  };
+
+                  // Convert workspace asset to ComponentInstance format
+                  const componentInstance: ComponentInstance = {
+                    id: `asset-${asset.id}`,
+                    type: getComponentType(asset.type),
+                    data: {
+                      title: asset.title || asset.type || "Asset",
+                      collection: collection.name,
+                      content: asset.content,
+                      url: asset.url || asset.file_path,
+                    },
+                  };
+                  collectionAssets.push(componentInstance);
+                });
+              }
+            });
+          }
+
+          // Combine individual assets and collection assets, removing duplicates
+          const allLinkedAssets = [...linkedAssets];
+          collectionAssets.forEach((collectionAsset) => {
+            const exists = allLinkedAssets.find(
+              (existing) => existing.id === collectionAsset.id
             );
-            return workspaceAsset?.knowledge_base_id === kb.id;
+            if (!exists) {
+              allLinkedAssets.push(collectionAsset);
+            }
           });
 
           return {
@@ -953,7 +1224,7 @@ export default function Home() {
               ? existingKbNode.position
               : { x: 400 + index * 300, y: 300 + index * 100 },
             data: {
-              attachedAssets: linkedAssets,
+              attachedAssets: allLinkedAssets,
               position: existingKbNode?.position || {
                 x: 400 + index * 300,
                 y: 300 + index * 100,
@@ -1327,7 +1598,13 @@ export default function Home() {
         handleUpdateComponent as EventListener
       );
     };
-  }, [setNodes, setEdges, setAttachedAssets, currentWorkspaceId]);
+  }, [
+    setNodes,
+    setEdges,
+    setAttachedAssets,
+    currentWorkspaceId,
+    switchWorkspace,
+  ]);
 
   return (
     <div className="">

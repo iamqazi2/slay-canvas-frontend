@@ -320,6 +320,13 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
     }
   }, [initialData]);
 
+  // Sync assets when initialData.assets changes (for external updates)
+  useEffect(() => {
+    if (initializedRef.current && initialData?.assets) {
+      setAssets(initialData.assets);
+    }
+  }, [initialData?.assets]);
+
   // Update component instance data when assets change
   useEffect(() => {
     if (id && inline) {
