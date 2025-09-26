@@ -54,6 +54,7 @@ class AuthenticatedFetch {
       const response = await fetch(url, {
         ...restOptions,
         headers: requestHeaders,
+        credentials: "include",
       });
 
       // Handle unauthorized responses
