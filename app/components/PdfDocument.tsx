@@ -1,6 +1,8 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { DeleteIcon, EditIcon } from "./icons";
+import { useToast } from "./ui/Toast";
+import ConfirmationModal from "./modals/ConfirmationModal";
 
 interface PdfDocumentProps {
   className?: string;
@@ -17,8 +19,11 @@ const PdfDocument: React.FC<PdfDocumentProps> = ({
   onClose,
   inline = false,
 }) => {
+  const { showToast } = useToast();
+
   // id is used for React key in parent component
   const [isDragging, setIsDragging] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [position, setPosition] = useState({ x: 77, y: 40 }); // Percentage values (70% from left, 40% from top)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [documentFile, setDocumentFile] = useState<File | null>(null);
@@ -216,7 +221,11 @@ const PdfDocument: React.FC<PdfDocumentProps> = ({
   };
 
   const handleDelete = (): void => {
-    console.log("PdfDocument handleDelete called");
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = (): void => {
+    console.log("PdfDocument handleConfirmDelete called");
     // Clean up document URL if it exists
     if (documentFile) {
       // Note: We don't need to revoke URL here since we're not using object URLs for documents
@@ -539,6 +548,17 @@ const PdfDocument: React.FC<PdfDocumentProps> = ({
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Document"
+        message="Are you sure you want to close this document? This will remove the current content."
+        confirmText="Delete"
+        confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+      />
     </div>
   );
 };

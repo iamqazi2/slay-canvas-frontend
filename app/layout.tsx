@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Urbanist } from "next/font/google";
 import AuthProvider from "./components/AuthProvider";
 import LoadingOverlay from "./components/LoadingOverlay";
+import { ToastProvider } from "./components/ui/Toast";
 import "./globals.css";
 import { StoreProvider } from "./redux/storeProvider";
 
@@ -27,8 +28,10 @@ export default function RootLayout({
       <body className={urbanist.className} style={{ scrollBehavior: "smooth" }}>
         <StoreProvider>
           <AuthProvider>
-            {children}
-            <LoadingOverlay />
+            <ToastProvider>
+              {children}
+              <LoadingOverlay />
+            </ToastProvider>
           </AuthProvider>
         </StoreProvider>
       </body>

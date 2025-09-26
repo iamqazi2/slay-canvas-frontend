@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import Modal from "../Modal";
 import TextField from "../TextField";
 import Button from "../Button";
+import { useToast } from "../ui/Toast";
 
 interface WebLinkModalProps {
   isOpen: boolean;
@@ -11,13 +12,17 @@ interface WebLinkModalProps {
 }
 
 export default function WebLinkModal({ isOpen, onClose, onSubmit }: WebLinkModalProps) {
+  const { showToast } = useToast();
   const [url, setUrl] = useState("");
 
   const handleSubmit = () => {
-    if (url && url.trim()) {
-      onSubmit(url.trim());
-      setUrl("");
+    const trimmed = url.trim();
+    if (!trimmed) {
+      showToast("Please enter a valid URL", "error");
+      return;
     }
+    onSubmit(trimmed);
+    setUrl("");
   };
 
   const handleClose = () => {
