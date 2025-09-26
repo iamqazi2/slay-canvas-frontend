@@ -38,6 +38,7 @@ const FormContent = () => {
   });
 
   const [currentView, setCurrentView] = useState<View>("login");
+  const [isVerifying, setIsVerifying] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useUserStore();
@@ -51,10 +52,12 @@ const FormContent = () => {
 
       if (error) {
         showToast(`Authentication failed: ${error}`, "error");
+        setIsVerifying(false);
         return;
       }
 
       if (accessToken) {
+        setIsVerifying(true);
         try {
           // Save the access token
           setAccessToken(accessToken);
@@ -72,6 +75,7 @@ const FormContent = () => {
         } catch (error) {
           console.error("Error fetching user data:", error);
           showToast("Failed to fetch user data", "error");
+          setIsVerifying(false);
         }
       }
     };
@@ -95,40 +99,56 @@ const FormContent = () => {
 
       {/* Centered Forms */}
       <div className="flex-1 flex items-center justify-center">
-        {currentView === "login" && (
-          <Login
-            setCurrentView={setCurrentView}
-            formData={formData}
-            setFormData={setFormData}
-          />
-        )}
-        {currentView === "signup" && (
-          <Signup
-            setCurrentView={setCurrentView}
-            formData={formData}
-            setFormData={setFormData}
-          />
-        )}
-        {currentView === "forget" && (
-          <Forget
-            setCurrentView={setCurrentView}
-            formData={formData}
-            setFormData={setFormData}
-          />
-        )}
-        {currentView === "otp" && (
-          <Authentication
-            setCurrentView={setCurrentView}
-            formData={formData}
-            setFormData={setFormData}
-          />
-        )}
-        {currentView === "reset" && (
-          <Reset
-            setCurrentView={setCurrentView}
-            formData={formData}
-            setFormData={setFormData}
-          />
+        {isVerifying ? (
+          <div className="bg-white rounded-2xl p-8 shadow-lg max-w-md w-full text-center">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-[#8e5eff]"></div>
+              <h2 className="text-xl font-semibold text-gray-800">
+                Verifying Session
+              </h2>
+              <p className="text-gray-600">
+                Please wait while we authenticate your account...
+              </p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {currentView === "login" && (
+              <Login
+                setCurrentView={setCurrentView}
+                formData={formData}
+                setFormData={setFormData}
+              />
+            )}
+            {currentView === "signup" && (
+              <Signup
+                setCurrentView={setCurrentView}
+                formData={formData}
+                setFormData={setFormData}
+              />
+            )}
+            {currentView === "forget" && (
+              <Forget
+                setCurrentView={setCurrentView}
+                formData={formData}
+                setFormData={setFormData}
+              />
+            )}
+            {currentView === "otp" && (
+              <Authentication
+                setCurrentView={setCurrentView}
+                formData={formData}
+                setFormData={setFormData}
+              />
+            )}
+            {currentView === "reset" && (
+              <Reset
+                setCurrentView={setCurrentView}
+                formData={formData}
+                setFormData={setFormData}
+              />
+            )}
+          </>
         )}
       </div>
     </div>

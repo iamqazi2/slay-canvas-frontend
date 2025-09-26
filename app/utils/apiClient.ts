@@ -1,11 +1,11 @@
 // Authenticated fetch client that automatically attaches access token
 
-import { getAccessToken, removeAccessToken } from "./cookies";
-import { store } from "@/app/redux/store";
 import {
-  incrementLoading,
   decrementLoading,
+  incrementLoading,
 } from "@/app/redux/slices/loadingSlice";
+import { store } from "@/app/redux/store";
+import { getAccessToken, removeAccessToken } from "./cookies";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8000/api";
@@ -29,6 +29,9 @@ class AuthenticatedFetch {
 
     const url = `${this.baseURL}${endpoint}`;
 
+    // Check if this is a selective-search endpoint
+    const isSelectiveSearch = endpoint.includes("/selective-search");
+
     // Prepare headers
     const requestHeaders: Record<string, string> = {
       ...(headers as Record<string, string>),
@@ -48,7 +51,10 @@ class AuthenticatedFetch {
       }
     }
 
-    store.dispatch(incrementLoading());
+    // Don't show loader for selective-search endpoints
+    if (!isSelectiveSearch) {
+      store.dispatch(incrementLoading());
+    }
 
     try {
       const response = await fetch(url, {
@@ -84,7 +90,10 @@ class AuthenticatedFetch {
       console.error(`API Error for ${endpoint}:`, error);
       throw error;
     } finally {
-      store.dispatch(decrementLoading());
+      // Don't hide loader for selective-search endpoints since we didn't show it
+      if (!isSelectiveSearch) {
+        store.dispatch(decrementLoading());
+      }
     }
   }
 
@@ -163,6 +172,9 @@ class AuthenticatedFetch {
 
     const url = `${this.baseURL}${endpoint}`;
 
+    // Check if this is a selective-search endpoint
+    const isSelectiveSearch = endpoint.includes("/selective-search");
+
     // Prepare headers
     const requestHeaders: Record<string, string> = {
       ...(headers as Record<string, string>),
@@ -190,7 +202,10 @@ class AuthenticatedFetch {
       body = JSON.stringify(data);
     }
 
-    store.dispatch(incrementLoading());
+    // Don't show loader for selective-search endpoints
+    if (!isSelectiveSearch) {
+      store.dispatch(incrementLoading());
+    }
 
     try {
       const response = await fetch(url, {
@@ -225,7 +240,10 @@ class AuthenticatedFetch {
       console.error(`API Error for ${endpoint}:`, error);
       throw error;
     } finally {
-      store.dispatch(decrementLoading());
+      // Don't hide loader for selective-search endpoints since we didn't show it
+      if (!isSelectiveSearch) {
+        store.dispatch(decrementLoading());
+      }
     }
   }
 }
