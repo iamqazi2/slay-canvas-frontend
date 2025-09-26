@@ -832,6 +832,7 @@ export default function Home() {
                     assetId,
                     folderInstance.data.collectionId
                   );
+                  switchWorkspace(currentWorkspaceId);
                   console.log(
                     `Successfully linked asset ${assetId} to collection ${folderInstance.data.collectionId}`
                   );
