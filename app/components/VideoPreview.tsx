@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
 import { VideoItem } from "@/app/models/interfaces";
 import Image from "next/image";
+import React, { useEffect, useMemo, useState } from "react";
 import DeleteIcon from "./icons/DeleteIcon";
 import EditIcon from "./icons/EditIcon";
 
 type VideoPreviewProps = {
+  id?: string;
   file?: File | null;
   src?: string | null;
   uploadedBlobUrl?: string | null;
@@ -17,6 +18,7 @@ type VideoPreviewProps = {
 };
 
 export default function VideoPreview({
+  id,
   file,
   src,
   uploadedBlobUrl,
@@ -26,6 +28,24 @@ export default function VideoPreview({
   onClose,
 }: VideoPreviewProps) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
+
+  const handleClose = () => {
+    // If we have an id, dispatch the removeComponent event for backend deletion
+    if (id) {
+      console.log(
+        "VideoPreview dispatching removeComponent event with id:",
+        id
+      );
+      const removeEvent = new CustomEvent("removeComponent", {
+        detail: { componentId: id },
+      });
+      window.dispatchEvent(removeEvent);
+    } else if (onClose) {
+      // Fallback to onClose prop if no id
+      console.log("VideoPreview using onClose callback");
+      onClose();
+    }
+  };
 
   const isDirectVideoUrl = useMemo(() => {
     const candidate = uploadedBlobUrl || src;
@@ -113,7 +133,7 @@ export default function VideoPreview({
           URL.revokeObjectURL(url);
           setObjectUrl(null);
         };
-      } catch (err) {
+      } catch {
         setObjectUrl(null);
       }
     }
@@ -294,7 +314,7 @@ export default function VideoPreview({
               <>
                 <EditIcon size={20} color="white" />
                 <button
-                  onClick={onClose}
+                  onClick={handleClose}
                   style={{
                     ...actionButtonStyle,
                     background: "rgba(255, 255, 255, 0.2)",
@@ -307,7 +327,7 @@ export default function VideoPreview({
               <>
                 <EditIcon size={20} color="white" />
                 <button
-                  onClick={onClose}
+                  onClick={handleClose}
                   style={{
                     ...actionButtonStyle,
                     background: "rgba(255, 255, 255, 0.2)",
@@ -357,7 +377,7 @@ export default function VideoPreview({
             <>
               <EditIcon size={20} color="white" />
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 style={{
                   ...actionButtonStyle,
                   background: "rgba(255, 255, 255, 0.2)",
@@ -370,7 +390,7 @@ export default function VideoPreview({
             <>
               <EditIcon size={20} color="white" />
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 style={{
                   ...actionButtonStyle,
                   background: "rgba(255, 255, 255, 0.2)",

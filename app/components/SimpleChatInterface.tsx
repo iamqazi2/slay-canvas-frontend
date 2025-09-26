@@ -1,18 +1,22 @@
 "use client";
 import {
+  Asset,
+  Collection,
   Conversation,
   KnowledgeBase,
   WorkspaceDetailed,
 } from "@/app/types/workspace";
-import { chatApi } from "@/app/utils/chatApi";
 import { apiClient } from "@/app/utils/apiClient";
+import { chatApi } from "@/app/utils/chatApi";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
-import { useRouter, usePathname } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { Handle, Position } from "reactflow";
-import DeleteIcon from "./icons/DeleteIcon";
+import remarkGfm from "remark-gfm";
 import ConversationLoadingSpinner from "./ConversationLoadingSpinner";
+import DeleteIcon from "./icons/DeleteIcon";
 
 interface Message {
   id: number;
@@ -46,7 +50,9 @@ export default function SimpleChatInterface({
   initialConversationId,
 }: SimpleChatInterfaceProps) {
   const [selectedChat, setSelectedChat] = useState(-1); // -1 means no selection
-  const [selectedFilter, setSelectedFilter] = useState("All Attached Nodes");
+  const [selectedFilters, setSelectedFilters] = useState<Set<string>>(
+    new Set(["All Attached Nodes"])
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -59,6 +65,121 @@ export default function SimpleChatInterface({
   const router = useRouter();
   const pathname = usePathname();
 
+  // Helper functions for dynamic filter generation
+  const getAvailableAssets = useCallback((): Asset[] => {
+    // Only return assets that are linked to this specific knowledge base
+    return (
+      workspace?.assets?.filter(
+        (asset) =>
+          asset.is_active && asset.knowledge_base_id === knowledgeBase.id
+      ) || []
+    );
+  }, [workspace?.assets, knowledgeBase.id]);
+
+  const getAvailableCollections = useCallback((): Collection[] => {
+    // Only return collections that are linked to this specific knowledge base
+    return (
+      workspace?.collections?.filter(
+        (collection) =>
+          collection.is_active &&
+          collection.knowledge_base_id === knowledgeBase.id
+      ) || []
+    );
+  }, [workspace?.collections, knowledgeBase.id]);
+
+  const generateFilterOptions = useCallback((): string[] => {
+    const options = ["All Attached Nodes"];
+
+    // Add collections first
+    const collections = getAvailableCollections();
+    collections.forEach((collection) => {
+      options.push(collection.name);
+    });
+
+    // Add individual assets that are not in any collection
+    const assets = getAvailableAssets();
+    const assetsWithoutCollection = assets.filter(
+      (asset) => !asset.collection_id
+    );
+    assetsWithoutCollection.forEach((asset) => {
+      options.push(asset.title);
+    });
+
+    return options;
+  }, [getAvailableAssets, getAvailableCollections]);
+
+  const getAssetsForFilter = useCallback(
+    (filterName: string): string[] => {
+      if (filterName === "All Attached Nodes") {
+        // Return all asset titles
+        return getAvailableAssets().map((asset) => asset.title);
+      }
+
+      // Check if it's a collection name
+      const collection = getAvailableCollections().find(
+        (col) => col.name === filterName
+      );
+      if (collection) {
+        // Return all assets in this collection
+        return getAvailableAssets()
+          .filter((asset) => asset.collection_id === collection.id)
+          .map((asset) => asset.title);
+      }
+
+      // It's an individual asset name
+      return [filterName];
+    },
+    [getAvailableAssets, getAvailableCollections]
+  );
+
+  const getAssetsForSelectedFilters = useCallback((): string[] => {
+    const allAssets = new Set<string>();
+
+    // If "All Attached Nodes" is selected, return all assets
+    if (selectedFilters.has("All Attached Nodes")) {
+      return getAvailableAssets().map((asset) => asset.title);
+    }
+
+    // Otherwise, combine assets from all selected filters
+    selectedFilters.forEach((filter) => {
+      const assets = getAssetsForFilter(filter);
+      assets.forEach((asset) => allAssets.add(asset));
+    });
+
+    return Array.from(allAssets);
+  }, [selectedFilters, getAssetsForFilter, getAvailableAssets]);
+
+  const toggleFilter = useCallback((filterName: string) => {
+    setSelectedFilters((prev) => {
+      const newFilters = new Set(prev);
+
+      if (filterName === "All Attached Nodes") {
+        // If toggling "All Attached Nodes", clear everything else
+        if (newFilters.has(filterName)) {
+          newFilters.delete(filterName);
+        } else {
+          return new Set(["All Attached Nodes"]);
+        }
+      } else {
+        // Remove "All Attached Nodes" if selecting individual items
+        newFilters.delete("All Attached Nodes");
+
+        if (newFilters.has(filterName)) {
+          newFilters.delete(filterName);
+        } else {
+          newFilters.add(filterName);
+        }
+
+        // If no filters left, default back to "All Attached Nodes"
+        if (newFilters.size === 0) {
+          newFilters.add("All Attached Nodes");
+        }
+      }
+
+      return newFilters;
+    });
+  }, []);
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messagesContainerRef.current) {
@@ -66,6 +187,26 @@ export default function SimpleChatInterface({
         messagesContainerRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Update selected filters if any are no longer available
+  useEffect(() => {
+    const availableFilters = generateFilterOptions();
+    setSelectedFilters((prev) => {
+      const validFilters = new Set<string>();
+      prev.forEach((filter) => {
+        if (availableFilters.includes(filter)) {
+          validFilters.add(filter);
+        }
+      });
+
+      // If no valid filters left, default to "All Attached Nodes"
+      if (validFilters.size === 0) {
+        validFilters.add("All Attached Nodes");
+      }
+
+      return validFilters;
+    });
+  }, [generateFilterOptions]);
 
   // Load existing conversation if we have conversations from knowledgeBase
   useEffect(() => {
@@ -177,10 +318,14 @@ export default function SimpleChatInterface({
     setMessage("");
     setIsStreaming(true);
     try {
+      // Get the assets to include based on selected filters
+      const selectedAssets = getAssetsForSelectedFilters();
+
       const stream = await chatApi.sendMessage({
         message: messageText.trim(),
         knowledge_base_name: knowledgeBase.name,
         conversation_id: conversationId,
+        document_titles: selectedAssets,
       });
 
       // Start streaming response
@@ -570,14 +715,7 @@ export default function SimpleChatInterface({
     created_at: conv.created_at,
   }));
 
-  const filterTags = [
-    "All Attached Nodes",
-    "Dhruv's Video Collection",
-    "Wikipedia",
-    "Recording",
-    "Mind map",
-    "Research",
-  ];
+  const filterTags = generateFilterOptions();
 
   const handleSendMessage = () => {
     if (message.trim()) {
@@ -627,17 +765,56 @@ export default function SimpleChatInterface({
               isUser ? "bg-[#4596FF]/20 text-black" : "bg-white text-black"
             }`}
           >
-            <div className="text-sm whitespace-pre-wrap leading-relaxed">
-              {message.content
-                .split("\n")
-                .map((line: string, lineIndex: number) => (
-                  <div key={lineIndex}>
-                    {line}
-                    {lineIndex < message.content.split("\n").length - 1 && (
-                      <br />
-                    )}
-                  </div>
-                ))}
+            <div className="text-sm leading-relaxed prose prose-sm max-w-none">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  // Custom styling for markdown elements
+                  p: ({ children }) => (
+                    <p className="mb-2 last:mb-0">{children}</p>
+                  ),
+                  ul: ({ children }) => (
+                    <ul className="list-disc ml-4 mb-2">{children}</ul>
+                  ),
+                  ol: ({ children }) => (
+                    <ol className="list-decimal ml-4 mb-2">{children}</ol>
+                  ),
+                  li: ({ children }) => <li className="mb-1">{children}</li>,
+                  code: ({ children, className }) => {
+                    const isInline = !className;
+                    return isInline ? (
+                      <code className="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">
+                        {children}
+                      </code>
+                    ) : (
+                      <code className="block bg-gray-100 p-2 rounded text-xs font-mono whitespace-pre overflow-x-auto">
+                        {children}
+                      </code>
+                    );
+                  },
+                  pre: ({ children }) => <pre className="mb-2">{children}</pre>,
+                  blockquote: ({ children }) => (
+                    <blockquote className="border-l-4 border-gray-300 pl-4 italic mb-2">
+                      {children}
+                    </blockquote>
+                  ),
+                  h1: ({ children }) => (
+                    <h1 className="text-lg font-semibold mb-2">{children}</h1>
+                  ),
+                  h2: ({ children }) => (
+                    <h2 className="text-base font-semibold mb-2">{children}</h2>
+                  ),
+                  h3: ({ children }) => (
+                    <h3 className="text-sm font-semibold mb-2">{children}</h3>
+                  ),
+                  strong: ({ children }) => (
+                    <strong className="font-semibold">{children}</strong>
+                  ),
+                  em: ({ children }) => <em className="italic">{children}</em>,
+                }}
+              >
+                {message.content}
+              </ReactMarkdown>
             </div>
           </div>
         </div>
@@ -764,11 +941,11 @@ export default function SimpleChatInterface({
                 <button
                   key={index}
                   className={`px-4 py-2 min-w-fit rounded-full text-sm font-medium transition-colors ${
-                    selectedFilter === tag
+                    selectedFilters.has(tag)
                       ? "bg-[#4596FF] text-white"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
-                  onClick={() => setSelectedFilter(tag)}
+                  onClick={() => toggleFilter(tag)}
                 >
                   {tag}
                 </button>

@@ -31,6 +31,7 @@ import {
 import AudioPlayer from "../components/AudioPlayer";
 import FolderCollection from "../components/FolderCollection";
 import ChatNav from "../components/New-Navbar";
+import { DeleteIcon, EditIcon } from "../components/icons";
 import DeleteWorkspaceModal from "../components/modals/DeleteWorkspaceModal";
 import EditWorkspaceModal from "../components/modals/EditWorkspaceModal";
 import { useUserStore } from "../store/userStore";
@@ -48,7 +49,6 @@ import {
   isBackendAsset,
 } from "../utils/assetUtils";
 import { collectionApi } from "../utils/collectionApi";
-import { DeleteIcon, EditIcon } from "../components/icons";
 
 interface AssetItem {
   id: string;
@@ -97,7 +97,7 @@ const renderComponent = (instance: ComponentInstance) => {
     //   />
     // );
     case "videoSocial":
-      return <VideoPreview key={id} src={data?.url || data?.text} />;
+      return <VideoPreview key={id} id={id} src={data?.url || data?.text} />;
     // return <VideoPreview key={id} file={data?.file} src={data?.text} />;
     case "audioPlayer":
       return (
@@ -372,7 +372,6 @@ export default function Home() {
   >([]);
 
   const [showChatInFlow, setShowChatInFlow] = useState<boolean>(false);
-  const [attachedAssets, setAttachedAssets] = useState<ComponentInstance[]>([]);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -545,7 +544,6 @@ export default function Home() {
       }
 
       // Reset other states when switching workspaces
-      setAttachedAssets([]);
       setShowChatInFlow(false);
     }
   }, [currentWorkspace]);
@@ -683,13 +681,13 @@ export default function Home() {
                   }
                 } else {
                   // Handle individual asset linking
-                  setAttachedAssets((prev) => {
-                    const exists = prev.find((a) => a.id === nodeData.id);
-                    if (!exists) {
-                      return [...prev, nodeData];
-                    }
-                    return prev;
-                  });
+                  // setAttachedAssets((prev) => {
+                  //   const exists = prev.find((a) => a.id === nodeData.id);
+                  //   if (!exists) {
+                  //     return [...prev, nodeData];
+                  //   }
+                  //   return prev;
+                  // });
 
                   const assetId = getAssetIdFromComponentId(nodeData.id);
                   if (assetId) {
@@ -703,6 +701,7 @@ export default function Home() {
                     );
                   }
                 }
+                switchWorkspace(currentWorkspaceId);
               } catch (error) {
                 console.error("Failed to link to knowledge base:", error);
               }
@@ -711,7 +710,7 @@ export default function Home() {
         }
       }
     },
-    [nodes, setEdges, setAttachedAssets, currentWorkspaceId]
+    [nodes, setEdges, currentWorkspaceId, switchWorkspace]
   );
 
   const onNodeDragStop = useCallback(
@@ -1058,7 +1057,7 @@ export default function Home() {
                   id: "chat-node",
                   type: "chat",
                   position: chatPosition,
-                  data: { attachedAssets, position: chatPosition },
+                  data: { attachedAssets: [], position: chatPosition },
                   style: { width: 800, height: 600 },
                 };
               })(),
@@ -1070,7 +1069,6 @@ export default function Home() {
   }, [
     componentInstances,
     showChatInFlow,
-    attachedAssets,
     knowledgeBases,
     currentWorkspace,
     setNodes,
@@ -1312,11 +1310,6 @@ export default function Home() {
         )
       );
 
-      // Remove from attachedAssets if present
-      setAttachedAssets((prev) =>
-        prev.filter((asset) => asset.id !== componentId)
-      );
-
       // Delete from backend if it's a backend asset or collection
       if (currentWorkspaceId) {
         try {
@@ -1353,6 +1346,7 @@ export default function Home() {
             if (assetId) {
               console.log("🔥 Calling deleteAsset API for asset ID:", assetId);
               await assetApi.deleteAsset(currentWorkspaceId, assetId);
+
               console.log(
                 "✅ Successfully deleted asset from backend:",
                 assetId
@@ -1408,7 +1402,7 @@ export default function Home() {
         handleUpdateComponent as EventListener
       );
     };
-  }, [setNodes, setEdges, setAttachedAssets, currentWorkspaceId]);
+  }, [setNodes, setEdges, currentWorkspaceId, switchWorkspace]);
 
   return (
     <div className="">
@@ -1526,7 +1520,7 @@ export default function Home() {
                 )}
 
               {!workspaceLoading &&
-                workspaces.map((ws, index) => (
+                workspaces.map((ws) => (
                   <div
                     key={ws.id}
                     className={`relative p-4 rounded-xl cursor-pointer transition-all duration-200 group ${

@@ -196,9 +196,9 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         const state = get();
 
         // If already current workspace, no need to fetch again
-        if (state.currentWorkspaceId === id && state.currentWorkspace) {
-          return;
-        }
+        // if (state.currentWorkspaceId === id && state.currentWorkspace) {
+        //   return;
+        // }
 
         await state.fetchWorkspaceDetails(id);
       },

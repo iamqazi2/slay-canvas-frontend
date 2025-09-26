@@ -3,7 +3,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import ChatNav from "../components/New-Navbar";
 import SimpleChatInterface from "../components/SimpleChatInterface";
-import { KnowledgeBase } from "../types/workspace";
+import { Asset, Collection, KnowledgeBase } from "../types/workspace";
 import { apiClient } from "../utils/apiClient";
 
 interface KnowledgeBaseApiResponse {
@@ -33,6 +33,8 @@ interface KnowledgeBaseApiResponse {
     created_at: string;
     updated_at: string;
   }>;
+  assets: Asset[];
+  collections: Collection[];
 }
 
 const ChatPage = () => {
@@ -42,6 +44,10 @@ const ChatPage = () => {
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBase | null>(
     null
   );
+  const [workspaceData, setWorkspaceData] = useState<{
+    assets: Asset[];
+    collections: Collection[];
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,6 +77,12 @@ const ChatPage = () => {
           created_at: kbData.created_at,
           conversations: kbData.conversations,
         };
+
+        // Store assets and collections for the chat interface
+        setWorkspaceData({
+          assets: kbData.assets || [],
+          collections: kbData.collections || [],
+        });
 
         setKnowledgeBase(transformedKB);
       } catch (err) {
@@ -120,6 +132,24 @@ const ChatPage = () => {
       <div className="h-[calc(100vh-78px)]">
         <SimpleChatInterface
           knowledgeBase={knowledgeBase}
+          workspace={
+            workspaceData
+              ? {
+                  id: knowledgeBase?.id || 0,
+                  name: knowledgeBase?.name || "",
+                  description: knowledgeBase?.description,
+                  settings: {},
+                  is_public: false,
+                  user_id: 0,
+                  created_at: knowledgeBase?.created_at || "",
+                  updated_at: knowledgeBase?.created_at || "",
+                  collaborators: [],
+                  knowledge_bases: [],
+                  assets: workspaceData.assets,
+                  collections: workspaceData.collections,
+                }
+              : undefined
+          }
           className="h-full"
           initialConversationId={
             conversationId ? parseInt(conversationId) : undefined
