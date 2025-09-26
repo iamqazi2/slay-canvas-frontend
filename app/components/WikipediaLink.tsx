@@ -198,15 +198,6 @@ const WikipediaLink: React.FC<WikipediaLinkProps> = ({
       );
   }, []);
 
-  const handleEdit = (): void => {
-    const newText = window.prompt("Enter new text content:", textContent || "");
-    if (newText && newText.trim() !== "") {
-      setTextContent(newText.trim());
-      const wikiLink = generateWikipediaLink(newText.trim());
-      setLinkUrl(wikiLink);
-    }
-  };
-
   const handleDelete = (): void => {
     setIsDeleteModalOpen(true);
   };
@@ -344,13 +335,6 @@ const WikipediaLink: React.FC<WikipediaLinkProps> = ({
 
           {/* Right side - Action buttons */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleEdit}
-              className="p-1 hover:bg-white/10 rounded transition-colors"
-              style={{ pointerEvents: "auto" }}
-            >
-              <EditIcon />
-            </button>
             <button
               onClick={handleDelete}
               className="p-1 hover:bg-white/10 rounded transition-colors"

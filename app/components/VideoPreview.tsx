@@ -312,7 +312,6 @@ export default function VideoPreview({
           <div style={actionsStyle}>
             {detectedPlatform === "direct" ? (
               <>
-                <EditIcon size={20} color="white" />
                 <button
                   onClick={handleClose}
                   style={{
@@ -325,7 +324,6 @@ export default function VideoPreview({
               </>
             ) : (
               <>
-                <EditIcon size={20} color="white" />
                 <button
                   onClick={handleClose}
                   style={{
@@ -375,7 +373,6 @@ export default function VideoPreview({
         <div style={actionsStyle}>
           {detectedPlatform === "direct" ? (
             <>
-              <EditIcon size={20} color="white" />
               <button
                 onClick={handleClose}
                 style={{
@@ -388,7 +385,6 @@ export default function VideoPreview({
             </>
           ) : (
             <>
-              <EditIcon size={20} color="white" />
               <button
                 onClick={handleClose}
                 style={{

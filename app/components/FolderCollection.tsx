@@ -482,7 +482,6 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
                 ref={nameInputRef}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                onBlur={handleNameSave}
                 onKeyPress={handleNameKeyPress}
                 className="bg-transparent text-white border-none outline-none font-medium text-[16px] leading-[100%] flex-1"
               />

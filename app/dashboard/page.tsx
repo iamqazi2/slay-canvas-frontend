@@ -259,7 +259,7 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
       style={{
         border:
           data.type === "videoCollection" || data.type === "videoSocial"
-            ? "1px solid #4596FF"
+            ? "1px solid #fff"
             : undefined,
         // borderRadius:
         //   data.type === "videoCollection" || data.type === "videoSocial"

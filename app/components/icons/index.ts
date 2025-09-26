@@ -18,4 +18,5 @@ export { default as WifiIcon } from "./WifiIcon";
 export { default as EditIcon } from "./EditIcon";
 export { default as DeleteIcon } from "./DeleteIcon";
 export { default as FacebookIcon } from "./FacebookIcon";
+export { default as LogoutIcon } from "./LogoutIcon";
 export { default as SocialMediaIcon } from "./SocialMediaIcon";
