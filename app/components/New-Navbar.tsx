@@ -11,8 +11,10 @@ import {
   DocumentIcon,
   HistoryIcon,
   BellIcon,
+  LogoutIcon,
 } from "./icons";
 import { useRouter } from "next/navigation";
+import { useUserStore } from "../store/userStore";
 import SharePanel from "./SharePanel";
 import NotificationPanel from "./NotificationPanel";
 
@@ -22,6 +24,7 @@ type ChatNavProps = {
 
 export default function ChatNav({ onWorkspaceToggle }: ChatNavProps) {
   const router = useRouter();
+  const { logout } = useUserStore();
   const [isSharePanelVisible, setIsSharePanelVisible] =
     useState<boolean>(false);
   const [isNotificationPanelVisible, setIsNotificationPanelVisible] =
@@ -41,6 +44,11 @@ export default function ChatNav({ onWorkspaceToggle }: ChatNavProps) {
 
   const handleCloseNotificationPanel = () => {
     setIsNotificationPanelVisible(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    router.push("/form");
   };
 
   return (
@@ -121,6 +129,12 @@ export default function ChatNav({ onWorkspaceToggle }: ChatNavProps) {
                 className={`cursor-pointer`}
               >
                 <BellIcon />
+              </button>
+              <button
+                onClick={handleLogout}
+                className="cursor-pointer bg-gradient-to-r from-[#8E5EFF] to-[#4596FF] hover:from-[#8E5EFF] hover:to-[#4596FF] rounded-lg p-2 transition-all duration-200 "
+              >
+                <LogoutIcon size={18} />
               </button>
             </div>
           </div>

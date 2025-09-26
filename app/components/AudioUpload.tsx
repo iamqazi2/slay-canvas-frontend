@@ -10,7 +10,7 @@ interface AudioUploadProps extends Omit<FileUploadProps, "accept"> {
 
 const AudioUpload: React.FC<AudioUploadProps> = ({
   maxDuration = 300, // 5 minutes default
-  allowedFormats = ["audio/mpeg", "audio/wav", "audio/mp3"],
+  allowedFormats = ["audio/mpeg", "audio/wav", "audio/mp3", "audio/ogg", "audio/aac", "audio/flac", "audio/webm", "audio/opus", "audio/mp4", "audio/x-m4a"],
   showWaveform = false,
   autoPlay = false,
   ...props

@@ -26,7 +26,9 @@ const TextCollection: React.FC<TextCollectionProps> = ({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [position, setPosition] = useState({ x: 77, y: 70 }); // Percentage values (70% from left, 70% from top)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [textContent, setTextContent] = useState<string>(initialData?.text || "");
+  const [textContent, setTextContent] = useState<string>(
+    initialData?.text || ""
+  );
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = React.useCallback(
@@ -164,13 +166,6 @@ const TextCollection: React.FC<TextCollectionProps> = ({
     }
   }, [initialData]);
 
-  const handleEdit = (): void => {
-    const newText = window.prompt("Enter new text content:", textContent || "");
-    if (newText && newText.trim() !== "") {
-      setTextContent(newText.trim());
-    }
-  };
-
   const handleDelete = (): void => {
     setIsDeleteModalOpen(true);
   };
@@ -285,13 +280,6 @@ const TextCollection: React.FC<TextCollectionProps> = ({
 
           {/* Right side - Action buttons */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleEdit}
-              className="p-1 hover:bg-white/10 rounded transition-colors"
-              style={{ pointerEvents: "auto" }}
-            >
-              <EditIcon />
-            </button>
             <button
               onClick={handleDelete}
               className="p-1 hover:bg-white/10 rounded transition-colors"

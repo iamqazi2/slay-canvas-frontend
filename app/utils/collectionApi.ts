@@ -56,7 +56,7 @@ export const collectionApi = {
     collectionId: number
   ): Promise<Collection> {
     return await apiClient.get<Collection>(
-      `/workspaces/${workspaceId}/collections/${collectionId}/`
+      `/workspaces/${workspaceId}/collections/${collectionId}`
     );
   },
 
@@ -67,7 +67,7 @@ export const collectionApi = {
     data: Partial<CollectionCreate>
   ): Promise<Collection> {
     return await apiClient.put<Collection>(
-      `/workspaces/${workspaceId}/collections/${collectionId}/`,
+      `/workspaces/${workspaceId}/collections/${collectionId}`,
       data
     );
   },
@@ -78,7 +78,7 @@ export const collectionApi = {
     collectionId: number
   ): Promise<void> {
     await apiClient.delete<void>(
-      `/workspaces/${workspaceId}/collections/${collectionId}/`
+      `/workspaces/${workspaceId}/collections/${collectionId}`
     );
   },
 
