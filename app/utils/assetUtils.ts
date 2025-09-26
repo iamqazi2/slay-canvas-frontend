@@ -22,7 +22,7 @@ export interface ComponentInstance {
 export function assetToComponentInstance(asset: Asset): ComponentInstance {
   // Map asset types to component types
   const typeMapping: Record<string, string> = {
-    video: "videoCollection",
+    video: "videoSocial", // Changed: video assets should use videoSocial to render like social links
     audio: "audioPlayer",
     image: "imageCollection",
     pdf: "pdfDocument",
@@ -118,6 +118,7 @@ export function componentTypeToAssetType(componentType: string): string {
   const reverseMapping: Record<string, string> = {
     videoCollection: "video",
     videoSocial: "social",
+    socialVideo: "video", // New mapping for social video file uploads
     audioPlayer: "audio",
     imageCollection: "image",
     pdfDocument: "pdf",
@@ -140,6 +141,8 @@ export function getAssetCreationStrategy(componentType: string): {
   switch (componentType) {
     case "social":
       return { endpoint: "link", assetType: "social", isFile: false };
+    case "socialVideo": // New type for social video file uploads
+      return { endpoint: "file", assetType: "video", isFile: true }; // Use video type instead of document
     case "wiki":
     case "wikipediaLink":
       return { endpoint: "link", assetType: "wiki", isFile: false };
@@ -155,7 +158,7 @@ export function getAssetCreationStrategy(componentType: string): {
       return { endpoint: "file", assetType: "audio", isFile: true };
     case "video":
     case "videoCollection":
-      return { endpoint: "file", assetType: "document", isFile: true }; // Video files use document endpoint
+      return { endpoint: "file", assetType: "video", isFile: true }; // Changed from document to video
     case "videoSocial": // New type for social media videos
       return { endpoint: "link", assetType: "social", isFile: false };
     case "document":

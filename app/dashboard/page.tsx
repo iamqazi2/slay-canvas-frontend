@@ -97,6 +97,8 @@ const renderComponent = (instance: ComponentInstance) => {
     // );
     case "videoSocial":
       return <VideoPreview key={id} id={id} src={data?.url || data?.text} />;
+    case "socialVideo": // Handle social video file uploads
+      return <VideoPreview key={id} id={id} file={data?.file} />;
     // return <VideoPreview key={id} file={data?.file} src={data?.text} />;
     case "audioPlayer":
       return (

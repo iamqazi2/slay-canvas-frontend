@@ -185,17 +185,30 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     }
   };
 
-  const handleVideoFileChange = (files: File[]) => {
+  const handleVideoFileChange = (
+    files: File[],
+    isSocialVideo: boolean = false
+  ) => {
     const file = files[0];
     if (file && file.type.startsWith("video/")) {
       setComponentData((prev) => ({ ...prev, videoFile: file }));
       setIsVideoPopup(false);
-      // Dispatch to dashboard - use videoCollection for actual video files
-      window.dispatchEvent(
-        new CustomEvent("createComponent", {
-          detail: { componentType: "videoCollection", data: { file } }, // Keep videoCollection for files
-        })
-      );
+
+      if (isSocialVideo) {
+        // For social video uploads, use socialVideo component type for backend video type
+        window.dispatchEvent(
+          new CustomEvent("createComponent", {
+            detail: { componentType: "socialVideo", data: { file } },
+          })
+        );
+      } else {
+        // For regular video files, keep using videoCollection
+        window.dispatchEvent(
+          new CustomEvent("createComponent", {
+            detail: { componentType: "videoCollection", data: { file } },
+          })
+        );
+      }
     }
   };
 
@@ -241,7 +254,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
   ) => {
     const file = e.target.files?.[0];
     if (file) {
-      handleVideoFileChange([file]);
+      handleVideoFileChange([file], false); // Regular video upload
     }
     if (videoInputRef.current) {
       videoInputRef.current.value = "";
@@ -336,7 +349,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     let parsed: URL | null = null;
     try {
       parsed = new URL(inputUrl);
-    } catch (e) {
+    } catch {
       parsed = null;
     }
 
@@ -748,7 +761,17 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
           setIsVideoPopup(true);
         }}
         onDeviceImport={() => {
-          videoInputRef.current?.click();
+          // Create a special input handler for social video uploads
+          const input = document.createElement("input");
+          input.type = "file";
+          input.accept = "video/*";
+          input.onchange = (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (file) {
+              handleVideoFileChange([file], true); // Social video upload
+            }
+          };
+          input.click();
         }}
       />
     </>
