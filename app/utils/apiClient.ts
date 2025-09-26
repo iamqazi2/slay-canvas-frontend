@@ -75,6 +75,7 @@ class AuthenticatedFetch {
         const errorData = await response.json().catch(() => null);
         throw new Error(
           errorData?.message ||
+            errorData?.detail ||
             `HTTP ${response.status}: ${response.statusText}`
         );
       }
@@ -227,6 +228,7 @@ class AuthenticatedFetch {
         const errorData = await response.json().catch(() => null);
         throw new Error(
           errorData?.message ||
+            errorData?.detail ||
             `HTTP ${response.status}: ${response.statusText}`
         );
       }
