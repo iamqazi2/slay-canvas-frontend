@@ -1,6 +1,8 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { DeleteIcon, EditIcon } from "./icons";
+import { useToast } from "./ui/Toast";
+import ConfirmationModal from "./modals/ConfirmationModal";
 
 interface ImageItem {
   id: string;
@@ -23,8 +25,11 @@ const ImageCollection: React.FC<ImageCollectionProps> = ({
   onClose,
   inline = false,
 }) => {
+  const { showToast } = useToast();
+
   // id is used for React key in parent component
   const [images, setImages] = useState<ImageItem[]>([]);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 10, y: 70 }); // Percentage values (10% from left, 60% from top)
@@ -283,7 +288,11 @@ const ImageCollection: React.FC<ImageCollectionProps> = ({
   };
 
   const handleCloseComponent = (): void => {
-    console.log("ImageCollection handleCloseComponent called");
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = (): void => {
+    console.log("ImageCollection handleConfirmDelete called");
     // Clean up image URLs
     images.forEach((img) => {
       if (img.thumbnail.startsWith("blob:")) {
@@ -404,6 +413,17 @@ const ImageCollection: React.FC<ImageCollectionProps> = ({
           </div>
         ))}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Image Collection"
+        message="Are you sure you want to close this image collection? This will remove all images."
+        confirmText="Delete"
+        confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+      />
     </div>
   );
 };

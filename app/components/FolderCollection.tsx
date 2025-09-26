@@ -4,6 +4,8 @@ import { useWorkspaceStore } from "../store/workspaceStore";
 import { collectionApi } from "../utils/collectionApi";
 import { DeleteIcon, EditIcon, FolderIcon } from "./icons";
 import NewFolderIcon from "./icons/NewFolder";
+import { useToast } from "./ui/Toast";
+import ConfirmationModal from "./modals/ConfirmationModal";
 import {
   AudioPlayer,
   ImageCollection,
@@ -42,8 +44,10 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
   onClose,
   inline = false,
 }) => {
+  const { showToast } = useToast();
   const { currentWorkspaceId } = useWorkspaceStore();
   const [name, setName] = useState(initialData?.name || "Collection");
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [assets, setAssets] = useState<AssetItem[]>(initialData?.assets || []);
   const [isEditingName, setIsEditingName] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -416,6 +420,10 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
   };
 
   const handleCloseComponent = () => {
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
     if (id) {
       const removeEvent = new CustomEvent("removeComponent", {
         detail: { componentId: id },
@@ -531,6 +539,17 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Collection"
+        message="Are you sure you want to close this collection? This will remove all assets from the collection."
+        confirmText="Delete"
+        confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+      />
     </div>
   );
 };

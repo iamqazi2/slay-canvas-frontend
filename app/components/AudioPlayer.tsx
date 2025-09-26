@@ -2,6 +2,8 @@
 import { Mic } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { DeleteIcon, EditIcon } from "./icons";
+import { useToast } from "./ui/Toast";
+import ConfirmationModal from "./modals/ConfirmationModal";
 
 interface AudioPlayerProps {
   className?: string;
@@ -18,6 +20,8 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   onClose,
   inline = false,
 }) => {
+  const { showToast } = useToast();
+
   // id is used for React key in parent component
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
@@ -27,6 +31,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const [audioFile, setAudioFile] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>("Recording.mp3");
   const [isVisible, setIsVisible] = useState<boolean>(true);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   // Draggable state
   const [isDraggingComponent, setIsDraggingComponent] = useState(false);
@@ -455,7 +460,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
           }
         }
       }
-      alert("No audio found in clipboard");
+      showToast("No audio found in clipboard", "error");
     } catch (err: unknown) {
       console.error("Failed to read clipboard:", err);
       fileInputRef.current?.click();
@@ -482,7 +487,11 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   };
 
   const handleClose = (): void => {
-    console.log("AudioPlayer handleClose called");
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = (): void => {
+    console.log("AudioPlayer handleConfirmDelete called");
     // Clean up audio resources
     if (audioFile) {
       URL.revokeObjectURL(audioFile);
@@ -788,6 +797,17 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Audio Player"
+        message="Are you sure you want to close this audio player? This will stop playback and remove the audio."
+        confirmText="Delete"
+        confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+      />
     </>
   );
 };

@@ -2,6 +2,7 @@
 import { assetApi } from "@/app/utils/assetApi";
 import { knowledgeBaseApi } from "@/app/utils/knowledgeBaseApi";
 import { useCallback, useEffect, useState } from "react";
+import { useToast } from "../components/ui/Toast";
 
 import ReactFlow, {
   addEdge,
@@ -25,6 +26,7 @@ import {
   SimpleChatInterface,
   TextCollection,
   VideoPreview,
+  WebLink,
   WikipediaLink,
 } from "../components";
 import AudioPlayer from "../components/AudioPlayer";
@@ -160,6 +162,21 @@ const renderComponent = (instance: ComponentInstance) => {
           }
         />
       );
+    case "webLink":
+      return (
+        <WebLink
+          key={id}
+          id={id}
+          inline={true}
+          initialData={
+            data?.url
+              ? { url: data.url, text: data.text || data.url }
+              : data?.text
+              ? { text: data.text }
+              : undefined
+          }
+        />
+      );
     case "text":
       return (
         <TextCollection
@@ -223,6 +240,8 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
         return "PDF Document";
       case "wikipediaLink":
         return "Wikipedia Link";
+      case "webLink":
+        return "Web Link";
       case "text":
         return "Text Content";
       case "folderCollection":
@@ -331,6 +350,8 @@ const nodeTypes = {
 };
 
 export default function Home() {
+  const { showToast } = useToast();
+
   // Workspace store
   const {
     workspaces,
@@ -432,6 +453,8 @@ export default function Home() {
                       return "pdfDocument";
                     case "wiki":
                       return "wikipediaLink";
+                    case "link":
+                      return "webLink";
                     case "text":
                       return "text";
                     default:
@@ -468,6 +491,11 @@ export default function Home() {
                           content: asset.content,
                         };
                       case "wikipediaLink":
+                        return {
+                          text: asset.url || asset.content,
+                          url: asset.url,
+                        };
+                      case "webLink":
                         return {
                           text: asset.url || asset.content,
                           url: asset.url,
@@ -733,8 +761,9 @@ export default function Home() {
 
               if (workspaceAsset?.knowledge_base_id) {
                 // Show user notification and prevent adding to collection
-                alert(
-                  "This asset is already linked to a knowledge base and cannot be added to a collection. Please unlink it from the knowledge base first."
+                showToast(
+                  "This asset is already linked to a knowledge base and cannot be added to a collection. Please unlink it from the knowledge base first.",
+                  "warning"
                 );
                 console.warn(
                   `Asset ${assetId} is already linked to knowledge base ${workspaceAsset.knowledge_base_id}, cannot add to collection`
@@ -760,6 +789,8 @@ export default function Home() {
                   ? "PDF Document"
                   : draggedInstance.type === "wikipediaLink"
                   ? "Wikipedia Link"
+                  : draggedInstance.type === "webLink"
+                  ? "Web Link"
                   : draggedInstance.type === "text"
                   ? "Text Content"
                   : "Asset",
@@ -855,6 +886,8 @@ export default function Home() {
         case "pdfDocument":
           return { width: 300, height: 145 };
         case "wikipediaLink":
+          return { width: 300, height: 145 };
+        case "webLink":
           return { width: 300, height: 145 };
         case "text":
           return { width: 300, height: 200 };
@@ -1541,13 +1574,6 @@ export default function Home() {
                           <DeleteIcon size={16} color="#EF4444" />
                         </button>
                       </div>
-
-                      {/* Active Indicator */}
-                      {ws.id === currentWorkspaceId && (
-                        <div className="w-3 h-3 rounded-full bg-gradient-to-r from-[#8E5EFF] to-[#4596FF] shadow-lg">
-                          <div className="w-full h-full rounded-full bg-gradient-to-r from-[#8E5EFF] to-[#4596FF] animate-pulse"></div>
-                        </div>
-                      )}
                     </div>
                   </div>
                 ))}

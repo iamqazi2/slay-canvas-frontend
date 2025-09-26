@@ -26,12 +26,13 @@ export function assetToComponentInstance(asset: Asset): ComponentInstance {
     audio: "audioPlayer",
     image: "imageCollection",
     pdf: "pdfDocument",
-    link: "wikipediaLink",
+    link: "webLink",
     wiki: "wikipediaLink", // Map wiki assets to wikipediaLink component
     social: "videoSocial", // Map social assets to videoSocial component
     text: "text",
     document: "pdfDocument",
-    url: "wikipediaLink",
+    url: "webLink",
+    internet: "webLink",
   };
 
   const componentType = typeMapping[asset.type.toLowerCase()] || "text";
@@ -41,6 +42,13 @@ export function assetToComponentInstance(asset: Asset): ComponentInstance {
 
   switch (componentType) {
     case "wikipediaLink":
+      data = {
+        text: asset.url || asset.file_path || asset.content || asset.title,
+        url: asset.url || asset.file_path,
+        title: asset.title,
+      };
+      break;
+    case "webLink":
       data = {
         text: asset.url || asset.file_path || asset.content || asset.title,
         url: asset.url || asset.file_path,
@@ -121,7 +129,8 @@ export function componentTypeToAssetType(componentType: string): string {
     audioPlayer: "audio",
     imageCollection: "image",
     pdfDocument: "pdf",
-    wikipediaLink: "link",
+    wikipediaLink: "wiki",
+    webLink: "internet",
     text: "text",
   };
 
@@ -143,6 +152,8 @@ export function getAssetCreationStrategy(componentType: string): {
     case "wiki":
     case "wikipediaLink":
       return { endpoint: "link", assetType: "wiki", isFile: false };
+    case "webLink":
+      return { endpoint: "link", assetType: "internet", isFile: false };
     case "internet":
       return { endpoint: "link", assetType: "internet", isFile: false };
     case "text":
