@@ -17,8 +17,8 @@ import { Handle, Position } from "reactflow";
 import remarkGfm from "remark-gfm";
 import ConversationLoadingSpinner from "./ConversationLoadingSpinner";
 import DeleteIcon from "./icons/DeleteIcon";
-import { useToast } from "./ui/Toast";
 import ConfirmationModal from "./modals/ConfirmationModal";
+import { useToast } from "./ui/Toast";
 
 interface Message {
   id: number;
@@ -70,6 +70,22 @@ export default function SimpleChatInterface({
   const router = useRouter();
   const pathname = usePathname();
 
+  // Helper function to get social media platform name from URL
+  const getSocialPlatformName = useCallback((url: string): string => {
+    if (!url) return "Social Media";
+
+    if (url.includes("youtube.com") || url.includes("youtu.be"))
+      return "YouTube Video";
+    if (url.includes("vimeo.com")) return "Vimeo Video";
+    if (url.includes("instagram.com")) return "Instagram Video";
+    if (url.includes("facebook.com") || url.includes("fb.watch"))
+      return "Facebook Video";
+    if (url.includes("tiktok.com")) return "TikTok Video";
+    if (url.includes("twitter.com") || url.includes("x.com"))
+      return "Twitter Video";
+    return "Social Media Video";
+  }, []);
+
   // Helper functions for dynamic filter generation
   const getAvailableAssets = useCallback((): Asset[] => {
     // Only return assets that are linked to this specific knowledge base
@@ -107,16 +123,22 @@ export default function SimpleChatInterface({
       (asset) => !asset.collection_id
     );
     assetsWithoutCollection.forEach((asset) => {
-      options.push(asset.title);
+      // For social assets, show platform name instead of URL
+      if (asset.type === "social" && asset.url) {
+        const platformName = getSocialPlatformName(asset.url);
+        options.push(platformName);
+      } else {
+        options.push(asset.title);
+      }
     });
 
     return options;
-  }, [getAvailableAssets, getAvailableCollections]);
+  }, [getAvailableAssets, getAvailableCollections, getSocialPlatformName]);
 
   const getAssetsForFilter = useCallback(
     (filterName: string): string[] => {
       if (filterName === "All Attached Nodes") {
-        // Return all asset titles
+        // Return all asset titles (original titles for backend)
         return getAvailableAssets().map((asset) => asset.title);
       }
 
@@ -125,16 +147,44 @@ export default function SimpleChatInterface({
         (col) => col.name === filterName
       );
       if (collection) {
-        // Return all assets in this collection
+        // Return all assets in this collection (original titles for backend)
         return getAvailableAssets()
           .filter((asset) => asset.collection_id === collection.id)
           .map((asset) => asset.title);
       }
 
-      // It's an individual asset name
-      return [filterName];
+      // Check if it's a social media platform name (display name)
+      const socialPlatforms = [
+        "YouTube Video",
+        "Facebook Video",
+        "Instagram Video",
+        "TikTok Video",
+        "Twitter Video",
+        "Vimeo Video",
+      ];
+      if (socialPlatforms.includes(filterName)) {
+        // Find assets that match this platform and return their ORIGINAL titles (URLs for backend)
+        return getAvailableAssets()
+          .filter((asset) => {
+            if (asset.type === "social" && asset.url) {
+              return getSocialPlatformName(asset.url) === filterName;
+            }
+            return false;
+          })
+          .map((asset) => asset.title); // Return original title (URL) for backend API
+      }
+
+      // It's an individual asset name - check if it's a social platform display name
+      const matchingAsset = getAvailableAssets().find((asset) => {
+        if (asset.type === "social" && asset.url) {
+          return getSocialPlatformName(asset.url) === filterName;
+        }
+        return asset.title === filterName;
+      });
+
+      return matchingAsset ? [matchingAsset.title] : [filterName];
     },
-    [getAvailableAssets, getAvailableCollections]
+    [getAvailableAssets, getAvailableCollections, getSocialPlatformName]
   );
 
   const getAssetsForSelectedFilters = useCallback((): string[] => {

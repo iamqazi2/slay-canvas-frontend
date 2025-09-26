@@ -8,7 +8,6 @@ import {
 import { useUserStore } from "@/app/store/userStore";
 import { useWorkspaceStore } from "@/app/store/workspaceStore";
 import { collectionApi } from "@/app/utils/collectionApi";
-import { useToast } from "./ui/Toast";
 import Image from "next/image";
 import React, { useCallback, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -32,6 +31,7 @@ import TextModal from "./modals/TextModal";
 import VideoModal from "./modals/VideoModal";
 import WebLinkModal from "./modals/WebLinkModal";
 import WikipediaModal from "./modals/WikipediaModal";
+import { useToast } from "./ui/Toast";
 
 type SidebarProps = {
   onChatClick: () => void;
@@ -711,14 +711,15 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
           addVideo(video);
           setIsVideoPopup(false);
           // Dispatch to dashboard with the correct component type for social media
+          // For social media links, set both title and url to the same value (the URL)
           window.dispatchEvent(
             new CustomEvent("createComponent", {
               detail: {
-                componentType: "videoSocial", // Changed from videoCollection to videoSocial
+                componentType: "videoSocial",
                 data: {
-                  url: video.url, // Use url instead of text
-                  text: video.url, // Keep text as fallback
-                  title: video.title,
+                  url: trimmed, // Use the original URL
+                  text: trimmed, // Keep text as the URL too
+                  title: trimmed, // Set title to the same URL
                   type: video.type,
                 },
               },
