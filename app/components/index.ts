@@ -1,5 +1,6 @@
 export { default as AudioPlayer } from "./AudioPlayer";
 export { default as ChatInterface } from "./ChatInterface";
+export { default as ConversationLoadingSpinner } from "./ConversationLoadingSpinner";
 export { default as ChatInterfaceDraggable } from "./ChatInterfaceDraggable";
 export { default as DocumentUpload } from "./DocumentUpload";
 export { default as FileUpload } from "./FileUpload";
