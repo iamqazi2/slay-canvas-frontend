@@ -65,14 +65,25 @@ export default function SimpleChatInterface({
 
   // Helper functions for dynamic filter generation
   const getAvailableAssets = useCallback((): Asset[] => {
-    return workspace?.assets?.filter((asset) => asset.is_active) || [];
-  }, [workspace?.assets]);
+    // Only return assets that are linked to this specific knowledge base
+    return (
+      workspace?.assets?.filter(
+        (asset) =>
+          asset.is_active && asset.knowledge_base_id === knowledgeBase.id
+      ) || []
+    );
+  }, [workspace?.assets, knowledgeBase.id]);
 
   const getAvailableCollections = useCallback((): Collection[] => {
+    // Only return collections that are linked to this specific knowledge base
     return (
-      workspace?.collections?.filter((collection) => collection.is_active) || []
+      workspace?.collections?.filter(
+        (collection) =>
+          collection.is_active &&
+          collection.knowledge_base_id === knowledgeBase.id
+      ) || []
     );
-  }, [workspace?.collections]);
+  }, [workspace?.collections, knowledgeBase.id]);
 
   const generateFilterOptions = useCallback((): string[] => {
     const options = ["All Attached Nodes"];
