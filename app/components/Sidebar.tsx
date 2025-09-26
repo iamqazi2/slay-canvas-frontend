@@ -54,6 +54,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     videoCollection: boolean;
     pdfDocument: boolean;
     wikipediaLink: boolean;
+    webLink: boolean; // added
     text: boolean;
   }>({
     imageCollection: false,
@@ -61,6 +62,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     videoCollection: false,
     pdfDocument: false,
     wikipediaLink: false,
+    webLink: false, // added
     text: false,
   });
 
@@ -70,6 +72,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     videoFile?: File;
     documentFile?: File;
     textContent?: string;
+    url?: string; // added
   }>({});
 
   const [isVideoPopup, setIsVideoPopup] = useState(false);
@@ -80,7 +83,6 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
   const [isWebLinkPopup, setIsWebLinkPopup] = useState(false);
   const [isTextPopup, setIsTextPopup] = useState(false);
   const [isPlusPopup, setIsPlusPopup] = useState(false);
-  const [url, setUrl] = useState("");
   const [wikiUrl, setWikiUrl] = useState("");
   const [webLinkUrl, setWebLinkUrl] = useState("");
   const [textContent, setTextContent] = useState("");
@@ -276,16 +278,30 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     );
   };
 
-  const showWebLink = () => {
-    setComponentData((prev) => ({ ...prev, textContent: webLinkUrl.trim() }));
-    setVisibleComponents((prev) => ({ ...prev, wikipediaLink: true }));
+  const showWebLink = (incomingUrl?: string) => {
+    const finalUrl = (incomingUrl || webLinkUrl || "").trim();
+    if (!finalUrl) {
+      alert("Please enter a valid URL");
+      return;
+    }
+
+    // store url and textContent so UI components can read it
+    setComponentData((prev) => ({
+      ...prev,
+      textContent: finalUrl,
+      url: finalUrl, // simplified, avoid duplicate keys
+    }));
+
+    // show the webLink UI (fixed key)
+    setVisibleComponents((prev) => ({ ...prev, webLink: true }));
     setIsWebLinkPopup(false);
-    // Dispatch to dashboard
+
+    // Dispatch to dashboard with url in payload
     window.dispatchEvent(
       new CustomEvent("createComponent", {
         detail: {
-          componentType: "wikipediaLink",
-          data: { text: webLinkUrl.trim() },
+          componentType: "webLink",
+          data: { url: finalUrl, text: finalUrl },
         },
       })
     );
@@ -727,8 +743,14 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
         isOpen={isWebLinkPopup}
         onClose={() => setIsWebLinkPopup(false)}
         onSubmit={(submittedUrl) => {
-          setWebLinkUrl(submittedUrl);
-          showWebLink();
+          const trimmed = submittedUrl.trim();
+          if (!trimmed) {
+            alert("Please enter a valid URL");
+            return;
+          }
+          setWebLinkUrl(trimmed);
+          // pass the trimmed url directly so showWebLink doesn't rely on stale state
+          showWebLink(trimmed);
         }}
       />
 

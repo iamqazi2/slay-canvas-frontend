@@ -673,7 +673,7 @@ export default function SimpleChatInterface({
         </div>
       )}
 
-      <div className="flex h-full min-h-0">
+      <div className="border-1 border-black/10 shadow-md  flex h-full min-h-0">
         {/* Left Sidebar */}
         <div className="w-[200px] min-w-[180px] max-w-[220px] bg-white border-r border-gray-200 flex flex-col min-h-0">
           {/* Top Section */}

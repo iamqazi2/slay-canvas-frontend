@@ -14,10 +14,13 @@ export default function WebLinkModal({ isOpen, onClose, onSubmit }: WebLinkModal
   const [url, setUrl] = useState("");
 
   const handleSubmit = () => {
-    if (url && url.trim()) {
-      onSubmit(url.trim());
-      setUrl("");
+    const trimmed = url.trim();
+    if (!trimmed) {
+      alert("Please enter a valid URL");
+      return;
     }
+    onSubmit(trimmed);
+    setUrl("");
   };
 
   const handleClose = () => {

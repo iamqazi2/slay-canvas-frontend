@@ -23,4 +23,5 @@ export { default as SimpleChatInterface } from "./SimpleChatInterface";
 export { default as TextArea } from "./TextArea";
 export { default as TextCollection } from "./TextCollection";
 export { default as VideoPreview } from "./VideoPreview";
+export { default as WebLink } from "./WebLink";
 export { default as WikipediaLink } from "./WikipediaLink";

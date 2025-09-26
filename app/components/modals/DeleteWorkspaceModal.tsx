@@ -43,25 +43,25 @@ export default function DeleteWorkspaceModal({
         <div className="text-center">
           <p className="text-gray-700 mb-2">
             Are you sure you want to delete the workspace{" "}
-            <span className="font-semibold text-gray-900">&ldquo;{workspaceName}&rdquo;</span>?
+            <span className="font-semibold text-gray-900">
+              &ldquo;{workspaceName}&rdquo;
+            </span>
+            ?
           </p>
           <p className="text-sm text-gray-500">
-            This action cannot be undone. All data associated with this workspace will be permanently deleted.
+            This action cannot be undone. All data associated with this
+            workspace will be permanently deleted.
           </p>
         </div>
 
         <div className="flex gap-3 w-full">
-          <Button
-            onClick={handleCancel}
-            variant="secondary"
-            className="flex-1"
-          >
+          <Button onClick={handleCancel} variant="secondary" className="flex-1">
             Cancel
           </Button>
           <Button
             onClick={handleConfirm}
             variant="primary"
-            className="flex-1 bg-red-500 hover:bg-red-600 text-white border-red-500"
+            className="flex-1 bg-red-500 hover:bg-red-600 hover:text-white text-red-600 border-red-500"
           >
             {isLoading ? "Deleting..." : "Delete"}
           </Button>
