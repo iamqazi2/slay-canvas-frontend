@@ -1,6 +1,11 @@
 // Authenticated fetch client that automatically attaches access token
 
 import { getAccessToken, removeAccessToken } from "./cookies";
+import { store } from "@/app/redux/store";
+import {
+  incrementLoading,
+  decrementLoading,
+} from "@/app/redux/slices/loadingSlice";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8000/api";
@@ -43,6 +48,8 @@ class AuthenticatedFetch {
       }
     }
 
+    store.dispatch(incrementLoading());
+
     try {
       const response = await fetch(url, {
         ...restOptions,
@@ -76,6 +83,8 @@ class AuthenticatedFetch {
     } catch (error) {
       console.error(`API Error for ${endpoint}:`, error);
       throw error;
+    } finally {
+      store.dispatch(decrementLoading());
     }
   }
 
@@ -181,6 +190,8 @@ class AuthenticatedFetch {
       body = JSON.stringify(data);
     }
 
+    store.dispatch(incrementLoading());
+
     try {
       const response = await fetch(url, {
         ...restOptions,
@@ -213,6 +224,8 @@ class AuthenticatedFetch {
     } catch (error) {
       console.error(`API Error for ${endpoint}:`, error);
       throw error;
+    } finally {
+      store.dispatch(decrementLoading());
     }
   }
 }

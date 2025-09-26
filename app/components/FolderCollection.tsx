@@ -438,7 +438,7 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
           ? {
               width: "100%",
               height: "100%",
-              background: "#244785",
+              background: "#1279FF",
             }
           : {
               left: `${position.x}%`,
@@ -449,7 +449,7 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
               maxHeight: "300px",
               opacity: 1,
               transform: "rotate(0deg)",
-              background: "#244785",
+              background: "#1279FF",
             }
       }
       tabIndex={inline ? undefined : 0}
@@ -463,7 +463,7 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
           style={{
-            background: "#244785",
+            background: "#1279FF",
             boxShadow: "0px 0px 40px 0px #1E1E1E33",
           }}
         >
