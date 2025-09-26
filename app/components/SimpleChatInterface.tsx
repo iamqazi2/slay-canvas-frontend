@@ -17,6 +17,8 @@ import { Handle, Position } from "reactflow";
 import remarkGfm from "remark-gfm";
 import ConversationLoadingSpinner from "./ConversationLoadingSpinner";
 import DeleteIcon from "./icons/DeleteIcon";
+import { useToast } from "./ui/Toast";
+import ConfirmationModal from "./modals/ConfirmationModal";
 
 interface Message {
   id: number;
@@ -49,6 +51,8 @@ export default function SimpleChatInterface({
   showHandles = false,
   initialConversationId,
 }: SimpleChatInterfaceProps) {
+  const { showToast } = useToast();
+
   const [selectedChat, setSelectedChat] = useState(-1); // -1 means no selection
   const [selectedFilters, setSelectedFilters] = useState<Set<string>>(
     new Set(["All Attached Nodes"])
@@ -60,6 +64,7 @@ export default function SimpleChatInterface({
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -732,15 +737,14 @@ export default function SimpleChatInterface({
 
   // Delete knowledge base
   const deleteKnowledgeBase = async () => {
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete the knowledge base "${knowledgeBase.name}"? This action cannot be undone.`
-    );
-    if (!confirmDelete) return;
+    setIsDeleteModalOpen(true);
+  };
 
+  const handleConfirmDelete = async () => {
     try {
       await apiClient.delete(`/agent/knowledge-bases/${knowledgeBase.name}`);
       // Show success message
-      alert("Knowledge base deleted successfully");
+      showToast("Knowledge base deleted successfully", "success");
       // Navigate to dashboard and refresh to update the UI
       router.push("/dashboard");
       // Refresh the page to update the knowledge bases list
@@ -749,7 +753,7 @@ export default function SimpleChatInterface({
       }, 100);
     } catch (error) {
       console.error("Failed to delete knowledge base:", error);
-      alert("Failed to delete knowledge base");
+      showToast("Failed to delete knowledge base", "error");
     }
   };
 
@@ -1074,6 +1078,17 @@ export default function SimpleChatInterface({
           />
         </>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Knowledge Base"
+        message={`Are you sure you want to delete the knowledge base "${knowledgeBase.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+      />
     </div>
   );
 }

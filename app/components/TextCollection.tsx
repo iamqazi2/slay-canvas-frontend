@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import { EditIcon, DeleteIcon } from "./icons";
+import { useToast } from "./ui/Toast";
+import ConfirmationModal from "./modals/ConfirmationModal";
 
 interface TextCollectionProps {
   className?: string;
@@ -17,8 +19,11 @@ const TextCollection: React.FC<TextCollectionProps> = ({
   onClose,
   inline = false,
 }) => {
+  const { showToast } = useToast();
+
   // id is used for React key in parent component
   const [isDragging, setIsDragging] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [position, setPosition] = useState({ x: 77, y: 70 }); // Percentage values (70% from left, 70% from top)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [textContent, setTextContent] = useState<string>(initialData?.text || "");
@@ -167,29 +172,27 @@ const TextCollection: React.FC<TextCollectionProps> = ({
   };
 
   const handleDelete = (): void => {
-    const confirmed = window.confirm(
-      "Are you sure you want to close this text collection? This will remove the current content."
-    );
+    setIsDeleteModalOpen(true);
+  };
 
-    if (confirmed) {
-      // Check if this is a sidebar component or has onClose prop
-      if (id === "sidebar-text-collection" || onClose) {
-        console.log(
-          "TextCollection is sidebar component or has onClose prop, calling onClose"
-        );
-        if (onClose) {
-          onClose();
-        }
-        return;
+  const handleConfirmDelete = (): void => {
+    // Check if this is a sidebar component or has onClose prop
+    if (id === "sidebar-text-collection" || onClose) {
+      console.log(
+        "TextCollection is sidebar component or has onClose prop, calling onClose"
+      );
+      if (onClose) {
+        onClose();
       }
+      return;
+    }
 
-      // Remove this component instance
-      if (id) {
-        const removeEvent = new CustomEvent("removeComponent", {
-          detail: { componentId: id },
-        });
-        window.dispatchEvent(removeEvent);
-      }
+    // Remove this component instance
+    if (id) {
+      const removeEvent = new CustomEvent("removeComponent", {
+        detail: { componentId: id },
+      });
+      window.dispatchEvent(removeEvent);
     }
   };
 
@@ -333,6 +336,17 @@ const TextCollection: React.FC<TextCollectionProps> = ({
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Text Collection"
+        message="Are you sure you want to close this text collection? This will remove the current content."
+        confirmText="Delete"
+        confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+      />
     </div>
   );
 };

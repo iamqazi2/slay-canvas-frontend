@@ -8,6 +8,7 @@ import {
 import { useUserStore } from "@/app/store/userStore";
 import { useWorkspaceStore } from "@/app/store/workspaceStore";
 import { collectionApi } from "@/app/utils/collectionApi";
+import { useToast } from "./ui/Toast";
 import Image from "next/image";
 import React, { useCallback, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -37,6 +38,8 @@ type SidebarProps = {
 };
 
 export default function Sidebar({ onChatClick }: SidebarProps) {
+  const { showToast } = useToast();
+
   // File input refs
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -281,7 +284,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
   const showWebLink = (incomingUrl?: string) => {
     const finalUrl = (incomingUrl || webLinkUrl || "").trim();
     if (!finalUrl) {
-      alert("Please enter a valid URL");
+      showToast("Please enter a valid URL", "error");
       return;
     }
 
@@ -745,7 +748,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
         onSubmit={(submittedUrl) => {
           const trimmed = submittedUrl.trim();
           if (!trimmed) {
-            alert("Please enter a valid URL");
+            showToast("Please enter a valid URL", "error");
             return;
           }
           setWebLinkUrl(trimmed);
