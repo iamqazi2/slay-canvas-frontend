@@ -12,7 +12,9 @@ import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { Handle, Position } from "reactflow";
+import remarkGfm from "remark-gfm";
 import ConversationLoadingSpinner from "./ConversationLoadingSpinner";
 import DeleteIcon from "./icons/DeleteIcon";
 
@@ -763,17 +765,56 @@ export default function SimpleChatInterface({
               isUser ? "bg-[#4596FF]/20 text-black" : "bg-white text-black"
             }`}
           >
-            <div className="text-sm whitespace-pre-wrap leading-relaxed">
-              {message.content
-                .split("\n")
-                .map((line: string, lineIndex: number) => (
-                  <div key={lineIndex}>
-                    {line}
-                    {lineIndex < message.content.split("\n").length - 1 && (
-                      <br />
-                    )}
-                  </div>
-                ))}
+            <div className="text-sm leading-relaxed prose prose-sm max-w-none">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  // Custom styling for markdown elements
+                  p: ({ children }) => (
+                    <p className="mb-2 last:mb-0">{children}</p>
+                  ),
+                  ul: ({ children }) => (
+                    <ul className="list-disc ml-4 mb-2">{children}</ul>
+                  ),
+                  ol: ({ children }) => (
+                    <ol className="list-decimal ml-4 mb-2">{children}</ol>
+                  ),
+                  li: ({ children }) => <li className="mb-1">{children}</li>,
+                  code: ({ children, className }) => {
+                    const isInline = !className;
+                    return isInline ? (
+                      <code className="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">
+                        {children}
+                      </code>
+                    ) : (
+                      <code className="block bg-gray-100 p-2 rounded text-xs font-mono whitespace-pre overflow-x-auto">
+                        {children}
+                      </code>
+                    );
+                  },
+                  pre: ({ children }) => <pre className="mb-2">{children}</pre>,
+                  blockquote: ({ children }) => (
+                    <blockquote className="border-l-4 border-gray-300 pl-4 italic mb-2">
+                      {children}
+                    </blockquote>
+                  ),
+                  h1: ({ children }) => (
+                    <h1 className="text-lg font-semibold mb-2">{children}</h1>
+                  ),
+                  h2: ({ children }) => (
+                    <h2 className="text-base font-semibold mb-2">{children}</h2>
+                  ),
+                  h3: ({ children }) => (
+                    <h3 className="text-sm font-semibold mb-2">{children}</h3>
+                  ),
+                  strong: ({ children }) => (
+                    <strong className="font-semibold">{children}</strong>
+                  ),
+                  em: ({ children }) => <em className="italic">{children}</em>,
+                }}
+              >
+                {message.content}
+              </ReactMarkdown>
             </div>
           </div>
         </div>
