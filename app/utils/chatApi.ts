@@ -82,29 +82,50 @@ export class ChatApi {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
+        console.log("Raw buffer:", buffer);
 
-        // Process complete lines
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || ""; // Keep incomplete line in buffer
+        // Backend sends complete response with control messages at the end
+        // Need to separate content from control messages
 
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6); // Remove 'data: ' prefix
+        // Check if we have [DONE] - this means the response is complete
+        if (buffer.includes("[DONE]")) {
+          let content = buffer;
 
-            if (data === "[DONE]") {
-              yield { type: "done", content: "" };
-              return;
-            } else if (data.startsWith("[CONVERSATION_ID:")) {
-              const conversationId = parseInt(data.match(/\d+/)?.[0] || "0");
-              yield { type: "conversation_id", content: "", conversationId };
-            } else if (data.startsWith("[ERROR:")) {
-              const error = data.slice(7, -1); // Remove '[ERROR:' and ']'
-              yield { type: "error", content: error };
-              return;
-            } else if (data.trim()) {
-              yield { type: "message", content: data };
-            }
+          // Extract and handle [CONVERSATION_ID:] if present
+          const conversationMatch = content.match(/\[CONVERSATION_ID:(\d+)\]/);
+          if (conversationMatch) {
+            const conversationId = parseInt(conversationMatch[1]);
+            // Remove conversation ID from content
+            content = content.replace(/\[CONVERSATION_ID:\d+\]/, "");
+            yield { type: "conversation_id", content: "", conversationId };
           }
+
+          // Remove [DONE] from content
+          content = content.replace("[DONE]", "");
+
+          // Yield the main content (if any)
+          if (content.trim()) {
+            yield { type: "message", content: content };
+          }
+
+          yield { type: "done", content: "" };
+          return;
+        }
+
+        // Check for error messages
+        if (buffer.includes("[ERROR:")) {
+          const match = buffer.match(/\[ERROR:([^\]]*)\]/);
+          if (match) {
+            const error = match[1];
+            yield { type: "error", content: error };
+            return;
+          }
+        }
+
+        // If no control messages yet, yield partial content for streaming effect
+        if (buffer && !buffer.includes("[")) {
+          yield { type: "message", content: buffer };
+          buffer = ""; // Clear buffer after yielding
         }
       }
     } finally {
