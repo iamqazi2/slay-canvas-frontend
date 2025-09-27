@@ -4,7 +4,6 @@ import { VideoItem } from "@/app/models/interfaces";
 import Image from "next/image";
 import React, { useEffect, useMemo, useState } from "react";
 import DeleteIcon from "./icons/DeleteIcon";
-import EditIcon from "./icons/EditIcon";
 
 type VideoPreviewProps = {
   id?: string;
@@ -145,12 +144,10 @@ export default function VideoPreview({
 
   const iframeSrc = (() => {
     if (!src) return null;
-    if (
-      detectedPlatform === "instagram" ||
-      detectedPlatform === "twitter" ||
-      detectedPlatform === "X"
-    )
-      return null;
+    if (detectedPlatform === "instagram") {
+      return `${src}/embed`;
+    }
+    if (detectedPlatform === "twitter" || detectedPlatform === "X") return null;
     if (type && embedPlatforms.includes(type)) return src;
     if (
       /\/embed\/|player\.vimeo\.com|facebook\.com\/plugins|instagram\.com\/p\/|instagram\.com\/reel|twitter\.com\/embed|twitframe\.com/i.test(
