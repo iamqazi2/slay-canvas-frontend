@@ -48,6 +48,7 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
 }) => {
   const { showToast } = useToast();
   const { currentWorkspaceId } = useWorkspaceStore();
+  // Initialize state with initial data - no effects needed!
   const [name, setName] = useState(initialData?.name || "Collection");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [assets, setAssets] = useState<AssetItem[]>(initialData?.assets || []);
@@ -310,19 +311,6 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
     handleTouchMove,
     handleTouchEnd,
   ]);
-
-  // Handle initial data updates
-  useEffect(() => {
-    if (initialData) {
-      if (initialData.name && initialData.name !== initialNameRef.current) {
-        setName(initialData.name);
-        initialNameRef.current = initialData.name;
-      }
-      if (initialData.assets) {
-        setAssets(initialData.assets);
-      }
-    }
-  }, [initialData]);
 
   // Update component instance data when assets change
   useEffect(() => {
