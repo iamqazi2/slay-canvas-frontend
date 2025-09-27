@@ -86,16 +86,6 @@ export default function SimpleChatInterface({
   }, []);
 
   // Helper functions for dynamic filter generation
-  const getAvailableAssets = useCallback((): Asset[] => {
-    // Only return assets that are linked to this specific knowledge base
-    return (
-      workspace?.assets?.filter(
-        (asset) =>
-          asset.is_active && asset.knowledge_base_id === knowledgeBase.id
-      ) || []
-    );
-  }, [workspace?.assets, knowledgeBase.id]);
-
   const getAvailableCollections = useCallback((): Collection[] => {
     // Only return collections that are linked to this specific knowledge base
     return (
@@ -106,6 +96,24 @@ export default function SimpleChatInterface({
       ) || []
     );
   }, [workspace?.collections, knowledgeBase.id]);
+
+  const getAvailableAssets = useCallback((): Asset[] => {
+    // Get collection IDs that belong to this knowledge base
+    const knowledgeBaseCollectionIds = getAvailableCollections().map(
+      (col) => col.id
+    );
+
+    // Return assets that are linked to this knowledge base OR belong to collections linked to this knowledge base
+    return (
+      workspace?.assets?.filter(
+        (asset) =>
+          asset.is_active &&
+          (asset.knowledge_base_id === knowledgeBase.id ||
+            (asset.collection_id &&
+              knowledgeBaseCollectionIds.includes(asset.collection_id)))
+      ) || []
+    );
+  }, [workspace?.assets, knowledgeBase.id, getAvailableCollections]);
 
   const generateFilterOptions = useCallback((): string[] => {
     const options = ["All Attached Nodes"];
