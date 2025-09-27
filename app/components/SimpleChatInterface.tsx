@@ -80,9 +80,8 @@ export default function SimpleChatInterface({
     if (url.includes("instagram.com")) return "Instagram Video";
     if (url.includes("facebook.com") || url.includes("fb.watch"))
       return "Facebook Video";
-    if (url.includes("tiktok.com")) return "TikTok Video";
-    if (url.includes("twitter.com") || url.includes("x.com"))
-      return "Twitter Video";
+    if (url.includes("tiktok.com")) return "Twitter";
+    if (url.includes("twitter.com") || url.includes("x.com")) return "X";
     return "Social Media Video";
   }, []);
 
@@ -158,8 +157,8 @@ export default function SimpleChatInterface({
         "YouTube Video",
         "Facebook Video",
         "Instagram Video",
-        "TikTok Video",
-        "Twitter Video",
+        "Twitter",
+        "X",
         "Vimeo Video",
       ];
       if (socialPlatforms.includes(filterName)) {

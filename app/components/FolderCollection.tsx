@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { collectionApi } from "../utils/collectionApi";
+import { getAssetIdFromComponentId } from "../utils/assetUtils";
 import { DeleteIcon, EditIcon, FolderIcon } from "./icons";
 import NewFolderIcon from "./icons/NewFolder";
 import { useToast } from "./ui/Toast";
@@ -58,7 +59,6 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
 
   // Use refs to track initial values without causing re-renders
   const initialNameRef = useRef<string>(initialData?.name || "Collection");
-  const initializedRef = useRef<boolean>(false);
 
   const renderAssetComponent = (asset: AssetItem) => {
     const getAssetWidth = (type: string) => {
@@ -310,17 +310,16 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
     handleTouchEnd,
   ]);
 
-  // Handle initial data - only update once when component first receives data
+  // Handle initial data updates
   useEffect(() => {
-    if (!initializedRef.current && initialData) {
-      if (initialData.name) {
+    if (initialData) {
+      if (initialData.name && initialData.name !== initialNameRef.current) {
         setName(initialData.name);
         initialNameRef.current = initialData.name;
       }
       if (initialData.assets) {
         setAssets(initialData.assets);
       }
-      initializedRef.current = true;
     }
   }, [initialData]);
 
@@ -338,25 +337,61 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
   }, [id, inline, name, assets]);
 
   // Handle drop of assets
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    const dragData = JSON.parse(e.dataTransfer.getData("application/json"));
-    if (dragData && dragData.id && dragData.type) {
-      const newAsset: AssetItem = {
-        id: dragData.id,
-        type: dragData.type,
-        title: dragData.title,
-        data: dragData.data,
-      };
-      setAssets((prev) => {
-        // Avoid duplicates
-        if (prev.find((a) => a.id === newAsset.id)) {
-          return prev;
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      const dragData = JSON.parse(e.dataTransfer.getData("application/json"));
+      if (dragData && dragData.id && dragData.type) {
+        const newAsset: AssetItem = {
+          id: dragData.id,
+          type: dragData.type,
+          title: dragData.title,
+          data: dragData.data,
+        };
+
+        // Check for duplicates
+        setAssets((prev) => {
+          if (prev.find((a) => a.id === newAsset.id)) {
+            return prev;
+          }
+          return [...prev, newAsset];
+        });
+
+        // Persist to backend if this is a collection
+        if (currentWorkspaceId) {
+          const collectionId = id?.startsWith("collection-")
+            ? parseInt(id.replace("collection-", ""), 10)
+            : null;
+
+          if (collectionId) {
+            try {
+              const assetId = getAssetIdFromComponentId(dragData.id);
+              if (assetId) {
+                await collectionApi.linkAssetToCollection(
+                  currentWorkspaceId,
+                  assetId,
+                  collectionId
+                );
+                console.log(
+                  `Successfully linked asset ${assetId} to collection ${collectionId}`
+                );
+              } else {
+                console.warn(
+                  "Could not extract asset ID from component ID:",
+                  dragData.id
+                );
+              }
+            } catch (error) {
+              console.error("Failed to link asset to collection:", error);
+              // Revert the local state change on error
+              setAssets((prev) => prev.filter((a) => a.id !== newAsset.id));
+            }
+          }
         }
-        return [...prev, newAsset];
-      });
-    }
-  }, []);
+      }
+    },
+    [currentWorkspaceId, id]
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -408,15 +443,47 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
     }
   };
 
-  const handleRemoveAsset = (assetId: string) => {
+  const handleRemoveAsset = async (assetId: string) => {
     // Remove from local state immediately for UI responsiveness
-    setAssets((prev) => prev.filter((a) => a.id !== assetId));
+    const updatedAssets = assets.filter((a) => a.id !== assetId);
+    setAssets(updatedAssets);
 
-    // Dispatch removeComponent event to trigger backend deletion
-    const removeEvent = new CustomEvent("removeComponent", {
-      detail: { componentId: assetId },
-    });
-    window.dispatchEvent(removeEvent);
+    // Unlink asset from collection in backend
+    if (currentWorkspaceId && id?.startsWith("collection-")) {
+      const collectionId = parseInt(id.replace("collection-", ""), 10);
+      try {
+        const assetIdNum = getAssetIdFromComponentId(assetId);
+        if (assetIdNum) {
+          await collectionApi.unlinkAssetFromCollection(
+            currentWorkspaceId,
+            assetIdNum,
+            collectionId
+          );
+          console.log(
+            `Successfully unlinked asset ${assetIdNum} from collection ${collectionId}`
+          );
+
+          // Dispatch updateComponent event to update the collection in the dashboard
+          const updateEvent = new CustomEvent("updateComponent", {
+            detail: {
+              componentId: id,
+              data: { name, assets: updatedAssets },
+            },
+          });
+          window.dispatchEvent(updateEvent);
+        } else {
+          console.warn(
+            "Could not extract asset ID from component ID:",
+            assetId
+          );
+        }
+      } catch (error) {
+        console.error("Failed to unlink asset from collection:", error);
+        // Revert the local state change on error
+        setAssets(assets); // Restore original assets
+        showToast("Failed to remove asset from collection", "error");
+      }
+    }
   };
 
   const handleCloseComponent = () => {
@@ -527,9 +594,9 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-x-2 gap-y-0">
+            <div className="grid grid-cols-2 gap-x-2 gap-y-2">
               {assets.map((asset) => (
-                <div key={asset.id}>
+                <div className="w-fit" key={asset.id}>
                   {/* Render the actual component */}
                   {renderAssetComponent(asset)}
                 </div>

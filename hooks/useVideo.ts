@@ -7,12 +7,14 @@ const useVideo = () => {
 
   // Utility functions for video processing
   const detectVideoType = (url: string): VideoItem["type"] => {
-    if (url.includes("youtube.com") || url.includes("youtu.be")) return "youtube";
+    if (url.includes("youtube.com") || url.includes("youtu.be"))
+      return "youtube";
     if (url.includes("vimeo.com")) return "vimeo";
     if (url.includes("instagram.com")) return "instagram";
-    if (url.includes("facebook.com") || url.includes("fb.watch")) return "facebook";
-    if (url.includes("tiktok.com")) return "tiktok";
-    if (url.includes("twitter.com") || url.includes("x.com")) return "twitter";
+    if (url.includes("facebook.com") || url.includes("fb.watch"))
+      return "facebook";
+    if (url.includes("tiktok.com")) return "twitter";
+    if (url.includes("twitter.com") || url.includes("x.com")) return "X";
     if (url.match(/\.(mp4|avi|mov|wmv|flv|webm|ogg)$/i)) return "direct";
     return "other";
   };
@@ -72,17 +74,17 @@ const useVideo = () => {
         author = "Facebook";
         platform = "Facebook";
         break;
-      case "tiktok":
-        title = "TikTok Video";
-        description = "Watch on TikTok";
-        author = "TikTok";
-        platform = "TikTok";
-        break;
       case "twitter":
-        title = "Twitter Video";
-        description = "View on Twitter";
+        title = "Twitter";
+        description = "Watch on Twitter";
         author = "Twitter";
         platform = "Twitter";
+        break;
+      case "X":
+        title = "X";
+        description = "View on X";
+        author = "X";
+        platform = "X";
         break;
       case "direct":
         title = "Video File";

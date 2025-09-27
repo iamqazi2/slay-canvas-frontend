@@ -343,8 +343,8 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     if (url.includes("instagram.com")) return "instagram";
     if (url.includes("facebook.com") || url.includes("fb.watch"))
       return "facebook";
-    if (url.includes("tiktok.com")) return "tiktok";
-    if (url.includes("twitter.com") || url.includes("x.com")) return "twitter";
+    if (url.includes("tiktok.com")) return "twitter";
+    if (url.includes("twitter.com") || url.includes("x.com")) return "X";
     if (url.match(/\.(mp4|avi|mov|wmv|flv|webm|ogg)$/i)) return "direct";
     return "other";
   };
@@ -458,27 +458,19 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
           )}&show_text=false`;
         }
         break;
-      case "tiktok":
-        title = "TikTok Video";
-        description = "Watch on TikTok";
-        author = "TikTok";
-        platform = "TikTok";
-        // try to extract numeric video id for embed; fall back to generic embed wrapper
-        const ttMatch =
-          inputUrl.match(/video\/(\d+)/) ||
-          inputUrl.match(/\/@[^\/]+\/video\/(\d+)/);
-        if (ttMatch && ttMatch[1]) {
-          url = `https://www.tiktok.com/embed/v2/${ttMatch[1]}`;
-        } else {
-          // generic embed wrapper (iframe)
-          url = `https://www.tiktok.com/embed/${encodeURIComponent(inputUrl)}`;
-        }
-        break;
       case "twitter":
-        title = "Twitter Video";
-        description = "View on Twitter";
+        title = "Twitter";
+        description = "Watch on Twitter";
         author = "Twitter";
         platform = "Twitter";
+        // use twitframe to render a tweet/video in an iframe
+        url = `https://twitframe.com/show?url=${encodeURIComponent(inputUrl)}`;
+        break;
+      case "X":
+        title = "X";
+        description = "View on X";
+        author = "X";
+        platform = "X";
         // use twitframe to render a tweet/video in an iframe
         url = `https://twitframe.com/show?url=${encodeURIComponent(inputUrl)}`;
         break;
@@ -543,12 +535,12 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
             <div className=" bg-[#F0F5F8] transition-opacity grid grid-cols-2 p-[4px] rounded-md gap-1">
               <Image
                 className="cursor-pointer"
-                src="/tiktok.svg"
+                src="/x.png"
                 height={15}
                 width={15}
-                alt="TikTok"
+                alt="X"
                 onClick={() => {
-                  setVideoModalHeading("Add TikTok Video");
+                  setVideoModalHeading("Add X");
                   setIsVideoPopup(true);
                 }}
               />
