@@ -107,15 +107,4 @@ export const collectionApi = {
       {} // No body needed for the new endpoint
     );
   },
-
-  // Unlink an asset from a collection
-  async unlinkAssetFromCollection(
-    workspaceId: number,
-    assetId: number,
-    collectionId: number
-  ): Promise<Asset> {
-    return await apiClient.delete<Asset>(
-      `/workspaces/${workspaceId}/assets/${assetId}/unlink-from-collection/${collectionId}`
-    );
-  },
 };

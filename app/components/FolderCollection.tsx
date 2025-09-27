@@ -1,12 +1,11 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useWorkspaceStore } from "../store/workspaceStore";
-import { collectionApi } from "../utils/collectionApi";
+import { assetApi } from "../utils/assetApi";
 import { getAssetIdFromComponentId } from "../utils/assetUtils";
+import { collectionApi } from "../utils/collectionApi";
 import { DeleteIcon, EditIcon, FolderIcon } from "./icons";
 import NewFolderIcon from "./icons/NewFolder";
-import { useToast } from "./ui/Toast";
-import ConfirmationModal from "./modals/ConfirmationModal";
 import {
   AudioPlayer,
   ImageCollection,
@@ -15,6 +14,8 @@ import {
   VideoPreview,
   WikipediaLink,
 } from "./index";
+import ConfirmationModal from "./modals/ConfirmationModal";
+import { useToast } from "./ui/Toast";
 
 interface AssetItem {
   id: string;
@@ -448,19 +449,14 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
     const updatedAssets = assets.filter((a) => a.id !== assetId);
     setAssets(updatedAssets);
 
-    // Unlink asset from collection in backend
+    // Delete asset from backend
     if (currentWorkspaceId && id?.startsWith("collection-")) {
-      const collectionId = parseInt(id.replace("collection-", ""), 10);
       try {
         const assetIdNum = getAssetIdFromComponentId(assetId);
         if (assetIdNum) {
-          await collectionApi.unlinkAssetFromCollection(
-            currentWorkspaceId,
-            assetIdNum,
-            collectionId
-          );
+          await assetApi.deleteAsset(currentWorkspaceId, assetIdNum);
           console.log(
-            `Successfully unlinked asset ${assetIdNum} from collection ${collectionId}`
+            `Successfully deleted asset ${assetIdNum} from workspace ${currentWorkspaceId}`
           );
 
           // Dispatch updateComponent event to update the collection in the dashboard
