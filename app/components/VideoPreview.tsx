@@ -2,7 +2,7 @@
 
 import { VideoItem } from "@/app/models/interfaces";
 import Image from "next/image";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { memo, useEffect, useMemo, useState } from "react";
 import DeleteIcon from "./icons/DeleteIcon";
 
 // Extend Window interface for third-party libraries
@@ -49,7 +49,7 @@ type VideoPreviewProps = {
   onClose?: () => void;
 };
 
-export default function VideoPreview({
+const VideoPreview = memo(function VideoPreview({
   id,
   file,
   src,
@@ -61,32 +61,8 @@ export default function VideoPreview({
 }: VideoPreviewProps) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
-  // Use refs to store stable values that won't cause re-renders
-  const initialSrc = useRef(src);
-  const initialFile = useRef(file);
-  const initialType = useRef(type);
-  const initialUploadedBlobUrl = useRef(uploadedBlobUrl);
-  const hasInitialized = useRef(false);
-
-  // Only use initial values, not changing props
-  const stableSrc = hasInitialized.current ? initialSrc.current : src;
-  const stableFile = hasInitialized.current ? initialFile.current : file;
-  const stableType = hasInitialized.current ? initialType.current : type;
-  const stableUploadedBlobUrl = hasInitialized.current
-    ? initialUploadedBlobUrl.current
-    : uploadedBlobUrl;
-
-  // Initialize stable values once
-  useEffect(() => {
-    if (!hasInitialized.current) {
-      initialSrc.current = src;
-      initialFile.current = file;
-      initialType.current = type;
-      initialUploadedBlobUrl.current = uploadedBlobUrl;
-      hasInitialized.current = true;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty deps - only run once
+  // Simply use the props directly - no need for complex stable value system
+  // that was causing re-render issues
 
   const handleClose = () => {
     // If we have an id, dispatch the removeComponent event for backend deletion
@@ -107,10 +83,10 @@ export default function VideoPreview({
   };
 
   const isDirectVideoUrl = useMemo(() => {
-    const candidate = stableUploadedBlobUrl || stableSrc;
+    const candidate = uploadedBlobUrl || src;
     if (!candidate) return false;
     return /\.(mp4|webm|ogg|mov|m4v|wmv|flv)$/i.test(candidate.split("?")[0]);
-  }, [stableSrc, stableUploadedBlobUrl]);
+  }, [src, uploadedBlobUrl]);
 
   const embedPlatforms = useMemo(
     () => ["youtube", "vimeo", "instagram", "facebook", "twitter", "tiktok"],
@@ -119,18 +95,21 @@ export default function VideoPreview({
 
   // Detect platform from URL or type
   const detectedPlatform = useMemo(() => {
-    if (stableType && embedPlatforms.includes(stableType)) return stableType;
-    if (!stableSrc) return null;
+    if (type && embedPlatforms.includes(type)) return type;
+    if (!src) return null;
 
-    if (/youtube\.com|youtu\.be/i.test(stableSrc)) return "youtube";
-    if (/vimeo\.com/i.test(stableSrc)) return "vimeo";
-    if (/instagram\.com/i.test(stableSrc)) return "instagram";
-    if (/facebook\.com/i.test(stableSrc)) return "facebook";
-    if (/tiktok\.com/i.test(stableSrc)) return "tiktok";
-    if (/twitter\.com|x\.com/i.test(stableSrc)) return "twitter";
+    if (/youtube\.com|youtu\.be/i.test(src)) return "youtube";
+    if (/vimeo\.com/i.test(src)) return "vimeo";
+    if (/instagram\.com/i.test(src)) return "instagram";
+    if (/facebook\.com/i.test(src)) return "facebook";
+    if (/tiktok\.com/i.test(src)) return "tiktok";
+    if (/twitter\.com|x\.com/i.test(src)) return "twitter";
+
+    // If it's a direct video URL, mark as direct
+    if (isDirectVideoUrl || file || uploadedBlobUrl) return "direct";
 
     return null;
-  }, [stableSrc, stableType, embedPlatforms]);
+  }, [src, type, embedPlatforms, isDirectVideoUrl, file, uploadedBlobUrl]);
 
   // Platform styling configuration
   const platformConfig = useMemo(() => {
@@ -175,42 +154,38 @@ export default function VideoPreview({
   }, [detectedPlatform]);
 
   useEffect(() => {
-    if (stableFile) {
+    if (file) {
       try {
-        const url = URL.createObjectURL(stableFile);
+        const url = URL.createObjectURL(file);
         setObjectUrl(url);
         return () => {
           URL.revokeObjectURL(url);
-          setObjectUrl(null);
         };
       } catch {
         setObjectUrl(null);
       }
+    } else {
+      // Clear objectUrl when file is removed
+      setObjectUrl(null);
     }
-    return () => {
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-        setObjectUrl(null);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once since we use stable values
+  }, [file]); // Only depend on file, not objectUrl
 
-  const shouldUseVideoTag =
-    !!stableFile || !!stableUploadedBlobUrl || isDirectVideoUrl || false;
+  const shouldUseVideoTag = !!file || !!uploadedBlobUrl || isDirectVideoUrl;
 
-  const videoSource =
-    objectUrl ||
-    stableUploadedBlobUrl ||
-    (isDirectVideoUrl ? stableSrc! : null);
+  const videoSource = useMemo(() => {
+    if (objectUrl) return objectUrl;
+    if (uploadedBlobUrl) return uploadedBlobUrl;
+    if (isDirectVideoUrl && src) return src;
+    return null;
+  }, [objectUrl, uploadedBlobUrl, isDirectVideoUrl, src]);
 
   // Build provider embed HTML (improved approach)
   // returns { type: 'iframe'|'html'|'fallback', htmlOrSrc }
   const embedPayload = useMemo(() => {
-    if (!stableSrc) return null;
+    if (!src) return null;
 
     // YouTube
-    const yt = stableSrc.match(
+    const yt = src.match(
       /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([A-Za-z0-9_-]{6,})/
     );
     if (yt && yt[1]) {
@@ -221,7 +196,7 @@ export default function VideoPreview({
     }
 
     // Vimeo
-    const v = stableSrc.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    const v = src.match(/vimeo\.com\/(?:video\/)?(\d+)/);
     if (v && v[1])
       return {
         type: "iframe" as const,
@@ -229,36 +204,36 @@ export default function VideoPreview({
       };
 
     // TikTok - prefer embed.js + blockquote snippet
-    if (/tiktok\.com/i.test(stableSrc)) {
-      const html = `<blockquote class="tiktok-embed" cite="${stableSrc}" data-video="${stableSrc}" style="max-width: 605px;min-width: 325px;" > <section> <a target="_blank" title="TikTok" href="${stableSrc}"></a> </section></blockquote>`;
+    if (/tiktok\.com/i.test(src)) {
+      const html = `<blockquote class="tiktok-embed" cite="${src}" data-video="${src}" style="max-width: 605px;min-width: 325px;" > <section> <a target="_blank" title="TikTok" href="${src}"></a> </section></blockquote>`;
       return { type: "html" as const, html, provider: "tiktok" as const };
     }
 
     // Instagram
-    if (/instagram\.com/i.test(stableSrc)) {
-      const html = `<blockquote class="instagram-media" data-instgrm-permalink="${stableSrc}" data-instgrm-version="14" style="background:#FFF; border:0; border-radius:3px; box-shadow:0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15); margin: 1px; max-width:540px; min-width:326px; padding:0; width:99.375%; width:-webkit-calc(100% - 2px); width:calc(100% - 2px);"></blockquote>`;
+    if (/instagram\.com/i.test(src)) {
+      const html = `<blockquote class="instagram-media" data-instgrm-permalink="${src}" data-instgrm-version="14" style="background:#FFF; border:0; border-radius:3px; box-shadow:0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15); margin: 1px; max-width:540px; min-width:326px; padding:0; width:99.375%; width:-webkit-calc(100% - 2px); width:calc(100% - 2px);"></blockquote>`;
       return { type: "html" as const, html, provider: "instagram" as const };
     }
 
     // Twitter / X
-    if (/twitter\.com|x\.com/i.test(stableSrc)) {
-      const html = `<blockquote class="twitter-tweet" data-theme="light"><a href="${stableSrc}"></a></blockquote>`;
+    if (/twitter\.com|x\.com/i.test(src)) {
+      const html = `<blockquote class="twitter-tweet" data-theme="light"><a href="${src}"></a></blockquote>`;
       return { type: "html" as const, html, provider: "twitter" as const };
     }
 
     // Facebook video/embed
-    if (/facebook\.com/i.test(stableSrc)) {
-      const html = `<div id="fb-root"></div><div class="fb-video" data-href="${stableSrc}" data-width="auto" data-show-text="false"></div>`;
+    if (/facebook\.com/i.test(src)) {
+      const html = `<div id="fb-root"></div><div class="fb-video" data-href="${src}" data-width="auto" data-show-text="false"></div>`;
       return { type: "html" as const, html, provider: "facebook" as const };
     }
 
     // If direct video url handled earlier; fallback to direct iframe try
     if (isDirectVideoUrl) {
-      return { type: "iframe" as const, src: stableSrc }; // likely works for direct hosted files
+      return { type: "iframe" as const, src: src }; // likely works for direct hosted files
     }
 
-    return { type: "fallback" as const, href: stableSrc };
-  }, [stableSrc, isDirectVideoUrl]);
+    return { type: "fallback" as const, href: src };
+  }, [src, isDirectVideoUrl]);
 
   // Effect to load provider scripts when needed
   useEffect(() => {
@@ -332,8 +307,20 @@ export default function VideoPreview({
     }
   }, [embedPayload?.type, embedPayload?.html, embedPayload?.provider]); // Re-run when Instagram HTML changes
 
+  // Memoize media style to prevent unnecessary re-renders
+  const mediaStyle = useMemo(
+    (): React.CSSProperties => ({
+      width: "100%",
+      height: "100%",
+      objectFit: "cover",
+      border: 0,
+      display: "block",
+    }),
+    []
+  );
+
   // Helper render function for embed content
-  function renderEmbedContent() {
+  const renderEmbedContent = useMemo(() => {
     if (!embedPayload) {
       return (
         <div
@@ -398,7 +385,7 @@ export default function VideoPreview({
         </a>
       </div>
     );
-  }
+  }, [embedPayload, mediaStyle]);
 
   // Main card container exactly matching screenshot
   const cardStyle: React.CSSProperties = {
@@ -481,80 +468,22 @@ export default function VideoPreview({
     overflow: isSocialVideo ? "auto" : "hidden",
   };
 
-  const mediaStyle: React.CSSProperties = {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    border: 0,
-    display: "block",
-  };
+  // Helper render function for video content
+  const renderVideoContent = useMemo(() => {
+    if (shouldUseVideoTag && videoSource) {
+      return (
+        <video
+          src={videoSource}
+          controls
+          playsInline
+          style={mediaStyle}
+          key={videoSource} // Force re-render when source changes
+        />
+      );
+    }
 
-  if (shouldUseVideoTag && videoSource) {
-    return (
-      <div className={className} style={cardStyle}>
-        {/* Header Overlay */}
-        <div style={headerOverlayStyle}>
-          <div style={headerLeftStyle}>
-            <div style={iconStyle}>
-              {platformConfig.icon.startsWith("/") ? (
-                <Image
-                  src={platformConfig.icon}
-                  width={18}
-                  height={18}
-                  alt={detectedPlatform || "video"}
-                  style={
-                    platformConfig.iconFilter
-                      ? { filter: platformConfig.iconFilter }
-                      : undefined
-                  }
-                />
-              ) : (
-                <span>{platformConfig.icon}</span>
-              )}
-            </div>
-            <span style={textStyle}>
-              {detectedPlatform
-                ? detectedPlatform.charAt(0).toUpperCase() +
-                  detectedPlatform.slice(1)
-                : "Video"}
-            </span>
-          </div>
-          <div style={actionsStyle}>
-            {detectedPlatform === "direct" ? (
-              <>
-                <button
-                  onClick={handleClose}
-                  style={{
-                    ...actionButtonStyle,
-                    background: "rgba(255, 255, 255, 0.2)",
-                  }}
-                >
-                  <DeleteIcon size={20} color="white" />
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={handleClose}
-                  style={{
-                    ...actionButtonStyle,
-                    background: "rgba(255, 255, 255, 0.2)",
-                  }}
-                >
-                  <DeleteIcon size={20} color="white" />
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Video Content */}
-        <div className="p-2" style={contentStyle}>
-          <video src={videoSource} controls playsInline style={mediaStyle} />
-        </div>
-      </div>
-    );
-  }
+    return renderEmbedContent;
+  }, [shouldUseVideoTag, videoSource, mediaStyle, renderEmbedContent]);
 
   return (
     <div className={className} style={cardStyle}>
@@ -586,42 +515,22 @@ export default function VideoPreview({
           </span>
         </div>
         <div style={actionsStyle}>
-          {detectedPlatform === "direct" ? (
-            <>
-              <button
-                onClick={handleClose}
-                style={{
-                  ...actionButtonStyle,
-                  background: "rgba(255, 255, 255, 0.2)",
-                }}
-              >
-                <DeleteIcon size={20} color="white" />
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={handleClose}
-                style={{
-                  ...actionButtonStyle,
-                  background: "rgba(255, 255, 255, 0.2)",
-                }}
-              >
-                <DeleteIcon size={20} color="white" />
-              </button>
-            </>
-          )}
+          <button
+            onClick={handleClose}
+            style={{
+              ...actionButtonStyle,
+              background: "rgba(255, 255, 255, 0.2)",
+            }}
+          >
+            <DeleteIcon size={20} color="white" />
+          </button>
         </div>
       </div>
 
-      {/* Iframe Content */}
-      <div style={contentStyle}>
-        {shouldUseVideoTag && videoSource ? (
-          <video src={videoSource} controls playsInline style={mediaStyle} />
-        ) : (
-          renderEmbedContent()
-        )}
-      </div>
+      {/* Content */}
+      <div style={contentStyle}>{renderVideoContent}</div>
     </div>
   );
-}
+});
+
+export default VideoPreview;
