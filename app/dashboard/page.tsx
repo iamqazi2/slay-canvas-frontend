@@ -683,6 +683,7 @@ export default function Home() {
                     console.log(
                       `Linked collection ${collectionId} to knowledge base ${kbId}`
                     );
+                    showToast("Collection successfully connected to chat", "success");
                   }
                 } else {
                   // Handle individual asset linking
@@ -704,18 +705,20 @@ export default function Home() {
                     console.log(
                       `Linked asset ${assetId} to knowledge base ${kbId}`
                     );
+                    showToast("Asset successfully connected to chat", "success");
                   }
                 }
                 switchWorkspace(currentWorkspaceId);
               } catch (error) {
                 console.error("Failed to link to knowledge base:", error);
+                showToast("Failed to connect asset to chat", "error");
               }
             }
           }
         }
       }
     },
-    [nodes, setEdges, currentWorkspaceId, switchWorkspace]
+    [nodes, setEdges, currentWorkspaceId, switchWorkspace, showToast]
   );
 
   const onNodeDragStop = useCallback(
