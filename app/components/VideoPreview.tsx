@@ -2,8 +2,41 @@
 
 import { VideoItem } from "@/app/models/interfaces";
 import Image from "next/image";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import DeleteIcon from "./icons/DeleteIcon";
+
+// Extend Window interface for third-party libraries
+declare global {
+  interface Window {
+    instgrm?: {
+      Embeds: {
+        process: () => void;
+      };
+    };
+    FB?: {
+      XFBML: {
+        parse: () => void;
+      };
+    };
+  }
+}
+
+// Helper to load external script once
+function loadScript(src: string, id?: string) {
+  if (id && document.getElementById(id)) return Promise.resolve();
+  return new Promise<void>((resolve, reject) => {
+    // check existing
+    const existing = Array.from(document.scripts).find((s) => s.src === src);
+    if (existing) return resolve();
+    const s = document.createElement("script");
+    if (id) s.id = id;
+    s.src = src;
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error(`Failed to load ${src}`));
+    document.body.appendChild(s);
+  });
+}
 
 type VideoPreviewProps = {
   id?: string;
@@ -28,6 +61,33 @@ export default function VideoPreview({
 }: VideoPreviewProps) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
+  // Use refs to store stable values that won't cause re-renders
+  const initialSrc = useRef(src);
+  const initialFile = useRef(file);
+  const initialType = useRef(type);
+  const initialUploadedBlobUrl = useRef(uploadedBlobUrl);
+  const hasInitialized = useRef(false);
+
+  // Only use initial values, not changing props
+  const stableSrc = hasInitialized.current ? initialSrc.current : src;
+  const stableFile = hasInitialized.current ? initialFile.current : file;
+  const stableType = hasInitialized.current ? initialType.current : type;
+  const stableUploadedBlobUrl = hasInitialized.current
+    ? initialUploadedBlobUrl.current
+    : uploadedBlobUrl;
+
+  // Initialize stable values once
+  useEffect(() => {
+    if (!hasInitialized.current) {
+      initialSrc.current = src;
+      initialFile.current = file;
+      initialType.current = type;
+      initialUploadedBlobUrl.current = uploadedBlobUrl;
+      hasInitialized.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run once
+
   const handleClose = () => {
     // If we have an id, dispatch the removeComponent event for backend deletion
     if (id) {
@@ -47,30 +107,30 @@ export default function VideoPreview({
   };
 
   const isDirectVideoUrl = useMemo(() => {
-    const candidate = uploadedBlobUrl || src;
+    const candidate = stableUploadedBlobUrl || stableSrc;
     if (!candidate) return false;
     return /\.(mp4|webm|ogg|mov|m4v|wmv|flv)$/i.test(candidate.split("?")[0]);
-  }, [src, uploadedBlobUrl]);
+  }, [stableSrc, stableUploadedBlobUrl]);
 
   const embedPlatforms = useMemo(
-    () => ["youtube", "vimeo", "instagram", "facebook", "twitter", "X"],
+    () => ["youtube", "vimeo", "instagram", "facebook", "twitter", "tiktok"],
     []
   );
 
   // Detect platform from URL or type
   const detectedPlatform = useMemo(() => {
-    if (type && embedPlatforms.includes(type)) return type;
-    if (!src) return null;
+    if (stableType && embedPlatforms.includes(stableType)) return stableType;
+    if (!stableSrc) return null;
 
-    if (/youtube\.com|youtu\.be/i.test(src)) return "youtube";
-    if (/vimeo\.com/i.test(src)) return "vimeo";
-    if (/instagram\.com/i.test(src)) return "instagram";
-    if (/facebook\.com/i.test(src)) return "facebook";
-    if (/tiktok\.com/i.test(src)) return "twitter";
-    if (/twitter\.com|x\.com/i.test(src)) return "X";
+    if (/youtube\.com|youtu\.be/i.test(stableSrc)) return "youtube";
+    if (/vimeo\.com/i.test(stableSrc)) return "vimeo";
+    if (/instagram\.com/i.test(stableSrc)) return "instagram";
+    if (/facebook\.com/i.test(stableSrc)) return "facebook";
+    if (/tiktok\.com/i.test(stableSrc)) return "tiktok";
+    if (/twitter\.com|x\.com/i.test(stableSrc)) return "twitter";
 
     return null;
-  }, [src, type, embedPlatforms]);
+  }, [stableSrc, stableType, embedPlatforms]);
 
   // Platform styling configuration
   const platformConfig = useMemo(() => {
@@ -115,9 +175,9 @@ export default function VideoPreview({
   }, [detectedPlatform]);
 
   useEffect(() => {
-    if (file) {
+    if (stableFile) {
       try {
-        const url = URL.createObjectURL(file);
+        const url = URL.createObjectURL(stableFile);
         setObjectUrl(url);
         return () => {
           URL.revokeObjectURL(url);
@@ -134,38 +194,211 @@ export default function VideoPreview({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [file]);
+  }, []); // Only run once since we use stable values
 
   const shouldUseVideoTag =
-    !!file || !!uploadedBlobUrl || isDirectVideoUrl || false;
+    !!stableFile || !!stableUploadedBlobUrl || isDirectVideoUrl || false;
 
   const videoSource =
-    objectUrl || uploadedBlobUrl || (isDirectVideoUrl ? src! : null);
+    objectUrl ||
+    stableUploadedBlobUrl ||
+    (isDirectVideoUrl ? stableSrc! : null);
 
-  const iframeSrc = (() => {
-    if (!src) return null;
-    if (detectedPlatform === "instagram") {
-      return `${src}/embed`;
-    }
-    if (detectedPlatform === "twitter" || detectedPlatform === "X") return null;
-    if (type && embedPlatforms.includes(type)) return src;
-    if (
-      /\/embed\/|player\.vimeo\.com|facebook\.com\/plugins|instagram\.com\/p\/|instagram\.com\/reel|twitter\.com\/embed|twitframe\.com/i.test(
-        src
-      )
-    )
-      return src;
-    const yt = src.match(
+  // Build provider embed HTML (improved approach)
+  // returns { type: 'iframe'|'html'|'fallback', htmlOrSrc }
+  const embedPayload = useMemo(() => {
+    if (!stableSrc) return null;
+
+    // YouTube
+    const yt = stableSrc.match(
       /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([A-Za-z0-9_-]{6,})/
     );
     if (yt && yt[1]) {
-      return `https://www.youtube.com/embed/${yt[1]}`;
+      return {
+        type: "iframe" as const,
+        src: `https://www.youtube.com/embed/${yt[1]}`,
+      };
     }
-    const v = src.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-    if (v && v[1]) return `https://player.vimeo.com/video/${v[1]}`;
-    if (!isDirectVideoUrl) return src;
-    return null;
-  })();
+
+    // Vimeo
+    const v = stableSrc.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    if (v && v[1])
+      return {
+        type: "iframe" as const,
+        src: `https://player.vimeo.com/video/${v[1]}`,
+      };
+
+    // TikTok - prefer embed.js + blockquote snippet
+    if (/tiktok\.com/i.test(stableSrc)) {
+      const html = `<blockquote class="tiktok-embed" cite="${stableSrc}" data-video="${stableSrc}" style="max-width: 605px;min-width: 325px;" > <section> <a target="_blank" title="TikTok" href="${stableSrc}"></a> </section></blockquote>`;
+      return { type: "html" as const, html, provider: "tiktok" as const };
+    }
+
+    // Instagram
+    if (/instagram\.com/i.test(stableSrc)) {
+      const html = `<blockquote class="instagram-media" data-instgrm-permalink="${stableSrc}" data-instgrm-version="14" style="background:#FFF; border:0; border-radius:3px; box-shadow:0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15); margin: 1px; max-width:540px; min-width:326px; padding:0; width:99.375%; width:-webkit-calc(100% - 2px); width:calc(100% - 2px);"></blockquote>`;
+      return { type: "html" as const, html, provider: "instagram" as const };
+    }
+
+    // Twitter / X
+    if (/twitter\.com|x\.com/i.test(stableSrc)) {
+      const html = `<blockquote class="twitter-tweet" data-theme="light"><a href="${stableSrc}"></a></blockquote>`;
+      return { type: "html" as const, html, provider: "twitter" as const };
+    }
+
+    // Facebook video/embed
+    if (/facebook\.com/i.test(stableSrc)) {
+      const html = `<div id="fb-root"></div><div class="fb-video" data-href="${stableSrc}" data-width="auto" data-show-text="false"></div>`;
+      return { type: "html" as const, html, provider: "facebook" as const };
+    }
+
+    // If direct video url handled earlier; fallback to direct iframe try
+    if (isDirectVideoUrl) {
+      return { type: "iframe" as const, src: stableSrc }; // likely works for direct hosted files
+    }
+
+    return { type: "fallback" as const, href: stableSrc };
+  }, [stableSrc, isDirectVideoUrl]);
+
+  // Effect to load provider scripts when needed
+  useEffect(() => {
+    if (!embedPayload || embedPayload.type !== "html") return;
+
+    const provider = embedPayload.provider;
+    if (provider === "tiktok") {
+      // TikTok embed script
+      loadScript("https://www.tiktok.com/embed.js", "tiktok-embed-js").catch(
+        () => {}
+      );
+    } else if (provider === "instagram") {
+      loadScript("https://www.instagram.com/embed.js", "instagram-embed-js")
+        .then(() => {
+          // Instagram requires window.instgrm && window.instgrm.Embeds.process()
+          // run it after script load
+          if (
+            window.instgrm &&
+            window.instgrm.Embeds &&
+            typeof window.instgrm.Embeds.process === "function"
+          ) {
+            window.instgrm.Embeds.process();
+          }
+        })
+        .catch(() => {});
+    } else if (provider === "twitter") {
+      loadScript(
+        "https://platform.twitter.com/widgets.js",
+        "twitter-widgets-js"
+      ).catch(() => {});
+    } else if (provider === "facebook") {
+      // Facebook SDK init (light)
+      if (!document.getElementById("facebook-jssdk")) {
+        const fb = document.createElement("script");
+        fb.id = "facebook-jssdk";
+        fb.src =
+          "https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v16.0";
+        fb.async = true;
+        document.body.appendChild(fb);
+      } else {
+        // reparse XFBML if already loaded
+        if (
+          window.FB &&
+          window.FB.XFBML &&
+          typeof window.FB.XFBML.parse === "function"
+        ) {
+          window.FB.XFBML.parse();
+        }
+      }
+    }
+  }, [embedPayload]);
+
+  // Additional effect to ensure Instagram embeds are processed after render
+  useEffect(() => {
+    if (
+      embedPayload?.type === "html" &&
+      embedPayload?.provider === "instagram"
+    ) {
+      // Process Instagram embeds after a short delay to ensure DOM is ready
+      const timeoutId = setTimeout(() => {
+        if (
+          window.instgrm &&
+          window.instgrm.Embeds &&
+          typeof window.instgrm.Embeds.process === "function"
+        ) {
+          window.instgrm.Embeds.process();
+        }
+      }, 300);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [embedPayload?.type, embedPayload?.html, embedPayload?.provider]); // Re-run when Instagram HTML changes
+
+  // Helper render function for embed content
+  function renderEmbedContent() {
+    if (!embedPayload) {
+      return (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#fff",
+            width: "100%",
+            height: "100%",
+          }}
+        >
+          Preview unavailable
+        </div>
+      );
+    }
+
+    if (embedPayload.type === "iframe") {
+      return (
+        <iframe
+          src={embedPayload.src}
+          title="video-preview-embed"
+          frameBorder={0}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+          allowFullScreen
+          style={mediaStyle}
+        />
+      );
+    }
+
+    if (embedPayload.type === "html") {
+      // render provider HTML (blockquotes, etc)
+      return (
+        <div
+          style={{ width: "100%", height: "100%", overflow: "auto" }}
+          // render HTML snippet
+          dangerouslySetInnerHTML={{ __html: embedPayload.html }}
+        />
+      );
+    }
+
+    // fallback: show link + thumbnail if possible
+    return (
+      <div
+        style={{
+          padding: 12,
+          color: "#fff",
+          background: "#000",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100%",
+        }}
+      >
+        <a
+          href={embedPayload.href}
+          target="_blank"
+          rel="noreferrer"
+          style={{ color: "#fff" }}
+        >
+          Open video
+        </a>
+      </div>
+    );
+  }
 
   // Main card container exactly matching screenshot
   const cardStyle: React.CSSProperties = {
@@ -383,28 +616,10 @@ export default function VideoPreview({
 
       {/* Iframe Content */}
       <div style={contentStyle}>
-        {iframeSrc ? (
-          <iframe
-            src={iframeSrc}
-            title="video-preview-embed"
-            frameBorder={0}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-            allowFullScreen
-            style={mediaStyle}
-          />
+        {shouldUseVideoTag && videoSource ? (
+          <video src={videoSource} controls playsInline style={mediaStyle} />
         ) : (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#fff",
-              width: "100%",
-              height: "100%",
-            }}
-          >
-            Preview unavailable
-          </div>
+          renderEmbedContent()
         )}
       </div>
     </div>
