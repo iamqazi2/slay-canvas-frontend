@@ -54,7 +54,7 @@ export default function VideoPreview({
   }, [src, uploadedBlobUrl]);
 
   const embedPlatforms = useMemo(
-    () => ["youtube", "vimeo", "instagram", "facebook", "tiktok", "twitter"],
+    () => ["youtube", "vimeo", "instagram", "facebook", "twitter", "X"],
     []
   );
 
@@ -67,8 +67,8 @@ export default function VideoPreview({
     if (/vimeo\.com/i.test(src)) return "vimeo";
     if (/instagram\.com/i.test(src)) return "instagram";
     if (/facebook\.com/i.test(src)) return "facebook";
-    if (/tiktok\.com/i.test(src)) return "tiktok";
-    if (/twitter\.com|x\.com/i.test(src)) return "twitter";
+    if (/tiktok\.com/i.test(src)) return "twitter";
+    if (/twitter\.com|x\.com/i.test(src)) return "X";
 
     return null;
   }, [src, type, embedPlatforms]);
@@ -77,7 +77,7 @@ export default function VideoPreview({
   const platformConfig = useMemo(() => {
     const configs: Record<
       string,
-      { bg: string; headerBg: string; icon: string }
+      { bg: string; headerBg: string; icon: string; iconFilter?: string }
     > = {
       instagram: {
         bg: "#FDF2F8", // Light pink
@@ -94,11 +94,7 @@ export default function VideoPreview({
         headerBg: "#2c5b98", // Facebook blue
         icon: "/fb-logo.svg",
       },
-      tiktok: {
-        bg: "#000000", // Dark like logo
-        headerBg: "#1c1417", // TikTok pink
-        icon: "/tiktok-logo.svg",
-      },
+
       direct: {
         bg: "#F8F9FA",
         headerBg: "#6B7280",
@@ -109,17 +105,12 @@ export default function VideoPreview({
         headerBg: "#1AB7EA", // Vimeo blue
         icon: "🎬",
       },
-      twitter: {
-        bg: "#F0F9FF", // Light cyan
-        headerBg: "#1DA1F2", // Twitter blue
-        icon: "🐦",
-      },
     };
     return (
       configs[detectedPlatform || ""] || {
         bg: "#F8F9FA",
-        headerBg: "#FF6B7A",
-        icon: "📷",
+        headerBg: "#1AB7EA",
+        icon: "/x.png",
       }
     );
   }, [detectedPlatform]);
@@ -154,9 +145,15 @@ export default function VideoPreview({
 
   const iframeSrc = (() => {
     if (!src) return null;
+    if (
+      detectedPlatform === "instagram" ||
+      detectedPlatform === "twitter" ||
+      detectedPlatform === "X"
+    )
+      return null;
     if (type && embedPlatforms.includes(type)) return src;
     if (
-      /\/embed\/|player\.vimeo\.com|facebook\.com\/plugins|instagram\.com\/p\/|instagram\.com\/reel|tiktok\.com\/embed|twitframe\.com/i.test(
+      /\/embed\/|player\.vimeo\.com|facebook\.com\/plugins|instagram\.com\/p\/|instagram\.com\/reel|twitter\.com\/embed|twitframe\.com/i.test(
         src
       )
     )
@@ -172,28 +169,6 @@ export default function VideoPreview({
     if (!isDirectVideoUrl) return src;
     return null;
   })();
-
-  // If neither videoSource nor iframeSrc, show fallback UI
-  if (!videoSource && !iframeSrc) {
-    return (
-      <div
-        className={className}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#111",
-          color: "#fff",
-          padding: 12,
-          borderRadius: 8,
-          minHeight: 160,
-          ...style,
-        }}
-      >
-        <div>Preview unavailable</div>
-      </div>
-    );
-  }
 
   // Main card container exactly matching screenshot
   const cardStyle: React.CSSProperties = {
@@ -267,7 +242,7 @@ export default function VideoPreview({
   // Content area with video/image
   const isSocialVideo =
     detectedPlatform &&
-    ["instagram", "tiktok", "facebook"].includes(detectedPlatform);
+    ["instagram", "twitter", "facebook"].includes(detectedPlatform);
   const contentStyle: React.CSSProperties = {
     width: "100%",
     height: isSocialVideo ? 520 : 320,
@@ -297,6 +272,11 @@ export default function VideoPreview({
                   width={18}
                   height={18}
                   alt={detectedPlatform || "video"}
+                  style={
+                    platformConfig.iconFilter
+                      ? { filter: platformConfig.iconFilter }
+                      : undefined
+                  }
                 />
               ) : (
                 <span>{platformConfig.icon}</span>
@@ -358,6 +338,11 @@ export default function VideoPreview({
                 width={18}
                 height={18}
                 alt={detectedPlatform || "video"}
+                style={
+                  platformConfig.iconFilter
+                    ? { filter: platformConfig.iconFilter }
+                    : undefined
+                }
               />
             ) : (
               <span>{platformConfig.icon}</span>
@@ -401,14 +386,29 @@ export default function VideoPreview({
 
       {/* Iframe Content */}
       <div style={contentStyle}>
-        <iframe
-          src={iframeSrc || undefined}
-          title="video-preview-embed"
-          frameBorder={0}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-          allowFullScreen
-          style={mediaStyle}
-        />
+        {iframeSrc ? (
+          <iframe
+            src={iframeSrc}
+            title="video-preview-embed"
+            frameBorder={0}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allowFullScreen
+            style={mediaStyle}
+          />
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#fff",
+              width: "100%",
+              height: "100%",
+            }}
+          >
+            Preview unavailable
+          </div>
+        )}
       </div>
     </div>
   );

@@ -15,7 +15,15 @@ export interface VideoItem {
   description: string;
   url: string;
   thumbnail?: string;
-  type: "youtube" | "vimeo" | "instagram" | "facebook" | "tiktok" | "twitter" | "direct" | "other";
+  type:
+    | "youtube"
+    | "vimeo"
+    | "instagram"
+    | "facebook"
+    | "twitter"
+    | "X"
+    | "direct"
+    | "other";
   duration?: string;
   author?: string;
   platform?: string;
