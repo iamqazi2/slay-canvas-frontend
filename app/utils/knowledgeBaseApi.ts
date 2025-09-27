@@ -60,12 +60,24 @@ class KnowledgeBaseApi {
   async linkAssetToKnowledgeBase(
     workspaceId: number,
     assetId: number,
-    knowledgeBaseId: number
+    knowledgeBaseId: number,
+    assetHandle?: string, // "left" or "right"
+    kbHandle?: string // "left" or "right"
   ): Promise<LinkAssetResponse> {
-    return await apiClient.post<LinkAssetResponse>(
-      `/workspaces/${workspaceId}/assets/${assetId}/link-to-kb/${knowledgeBaseId}`,
-      {}
-    );
+    const params = new URLSearchParams();
+    if (assetHandle) {
+      params.append("asset_handle", assetHandle);
+    }
+    if (kbHandle) {
+      params.append("kb_handle", kbHandle);
+    }
+
+    const queryString = params.toString();
+    const url = `/workspaces/${workspaceId}/assets/${assetId}/link-to-kb/${knowledgeBaseId}${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    return await apiClient.post<LinkAssetResponse>(url, {});
   }
 
   /**
@@ -86,12 +98,24 @@ class KnowledgeBaseApi {
   async linkCollectionToKnowledgeBase(
     workspaceId: number,
     collectionId: number,
-    knowledgeBaseId: number
+    knowledgeBaseId: number,
+    collectionHandle?: string, // "left" or "right" - handle for the collection
+    kbHandle?: string // "left" or "right" - handle for the KB
   ): Promise<LinkAssetResponse> {
-    return await apiClient.post<LinkAssetResponse>(
-      `/workspaces/${workspaceId}/collections/${collectionId}/link-to-kb/${knowledgeBaseId}`,
-      {}
-    );
+    const params = new URLSearchParams();
+    if (collectionHandle) {
+      params.append("collection_handle", collectionHandle);
+    }
+    if (kbHandle) {
+      params.append("kb_handle", kbHandle);
+    }
+
+    const queryString = params.toString();
+    const url = `/workspaces/${workspaceId}/collections/${collectionId}/link-to-kb/${knowledgeBaseId}${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    return await apiClient.post<LinkAssetResponse>(url, {});
   }
 
   /**

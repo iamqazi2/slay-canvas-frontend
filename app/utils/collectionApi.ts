@@ -9,6 +9,9 @@ export interface Collection {
   created_at: string;
   workspace_id: number;
   asset_count?: number;
+  knowledge_base_id?: number;
+  kb_connection_asset_handle?: string | null;
+  kb_connection_kb_handle?: string | null;
 }
 
 export interface CollectionCreate {
@@ -29,6 +32,8 @@ export interface Asset {
   knowledge_base_id?: number;
   is_active: boolean;
   created_at: string;
+  kb_connection_asset_handle?: string | null;
+  kb_connection_kb_handle?: string | null;
 }
 
 export const collectionApi = {

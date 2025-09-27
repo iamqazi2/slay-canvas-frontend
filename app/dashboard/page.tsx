@@ -280,9 +280,11 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
         />
       )}
 
+      {/* Left side handles - both source and target */}
       <Handle
         type="target"
         position={Position.Left}
+        id="left"
         onMouseDown={(e) => {
           e.stopPropagation();
           e.preventDefault();
@@ -301,7 +303,30 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
       />
       <Handle
         type="source"
+        position={Position.Left}
+        id="left"
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+        style={{
+          background: "#F0F5F7",
+          width: "24px",
+          height: "24px",
+          border: "1px solid rgba(69, 150, 255, 0.1)",
+          boxShadow: "0 0 8px rgba(69, 150, 255, 0.3)",
+          left: "-28px",
+          top: "55%",
+          transform: "translateY(-50%)",
+          zIndex: 1001,
+        }}
+      />
+
+      {/* Right side handles - both source and target */}
+      <Handle
+        type="target"
         position={Position.Right}
+        id="right"
         onMouseDown={(e) => {
           e.stopPropagation();
           e.preventDefault();
@@ -316,6 +341,26 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
           top: "55%",
           transform: "translateY(-50%)",
           zIndex: 1000,
+        }}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+        style={{
+          background: "#F0F5F7",
+          width: "24px",
+          height: "24px",
+          border: "1px solid rgba(69, 150, 255, 0.1)",
+          boxShadow: "0 0 8px rgba(69, 150, 255, 0.3)",
+          right: "-28px",
+          top: "55%",
+          transform: "translateY(-50%)",
+          zIndex: 1001,
         }}
       />
       {renderComponent(data)}
@@ -670,42 +715,52 @@ export default function Home() {
 
             if (currentWorkspaceId) {
               try {
+                // Determine handles based on connection params
+                const sourceHandle = params.sourceHandle || "right"; // default fallback
+                const targetHandle = params.targetHandle || "left"; // default fallback
+
+                // Determine which handles to use for asset/collection and KB
+                const assetHandle = targetIsKB ? sourceHandle : targetHandle;
+                const kbHandle = targetIsKB ? targetHandle : sourceHandle;
+
+                console.log(
+                  `Connection handles - Asset: ${assetHandle}, KB: ${kbHandle}`
+                );
+
                 // Check if this is a collection or individual asset
                 if (nodeData.type === "folderCollection") {
-                  // Handle collection linking
+                  // Handle collection linking with automatic handle detection
                   const collectionId = nodeData.data?.collectionId;
                   if (collectionId) {
                     await knowledgeBaseApi.linkCollectionToKnowledgeBase(
                       currentWorkspaceId,
                       collectionId,
-                      kbId
+                      kbId,
+                      assetHandle as "left" | "right",
+                      kbHandle as "left" | "right"
                     );
                     console.log(
-                      `Linked collection ${collectionId} to knowledge base ${kbId}`
+                      `Linked collection ${collectionId} to knowledge base ${kbId} with handles ${assetHandle}-${kbHandle}`
                     );
                   }
                 } else {
-                  // Handle individual asset linking
-                  // setAttachedAssets((prev) => {
-                  //   const exists = prev.find((a) => a.id === nodeData.id);
-                  //   if (!exists) {
-                  //     return [...prev, nodeData];
-                  //   }
-                  //   return prev;
-                  // });
-
+                  // Handle individual asset linking with automatic handle detection
                   const assetId = getAssetIdFromComponentId(nodeData.id);
                   if (assetId) {
                     await knowledgeBaseApi.linkAssetToKnowledgeBase(
                       currentWorkspaceId,
                       assetId,
-                      kbId
+                      kbId,
+                      assetHandle as "left" | "right",
+                      kbHandle as "left" | "right"
                     );
                     console.log(
-                      `Linked asset ${assetId} to knowledge base ${kbId}`
+                      `Linked asset ${assetId} to knowledge base ${kbId} with handles ${assetHandle}-${kbHandle}`
                     );
                   }
                 }
+
+                // Refresh workspace
                 switchWorkspace(currentWorkspaceId);
               } catch (error) {
                 console.error("Failed to link to knowledge base:", error);
@@ -715,7 +770,7 @@ export default function Home() {
         }
       }
     },
-    [nodes, setEdges, currentWorkspaceId, switchWorkspace]
+    [nodes, setEdges, currentWorkspaceId, switchWorkspace, showToast]
   );
 
   const onNodeDragStop = useCallback(
@@ -1094,10 +1149,20 @@ export default function Home() {
         const assetNodeId = `asset-${asset.id}`;
         const kbNodeId = `kb-${asset.knowledge_base_id}`;
 
+        console.log(`Asset ${asset.id} edge creation:`, {
+          assetId: asset.id,
+          kb_connection_asset_handle: asset.kb_connection_asset_handle,
+          kb_connection_kb_handle: asset.kb_connection_kb_handle,
+          sourceHandle: asset.kb_connection_asset_handle || "right",
+          targetHandle: asset.kb_connection_kb_handle || "left",
+        });
+
         existingEdges.push({
           id: `${assetNodeId}-${kbNodeId}`,
           source: assetNodeId,
           target: kbNodeId,
+          sourceHandle: asset.kb_connection_asset_handle || "right",
+          targetHandle: asset.kb_connection_kb_handle || "left",
           type: "default",
           style: { stroke: "#4596FF", strokeDasharray: "5,5" },
         });
@@ -1116,6 +1181,8 @@ export default function Home() {
             id: `${collectionNodeId}-${kbNodeId}`,
             source: collectionNodeId,
             target: kbNodeId,
+            sourceHandle: collection.kb_connection_asset_handle || "right",
+            targetHandle: collection.kb_connection_kb_handle || "left",
             type: "default",
             style: { stroke: "#4596FF", strokeDasharray: "5,5" },
           });
