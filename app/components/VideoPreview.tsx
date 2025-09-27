@@ -18,6 +18,11 @@ declare global {
         parse: () => void;
       };
     };
+    twttr?: {
+      widgets: {
+        load: () => void;
+      };
+    };
   }
 }
 
@@ -103,7 +108,8 @@ const VideoPreview = memo(function VideoPreview({
     if (/instagram\.com/i.test(src)) return "instagram";
     if (/facebook\.com/i.test(src)) return "facebook";
     if (/tiktok\.com/i.test(src)) return "tiktok";
-    if (/twitter\.com|x\.com/i.test(src)) return "twitter";
+    if (/(?:twitter\.com|x\.com).*\/(?:status|i\/status)\//i.test(src))
+      return "twitter";
 
     // If it's a direct video URL, mark as direct
     if (isDirectVideoUrl || file || uploadedBlobUrl) return "direct";
@@ -132,7 +138,11 @@ const VideoPreview = memo(function VideoPreview({
         headerBg: "#2c5b98", // Facebook blue
         icon: "/fb-logo.svg",
       },
-
+      twitter: {
+        bg: "#F8FAFC", // Light gray
+        headerBg: "#1DA1F2", // Twitter blue
+        icon: "/x.png", // Using the X logo
+      },
       direct: {
         bg: "#F8F9FA",
         headerBg: "#6B7280",
@@ -215,9 +225,24 @@ const VideoPreview = memo(function VideoPreview({
       return { type: "html" as const, html, provider: "instagram" as const };
     }
 
-    // Twitter / X
-    if (/twitter\.com|x\.com/i.test(src)) {
-      const html = `<blockquote class="twitter-tweet" data-theme="light"><a href="${src}"></a></blockquote>`;
+    // Twitter / X - handle both old twitter.com and new x.com URLs
+    if (/(?:twitter\.com|x\.com)/i.test(src)) {
+      // Extract tweet ID from various URL formats
+      const tweetMatch = src.match(/(?:status|statuses)\/(\d+)/);
+      let tweetUrl = src;
+
+      // if (tweetMatch && tweetMatch[1]) {
+      //   const tweetId = tweetMatch[1];
+      //   // Always use twitter.com for embeds as it works better
+      //   tweetUrl = `https://twitter.com/i/web/status/${tweetId}`;
+      // } else if (src.includes("x.com")) {
+      // Fallback: convert x.com URLs to twitter.com for better embedding
+      tweetUrl = src.replace(/x\.com/g, "twitter.com");
+      // }
+
+      const html = `<blockquote class="twitter-tweet" data-theme="light" data-dnt="true">
+        <a href="${tweetUrl}"></a>
+      </blockquote>`;
       return { type: "html" as const, html, provider: "twitter" as const };
     }
 
@@ -263,7 +288,14 @@ const VideoPreview = memo(function VideoPreview({
       loadScript(
         "https://platform.twitter.com/widgets.js",
         "twitter-widgets-js"
-      ).catch(() => {});
+      )
+        .then(() => {
+          // Force Twitter widgets to re-scan and render
+          if (window.twttr?.widgets?.load) {
+            window.twttr.widgets.load();
+          }
+        })
+        .catch(() => {});
     } else if (provider === "facebook") {
       // Facebook SDK init (light)
       if (!document.getElementById("facebook-jssdk")) {
@@ -307,6 +339,20 @@ const VideoPreview = memo(function VideoPreview({
     }
   }, [embedPayload?.type, embedPayload?.html, embedPayload?.provider]); // Re-run when Instagram HTML changes
 
+  // Additional effect to ensure Twitter/X embeds are processed after render
+  useEffect(() => {
+    if (embedPayload?.type === "html" && embedPayload?.provider === "twitter") {
+      // Process Twitter embeds after a short delay to ensure DOM is ready
+      const timeoutId = setTimeout(() => {
+        if (window.twttr && window.twttr.widgets) {
+          window.twttr.widgets.load();
+        }
+      }, 500); // Slightly longer delay for Twitter
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [embedPayload?.type, embedPayload?.html, embedPayload?.provider]);
+
   // Memoize media style to prevent unnecessary re-renders
   const mediaStyle = useMemo(
     (): React.CSSProperties => ({
@@ -347,6 +393,9 @@ const VideoPreview = memo(function VideoPreview({
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
           style={mediaStyle}
+          onError={() => {
+            console.warn("Iframe failed to load:", embedPayload.src);
+          }}
         />
       );
     }
@@ -355,7 +404,14 @@ const VideoPreview = memo(function VideoPreview({
       // render provider HTML (blockquotes, etc)
       return (
         <div
-          style={{ width: "100%", height: "100%", overflow: "auto" }}
+          style={{
+            width: "100%",
+            height: "100%",
+            overflow: "auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
           // render HTML snippet
           dangerouslySetInnerHTML={{ __html: embedPayload.html }}
         />
@@ -373,19 +429,26 @@ const VideoPreview = memo(function VideoPreview({
           alignItems: "center",
           justifyContent: "center",
           height: "100%",
+          flexDirection: "column",
+          gap: 8,
         }}
       >
+        <span>Unable to embed content</span>
         <a
           href={embedPayload.href}
           target="_blank"
           rel="noreferrer"
-          style={{ color: "#fff" }}
+          style={{
+            color: "#1DA1F2",
+            textDecoration: "underline",
+            fontSize: "14px",
+          }}
         >
-          Open video
+          View on {detectedPlatform || "external site"}
         </a>
       </div>
     );
-  }, [embedPayload, mediaStyle]);
+  }, [embedPayload, mediaStyle, detectedPlatform]);
 
   // Main card container exactly matching screenshot
   const cardStyle: React.CSSProperties = {
