@@ -4,6 +4,7 @@ import { knowledgeBaseApi } from "@/app/utils/knowledgeBaseApi";
 import { useCallback, useEffect, useState } from "react";
 import { useToast } from "../components/ui/Toast";
 
+import { ConnectionMode } from "@xyflow/react";
 import ReactFlow, {
   addEdge,
   Background,
@@ -280,27 +281,7 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
         />
       )}
 
-      {/* Left side handles - both source and target */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="left"
-        onMouseDown={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-        }}
-        style={{
-          background: "#F0F5F7",
-          width: "24px",
-          height: "24px",
-          border: "1px solid rgba(69, 150, 255, 0.1)",
-          boxShadow: "0 0 8px rgba(69, 150, 255, 0.3)",
-          left: "-28px",
-          top: "55%",
-          transform: "translateY(-50%)",
-          zIndex: 1000,
-        }}
-      />
+      {/* Left handle */}
       <Handle
         type="source"
         position={Position.Left}
@@ -318,31 +299,11 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
           left: "-28px",
           top: "55%",
           transform: "translateY(-50%)",
-          zIndex: 1001,
+          zIndex: 1000,
         }}
       />
 
-      {/* Right side handles - both source and target */}
-      <Handle
-        type="target"
-        position={Position.Right}
-        id="right"
-        onMouseDown={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-        }}
-        style={{
-          background: "#F0F5F7",
-          width: "24px",
-          height: "24px",
-          border: "1px solid rgba(69, 150, 255, 0.1)",
-          boxShadow: "0 0 8px rgba(69, 150, 255, 0.3)",
-          right: "-28px",
-          top: "55%",
-          transform: "translateY(-50%)",
-          zIndex: 1000,
-        }}
-      />
+      {/* Right handle */}
       <Handle
         type="source"
         position={Position.Right}
@@ -360,7 +321,7 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
           right: "-28px",
           top: "55%",
           transform: "translateY(-50%)",
-          zIndex: 1001,
+          zIndex: 1000,
         }}
       />
       {renderComponent(data)}
@@ -1673,6 +1634,8 @@ export default function Home() {
             onConnect={onConnect}
             onNodeDragStop={onNodeDragStop}
             nodeTypes={nodeTypes}
+            isValidConnection={() => true}
+            connectionMode={ConnectionMode.Loose}
             defaultViewport={{ x: 0, y: 0, zoom: 1 }}
             defaultEdgeOptions={{
               style: { stroke: "#4596FF", strokeDasharray: "5,5" },

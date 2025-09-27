@@ -1105,22 +1105,6 @@ export default function SimpleChatInterface({
         <>
           {/* Left side handles - both source and target */}
           <Handle
-            type="target"
-            position={Position.Left}
-            id="left"
-            style={{
-              background: "#F0F5F7",
-              width: "24px",
-              height: "24px",
-              border: "2px solid #4596FF",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              zIndex: 1000,
-              left: "-12px",
-              top: "50%",
-              transform: "translateY(-50%)",
-            }}
-          />
-          <Handle
             type="source"
             position={Position.Left}
             id="left"
@@ -1130,30 +1114,14 @@ export default function SimpleChatInterface({
               height: "24px",
               border: "2px solid #4596FF",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              zIndex: 1001,
+              zIndex: 1000,
               left: "-12px",
               top: "50%",
               transform: "translateY(-50%)",
             }}
           />
 
-          {/* Right side handles - both source and target */}
-          <Handle
-            type="target"
-            position={Position.Right}
-            id="right"
-            style={{
-              background: "#F0F5F7",
-              width: "24px",
-              height: "24px",
-              border: "2px solid #4596FF",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              zIndex: 1000,
-              right: "-12px",
-              top: "50%",
-              transform: "translateY(-50%)",
-            }}
-          />
+          {/* Right handle */}
           <Handle
             type="source"
             position={Position.Right}
@@ -1164,7 +1132,7 @@ export default function SimpleChatInterface({
               height: "24px",
               border: "2px solid #4596FF",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              zIndex: 1001,
+              zIndex: 1000,
               right: "-12px",
               top: "50%",
               transform: "translateY(-50%)",
