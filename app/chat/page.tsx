@@ -76,6 +76,8 @@ const ChatPage = () => {
           is_active: kbData.stats.is_active,
           created_at: kbData.created_at,
           conversations: kbData.conversations,
+          position_x: 0,
+          position_y: 0,
         };
 
         // Store assets and collections for the chat interface
