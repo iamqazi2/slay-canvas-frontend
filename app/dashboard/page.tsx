@@ -1,6 +1,7 @@
 "use client";
 import { assetApi } from "@/app/utils/assetApi";
 import { knowledgeBaseApi } from "@/app/utils/knowledgeBaseApi";
+import { updatePosition } from "@/app/utils/positionApi";
 import { useCallback, useEffect, useState } from "react";
 import { useToast } from "../components/ui/Toast";
 
@@ -638,6 +639,8 @@ export default function Home() {
         collection_name: kbResponse.collection_name,
         is_active: true,
         created_at: new Date().toISOString(),
+        position_x: 0, // Default position
+        position_y: 0, // Default position
       };
 
       // Optimistically add the new KB to local state so it appears immediately
@@ -736,6 +739,64 @@ export default function Home() {
 
   const onNodeDragStop = useCallback(
     async (event: React.MouseEvent, node: Node) => {
+      if (currentWorkspaceId && node.data) {
+        console.log("Node drag stop:", node);
+        try {
+          let itemType: "asset" | "collection" | "kb" | undefined;
+
+          // Determine the item type and ID based on node type and data
+          if (node.id.includes("asset-")) {
+            itemType = "asset";
+            // const componentInstance = node.data as ComponentInstance;
+            // const assetId = getAssetIdFromComponentId(componentInstance.id);
+            // if (assetId !== null) {
+            //   itemId = assetId;
+            //   itemType = "asset";
+            // }
+          } else if (node.id.includes("collection-")) {
+            // const collectionData = node.data as {
+            //   collectionId?: number;
+            //   id?: number;
+            // };
+            // itemId = collectionData.collectionId || collectionData.id;
+            itemType = "collection";
+          } else if (node.id.includes("kb-")) {
+            // const kbData = node.data as {
+            //   knowledgeBaseId?: number;
+            //   id?: number;
+            // };
+            // itemId = kbData.knowledgeBaseId || kbData.id;
+            itemType = "kb";
+          }
+
+          const itemId = node.id.includes("asset-")
+            ? node.id.split("asset-")[1]
+            : node.id.includes("collection-")
+            ? node.id.split("collection-")[1]
+            : node.id.includes("kb-")
+            ? node.id.split("kb-")[1]
+            : undefined;
+
+          console.log(itemId, itemType);
+          // Call position API if we have valid data
+          if (itemId && itemType) {
+            await updatePosition(currentWorkspaceId, {
+              id: Number(itemId),
+              type: itemType,
+              x: Math.round(node.position.x),
+              y: Math.round(node.position.y),
+            });
+            console.log(
+              `Updated ${itemType} ${itemId} position:`,
+              node.position
+            );
+          }
+        } catch (error) {
+          console.error("Failed to update position:", error);
+          // Optionally show toast notification
+        }
+      }
+
       // Check if dragged node is over a folderCollection node
       const draggedNode = node;
       if (
@@ -888,6 +949,8 @@ export default function Home() {
       setEdges,
       currentWorkspaceId,
       currentWorkspace,
+      showToast,
+      switchWorkspace,
     ]
   );
 
@@ -1016,12 +1079,52 @@ export default function Home() {
           const dimensions = getNodeDimensions(instance.type);
           // Find existing node to preserve position and size
           const existingNode = currentNodes.find((n) => n.id === instance.id);
+
+          // Get backend position for this instance
+          let backendPosition = { x: 100 + index * 200, y: 100 }; // default fallback
+
+          if (instance.id.startsWith("asset-")) {
+            const assetId = getAssetIdFromComponentId(instance.id);
+            if (assetId && currentWorkspace?.assets) {
+              const backendAsset = currentWorkspace.assets.find(
+                (a) => a.id === assetId
+              );
+              if (
+                backendAsset &&
+                backendAsset.position_x !== undefined &&
+                backendAsset.position_y !== undefined
+              ) {
+                backendPosition = {
+                  x: backendAsset.position_x,
+                  y: backendAsset.position_y,
+                };
+              }
+            }
+          } else if (instance.id.startsWith("collection-")) {
+            const collectionId = parseInt(
+              instance.id.replace("collection-", "")
+            );
+            if (currentWorkspace?.collections) {
+              const backendCollection = currentWorkspace.collections.find(
+                (c) => c.id === collectionId
+              );
+              if (
+                backendCollection &&
+                backendCollection.position_x !== undefined &&
+                backendCollection.position_y !== undefined
+              ) {
+                backendPosition = {
+                  x: backendCollection.position_x,
+                  y: backendCollection.position_y,
+                };
+              }
+            }
+          }
+
           return {
             id: instance.id,
             type: "asset",
-            position: existingNode
-              ? existingNode.position
-              : { x: 100 + index * 200, y: 100 },
+            position: existingNode ? existingNode.position : backendPosition, // Use backend position instead of default
             data: instance,
             width: existingNode?.width || dimensions.width,
             height: existingNode?.height || dimensions.height,
@@ -1035,6 +1138,12 @@ export default function Home() {
         ...knowledgeBases.map((kb, index) => {
           const kbNodeId = `kb-${kb.id}`;
           const existingKbNode = currentNodes.find((n) => n.id === kbNodeId);
+
+          // Get backend position for knowledge base
+          const backendPosition =
+            kb.position_x !== undefined && kb.position_y !== undefined
+              ? { x: kb.position_x, y: kb.position_y }
+              : { x: 400 + index * 300, y: 300 + index * 100 }; // fallback
 
           // Find assets linked to this knowledge base
           const linkedAssets = componentInstances.filter((instance) => {
@@ -1054,13 +1163,10 @@ export default function Home() {
             type: "chat",
             position: existingKbNode
               ? existingKbNode.position
-              : { x: 400 + index * 300, y: 300 + index * 100 },
+              : backendPosition, // Use backend position instead of default
             data: {
               attachedAssets: linkedAssets,
-              position: existingKbNode?.position || {
-                x: 400 + index * 300,
-                y: 300 + index * 100,
-              },
+              position: existingKbNode?.position || backendPosition, // Use backend position here too
               knowledgeBase: kb,
               workspace: currentWorkspace,
             },

@@ -51,6 +51,8 @@ export interface KnowledgeBase {
   collection_name: string;
   is_active: boolean;
   created_at: string;
+  position_x: number;
+  position_y: number;
   conversations?: Conversation[];
 }
 
@@ -75,6 +77,8 @@ export interface Asset {
   knowledge_base_id?: number;
   is_active: boolean;
   created_at: string;
+  position_x: number;
+  position_y: number;
   kb_connection_asset_handle?: string | null; // "left" or "right"
   kb_connection_kb_handle?: string | null; // "left" or "right"
 }
@@ -86,6 +90,8 @@ export interface Collection {
   knowledge_base_id?: number;
   is_active: boolean;
   created_at: string;
+  position_x: number;
+  position_y: number;
   asset_count: number;
   kb_connection_asset_handle?: string | null; // "left" or "right" for collection handle
   kb_connection_kb_handle?: string | null; // "left" or "right" for KB handle
