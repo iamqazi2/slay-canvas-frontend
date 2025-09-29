@@ -609,12 +609,12 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
             </div>
 
             {/* Hierarchy/Flowchart Icon - Wikipedia */}
-            <div
+            {/* <div
               className="cursor-pointer hover:opacity-70 transition-opacity"
               onClick={() => setIsWikipediaPopup(true)}
             >
               <GridIconNew width={24} height={24} className="sm:w-8 sm:h-8" />
-            </div>
+            </div> */}
 
             {/* Globe Icon - Web Link */}
             <div

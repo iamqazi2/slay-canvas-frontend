@@ -309,7 +309,7 @@ const WebLink: React.FC<WebLinkProps> = ({
                 color: "#FFFFFF",
               }}
             >
-              {linkUrl ? getDisplayTitle(linkUrl) : "Web Link"}
+              Web Links
             </span>
           </div>
 
