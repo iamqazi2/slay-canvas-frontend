@@ -706,6 +706,7 @@ export default function Home() {
                     console.log(
                       `Linked collection ${collectionId} to knowledge base ${kbId} with handles ${assetHandle}-${kbHandle}`
                     );
+                    showToast("Collection successfully connected to chat", "success");
                   }
                 } else {
                   // Handle individual asset linking with automatic handle detection
@@ -721,6 +722,7 @@ export default function Home() {
                     console.log(
                       `Linked asset ${assetId} to knowledge base ${kbId} with handles ${assetHandle}-${kbHandle}`
                     );
+                    showToast("Asset successfully connected to chat", "success");
                   }
                 }
 
@@ -728,6 +730,7 @@ export default function Home() {
                 switchWorkspace(currentWorkspaceId);
               } catch (error) {
                 console.error("Failed to link to knowledge base:", error);
+                showToast("Failed to connect asset to chat", "error");
               }
             }
           }
