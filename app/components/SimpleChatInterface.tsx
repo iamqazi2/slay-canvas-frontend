@@ -60,6 +60,7 @@ export default function SimpleChatInterface({
   const [searchQuery, setSearchQuery] = useState("");
   const [message, setMessage] = useState("");
   const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -68,6 +69,7 @@ export default function SimpleChatInterface({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -263,6 +265,23 @@ export default function SimpleChatInterface({
         messagesContainerRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsModelDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // Update selected filters if any are no longer available
   useEffect(() => {
@@ -1017,17 +1036,57 @@ export default function SimpleChatInterface({
                 <span className="text-sm font-medium text-gray-700">
                   AI Model:
                 </span>
-                <select
-                  value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value)}
-                  className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4596FF] focus:border-transparent bg-white"
-                >
-                  {availableModels.map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {model.name}
-                    </option>
-                  ))}
-                </select>
+                {/* Custom Model Dropdown */}
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
+                    disabled={isStreaming}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4596FF] focus:border-transparent bg-white hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <span>
+                      {
+                        availableModels.find((m) => m.id === selectedModel)
+                          ?.name
+                      }
+                    </span>
+                    <svg
+                      className={`w-4 h-4 transition-transform ${
+                        isModelDropdownOpen ? "rotate-180" : ""
+                      }`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+
+                  {isModelDropdownOpen && (
+                    <div className="absolute top-full right-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                      {availableModels.map((model) => (
+                        <button
+                          key={model.id}
+                          onClick={() => {
+                            setSelectedModel(model.id);
+                            setIsModelDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors ${
+                            model.id === selectedModel
+                              ? "bg-[#4596FF] text-white hover:!bg-[#4596FF]/90"
+                              : "text-gray-700 bg-white"
+                          }`}
+                        >
+                          {model.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             <div
