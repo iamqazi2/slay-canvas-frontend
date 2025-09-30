@@ -30,7 +30,8 @@ class AuthenticatedFetch {
     const url = `${this.baseURL}${endpoint}`;
 
     // Check if this is a selective-search endpoint
-    const isSelectiveSearch = endpoint.includes("/selective-search");
+    const isSelectiveSearch =
+      endpoint.includes("/selective-search") || endpoint.includes("positions");
 
     // Prepare headers
     const requestHeaders: Record<string, string> = {

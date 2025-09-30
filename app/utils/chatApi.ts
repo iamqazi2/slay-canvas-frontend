@@ -24,6 +24,7 @@ export interface ChatAgentRequest {
   knowledge_base_name: string;
   conversation_id?: number | null;
   document_titles?: string[];
+  model?: string;
 }
 
 export class ChatApi {
@@ -42,6 +43,7 @@ export class ChatApi {
           knowledge_base_name: request.knowledge_base_name,
           conversation_id: request.conversation_id,
           document_titles: request.document_titles || [],
+          model: request.model,
         }
       );
     } catch (error) {

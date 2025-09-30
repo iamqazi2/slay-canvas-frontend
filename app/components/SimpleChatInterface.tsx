@@ -59,6 +59,7 @@ export default function SimpleChatInterface({
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [message, setMessage] = useState("");
+  const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -69,6 +70,19 @@ export default function SimpleChatInterface({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const pathname = usePathname();
+
+  // Available AI models
+  const availableModels = [
+    { id: "gpt-4o-mini", name: "GPT-4o Mini" },
+    { id: "qwen/qwen3-14b:free", name: "Qwen 3 14B" },
+    { id: "google/gemma-3-27b-it:free", name: "Gemma 3 27B" },
+    { id: "meta-llama/llama-4-scout:free", name: "Llama 4 Scout" },
+    {
+      id: "cognitivecomputations/dolphin3.0-mistral-24b:free",
+      name: "Dolphin 3.0 Mistral 24B",
+    },
+    { id: "nvidia/nemotron-nano-9b-v2:free", name: "Nemotron Nano 9B" },
+  ];
 
   // Helper function to get social media platform name from URL
   const getSocialPlatformName = useCallback((url: string): string => {
@@ -388,6 +402,7 @@ export default function SimpleChatInterface({
         knowledge_base_name: knowledgeBase.name,
         conversation_id: conversationId,
         document_titles: selectedAssets,
+        model: selectedModel,
       });
 
       // Start streaming response
@@ -992,8 +1007,29 @@ export default function SimpleChatInterface({
 
         {/* Main Content Area */}
         <div className="flex-1 min-w-[300px] flex flex-col min-h-0">
-          {/* Filter Tags */}
+          {/* Filter Tags and Model Selection */}
           <div className="px-6 py-4 border-b border-gray-200 bg-white">
+            <div className="flex items-center justify-between gap-4 mb-3">
+              <span className="text-sm font-medium text-gray-700">
+                Filter Content:
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">
+                  AI Model:
+                </span>
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4596FF] focus:border-transparent bg-white"
+                >
+                  {availableModels.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <div
               className="flex gap-2 w-full overflow-x-auto"
               style={{ scrollbarWidth: "none" }}
@@ -1039,6 +1075,16 @@ export default function SimpleChatInterface({
                     {knowledgeBase.name}&rdquo;. Ask any question and get
                     AI-powered responses based on your uploaded content.
                   </p>
+
+                  <div className="mt-4 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-sm text-blue-700">
+                      <span className="font-medium">Current Model:</span>{" "}
+                      {
+                        availableModels.find((m) => m.id === selectedModel)
+                          ?.name
+                      }
+                    </p>
+                  </div>
                 </div>
               </div>
             ) : (
