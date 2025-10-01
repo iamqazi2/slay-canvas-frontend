@@ -706,7 +706,10 @@ export default function Home() {
                     console.log(
                       `Linked collection ${collectionId} to knowledge base ${kbId} with handles ${assetHandle}-${kbHandle}`
                     );
-                    showToast("Collection successfully connected to chat", "success");
+                    showToast(
+                      "Collection successfully connected to chat",
+                      "success"
+                    );
                   }
                 } else {
                   // Handle individual asset linking with automatic handle detection
@@ -722,7 +725,10 @@ export default function Home() {
                     console.log(
                       `Linked asset ${assetId} to knowledge base ${kbId} with handles ${assetHandle}-${kbHandle}`
                     );
-                    showToast("Asset successfully connected to chat", "success");
+                    showToast(
+                      "Asset successfully connected to chat",
+                      "success"
+                    );
                   }
                 }
 
@@ -1749,6 +1755,9 @@ export default function Home() {
             defaultEdgeOptions={{
               style: { stroke: "#4596FF", strokeDasharray: "5,5" },
             }}
+            // noDragClassName="noDrag"
+            noWheelClassName="noDrag"
+            // nodesDraggable={true}
           >
             <Controls />
             <Background />

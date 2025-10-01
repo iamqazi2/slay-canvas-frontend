@@ -921,7 +921,7 @@ export default function SimpleChatInterface({
     <div className={`flex flex-col h-full ${className}`}>
       {pathname !== "/chat" && (
         <div
-          className="px-4 sm:px-6 py-3 sm:py-4 text-white rounded-t-xl"
+          className="drag-handle px-4 sm:px-6 py-3 sm:py-4 text-white rounded-t-xl cursor-move"
           style={{
             background:
               "radial-gradient(50% 97.57% at 50% 50%, #4596FF 0%, #8E5EFF 100%)",
@@ -945,7 +945,7 @@ export default function SimpleChatInterface({
         </div>
       )}
 
-      <div className="border-1 border-black/10 shadow-md  flex h-full min-h-0">
+      <div className="border-1 border-black/10 shadow-md flex h-full min-h-0 noDrag">
         {/* Left Sidebar */}
         <div className="w-[200px] min-w-[180px] max-w-[220px] bg-white border-r border-gray-200 flex flex-col min-h-0">
           {/* Top Section */}
