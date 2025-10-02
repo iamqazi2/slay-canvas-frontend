@@ -29,9 +29,10 @@ class AuthenticatedFetch {
 
     const url = `${this.baseURL}${endpoint}`;
 
-    // Check if this is a selective-search endpoint
+    // Check if this is a selective-search endpoint or link-to-kb endpoint
     const isSelectiveSearch =
       endpoint.includes("/selective-search") || endpoint.includes("positions");
+    const isLinkToKb = endpoint.includes("/link-to-kb");
 
     // Prepare headers
     const requestHeaders: Record<string, string> = {
@@ -52,8 +53,8 @@ class AuthenticatedFetch {
       }
     }
 
-    // Don't show loader for selective-search endpoints
-    if (!isSelectiveSearch) {
+    // Don't show loader for selective-search endpoints or link-to-kb endpoints
+    if (!isSelectiveSearch && !isLinkToKb) {
       store.dispatch(incrementLoading());
     }
 
@@ -92,8 +93,8 @@ class AuthenticatedFetch {
       console.error(`API Error for ${endpoint}:`, error);
       throw error;
     } finally {
-      // Don't hide loader for selective-search endpoints since we didn't show it
-      if (!isSelectiveSearch) {
+      // Don't hide loader for selective-search endpoints or link-to-kb endpoints since we didn't show it
+      if (!isSelectiveSearch && !isLinkToKb) {
         store.dispatch(decrementLoading());
       }
     }
@@ -174,8 +175,9 @@ class AuthenticatedFetch {
 
     const url = `${this.baseURL}${endpoint}`;
 
-    // Check if this is a selective-search endpoint
+    // Check if this is a selective-search endpoint or link-to-kb endpoint
     const isSelectiveSearch = endpoint.includes("/selective-search");
+    const isLinkToKb = endpoint.includes("/link-to-kb");
 
     // Prepare headers
     const requestHeaders: Record<string, string> = {
@@ -204,8 +206,8 @@ class AuthenticatedFetch {
       body = JSON.stringify(data);
     }
 
-    // Don't show loader for selective-search endpoints
-    if (!isSelectiveSearch) {
+    // Don't show loader for selective-search endpoints or link-to-kb endpoints
+    if (!isSelectiveSearch && !isLinkToKb) {
       store.dispatch(incrementLoading());
     }
 
@@ -243,8 +245,8 @@ class AuthenticatedFetch {
       console.error(`API Error for ${endpoint}:`, error);
       throw error;
     } finally {
-      // Don't hide loader for selective-search endpoints since we didn't show it
-      if (!isSelectiveSearch) {
+      // Don't hide loader for selective-search endpoints or link-to-kb endpoints since we didn't show it
+      if (!isSelectiveSearch && !isLinkToKb) {
         store.dispatch(decrementLoading());
       }
     }

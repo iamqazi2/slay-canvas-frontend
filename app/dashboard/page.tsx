@@ -338,10 +338,19 @@ const ChatNode = ({
     position: { x: number; y: number };
     knowledgeBase: KnowledgeBase;
     workspace?: WorkspaceDetailed;
+    isLoading?: boolean;
   };
 }) => {
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full relative">
+      {data.isLoading && (
+        <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
+          <div className="flex flex-col items-center gap-2">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4596FF]"></div>
+            <span className="text-sm text-gray-600">Connecting...</span>
+          </div>
+        </div>
+      )}
       <SimpleChatInterface
         knowledgeBase={data.knowledgeBase}
         workspace={data.workspace}
@@ -385,6 +394,9 @@ export default function Home() {
 
   const [showChatInFlow, setShowChatInFlow] = useState<boolean>(false);
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
+  const [kbLoadingStates, setKbLoadingStates] = useState<
+    Record<number, boolean>
+  >({});
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -557,6 +569,8 @@ export default function Home() {
 
       // Reset other states when switching workspaces
       setShowChatInFlow(false);
+      // Clear KB loading states when switching workspaces
+      setKbLoadingStates({});
     }
   }, [currentWorkspace]);
 
@@ -655,6 +669,14 @@ export default function Home() {
     }
   };
 
+  // Helper functions for KB loading states
+  const setKbLoading = useCallback((kbId: number, loading: boolean) => {
+    setKbLoadingStates((prev) => ({
+      ...prev,
+      [kbId]: loading,
+    }));
+  }, []);
+
   const onConnect = useCallback(
     async (params: Connection) => {
       // Handle connections to/from knowledge base nodes
@@ -679,6 +701,9 @@ export default function Home() {
 
             if (currentWorkspaceId) {
               try {
+                // Show loading on the specific KB
+                setKbLoading(kbId, true);
+
                 // Determine handles based on connection params
                 const sourceHandle = params.sourceHandle || "right"; // default fallback
                 const targetHandle = params.targetHandle || "left"; // default fallback
@@ -737,13 +762,23 @@ export default function Home() {
               } catch (error) {
                 console.error("Failed to link to knowledge base:", error);
                 showToast("Failed to connect asset to chat", "error");
+              } finally {
+                // Hide loading on the specific KB
+                setKbLoading(kbId, false);
               }
             }
           }
         }
       }
     },
-    [nodes, setEdges, currentWorkspaceId, switchWorkspace, showToast]
+    [
+      nodes,
+      setEdges,
+      currentWorkspaceId,
+      switchWorkspace,
+      showToast,
+      setKbLoading,
+    ]
   );
 
   const onNodeDragStop = useCallback(
@@ -1178,6 +1213,7 @@ export default function Home() {
               position: existingKbNode?.position || backendPosition, // Use backend position here too
               knowledgeBase: kb,
               workspace: currentWorkspace,
+              isLoading: kbLoadingStates[kb.id] || false, // Add loading state
             },
             style: { width: 800, height: 600 },
           };
@@ -1209,6 +1245,7 @@ export default function Home() {
     showChatInFlow,
     knowledgeBases,
     currentWorkspace,
+    kbLoadingStates,
     setNodes,
   ]);
 
