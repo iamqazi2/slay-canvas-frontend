@@ -24,7 +24,6 @@ export default function BoardsDashboard() {
     deleteWorkspace,
     starWorkspace,
     archiveWorkspace,
-    switchWorkspace,
   } = useWorkspaceStore();
 
   const { isAuthenticated } = useUserStore();
@@ -102,8 +101,7 @@ export default function BoardsDashboard() {
   };
 
   const handleSelectBoard = async (boardId: number) => {
-    await switchWorkspace(boardId);
-    router.push("/dashboard");
+    router.push(`/workspace/${boardId}`);
   };
 
   const handleCreateNewBoard = async () => {

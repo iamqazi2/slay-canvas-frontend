@@ -3,9 +3,10 @@ import { assetApi } from "@/app/utils/assetApi";
 import { knowledgeBaseApi } from "@/app/utils/knowledgeBaseApi";
 import { updatePosition } from "@/app/utils/positionApi";
 import { useCallback, useEffect, useState } from "react";
-import { useToast } from "../components/ui/Toast";
+import { useToast } from "../../components/ui/Toast";
 
 import { ConnectionMode } from "@xyflow/react";
+import { useParams, useRouter } from "next/navigation";
 import ReactFlow, {
   addEdge,
   Background,
@@ -30,28 +31,27 @@ import {
   VideoPreview,
   WebLink,
   WikipediaLink,
-} from "../components";
-import AudioPlayer from "../components/AudioPlayer";
-import FolderCollection from "../components/FolderCollection";
-import ChatNav from "../components/New-Navbar";
-import { DeleteIcon, EditIcon } from "../components/icons";
-import DeleteWorkspaceModal from "../components/modals/DeleteWorkspaceModal";
-import EditWorkspaceModal from "../components/modals/EditWorkspaceModal";
-import { useUserStore } from "../store/userStore";
-import { useWorkspaceStore } from "../store/workspaceStore";
+} from "../../components";
+import AudioPlayer from "../../components/AudioPlayer";
+import FolderCollection from "../../components/FolderCollection";
+import ChatNav from "../../components/New-Navbar";
+import DeleteWorkspaceModal from "../../components/modals/DeleteWorkspaceModal";
+import EditWorkspaceModal from "../../components/modals/EditWorkspaceModal";
+import { useUserStore } from "../../store/userStore";
+import { useWorkspaceStore } from "../../store/workspaceStore";
 import {
   Collection,
   KnowledgeBase,
   WorkspaceDetailed,
-} from "../types/workspace";
+} from "../../types/workspace";
 import {
   assetsToComponentInstances,
   componentInstanceToAssetCreate,
   getAssetCreationStrategy,
   getAssetIdFromComponentId,
   isBackendAsset,
-} from "../utils/assetUtils";
-import { collectionApi } from "../utils/collectionApi";
+} from "../../utils/assetUtils";
+import { collectionApi } from "../../utils/collectionApi";
 
 interface AssetItem {
   id: string;
@@ -91,19 +91,10 @@ const renderComponent = (instance: ComponentInstance) => {
 
   switch (type) {
     case "videoCollection":
-    // return (
-    //   <VideoPreview
-    //     key={id}
-    //     id={id}
-    //     file={data?.file}
-    //     src={data?.url || data?.text}
-    //   />
-    // );
     case "videoSocial":
       return <VideoPreview key={id} id={id} src={data?.url || data?.text} />;
     case "socialVideo": // Handle social video file uploads
       return <VideoPreview key={id} id={id} file={data?.file} />;
-    // return <VideoPreview key={id} file={data?.file} src={data?.text} />;
     case "audioPlayer":
       return (
         <AudioPlayer
@@ -263,11 +254,6 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
           data.type === "videoCollection" || data.type === "videoSocial"
             ? "1px solid #fff"
             : undefined,
-        // borderRadius:
-        //   data.type === "videoCollection" || data.type === "videoSocial"
-        //     ? "24px"
-        //     : undefined,
-        //   data.type === "videoCollection" ? "1px solid #4596FF" : undefined,
         borderRadius: data.type === "videoCollection" ? "24px" : undefined,
       }}
       draggable={data.type !== "folderCollection"}
@@ -367,22 +353,20 @@ const nodeTypes = {
   chat: ChatNode,
 };
 
-export default function Home() {
+export default function WorkspacePage() {
   const { showToast } = useToast();
+  const params = useParams();
+  const router = useRouter();
+  const workspaceId = params?.id ? parseInt(params.id as string) : null;
 
   // Workspace store
   const {
-    workspaces,
     currentWorkspace,
-    currentWorkspaceId,
     isLoading: workspaceLoading,
     error: workspaceError,
-    fetchWorkspaces,
-    createWorkspace,
+    fetchWorkspaceDetails,
     updateWorkspace,
     deleteWorkspace,
-    switchWorkspace,
-    clearError,
   } = useWorkspaceStore();
 
   const { isAuthenticated } = useUserStore();
@@ -401,11 +385,6 @@ export default function Home() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  const [isWorkspaceSidebarOpen, setIsWorkspaceSidebarOpen] =
-    useState<boolean>(false);
-  // const [currentWorkspaceId, setCurrentWorkspaceId] =
-  //   useState<string>("default");
-
   // Modal states
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
@@ -414,29 +393,12 @@ export default function Home() {
     name: string;
   } | null>(null);
 
-  // Load workspaces on component mount
+  // Load workspace details when component mounts or workspaceId changes
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchWorkspaces();
+    if (isAuthenticated && workspaceId) {
+      fetchWorkspaceDetails(workspaceId);
     }
-  }, [isAuthenticated, fetchWorkspaces]);
-
-  // Auto-select first workspace if none is selected
-  useEffect(() => {
-    if (workspaces.length > 0 && !currentWorkspaceId && !workspaceLoading) {
-      switchWorkspace(workspaces[0].id);
-    }
-  }, [workspaces, currentWorkspaceId, workspaceLoading, switchWorkspace]);
-
-  // Load workspace details when currentWorkspaceId changes
-  useEffect(() => {
-    if (
-      currentWorkspaceId &&
-      (!currentWorkspace || currentWorkspace.id !== currentWorkspaceId)
-    ) {
-      switchWorkspace(currentWorkspaceId);
-    }
-  }, [currentWorkspaceId, currentWorkspace, switchWorkspace]);
+  }, [isAuthenticated, workspaceId, fetchWorkspaceDetails]);
 
   // Load workspace assets when currentWorkspace changes
   useEffect(() => {
@@ -574,31 +536,16 @@ export default function Home() {
     }
   }, [currentWorkspace]);
 
-  const createNewWorkspace = async () => {
-    const newWorkspace = await createWorkspace({
-      name: `Workspace ${workspaces.length + 1}`,
-      description: "New workspace",
-      settings: {},
-      is_public: false,
-      collaborator_ids: [],
-    });
+  // Modal handlers - these will be used if we add workspace management UI
+  // const handleEditWorkspace = (workspace: { id: number; name: string }) => {
+  //   setSelectedWorkspace(workspace);
+  //   setIsEditModalOpen(true);
+  // };
 
-    if (newWorkspace) {
-      // Switch to the new workspace
-      switchWorkspace(newWorkspace.id);
-    }
-  };
-
-  // Modal handlers
-  const handleEditWorkspace = (workspace: { id: number; name: string }) => {
-    setSelectedWorkspace(workspace);
-    setIsEditModalOpen(true);
-  };
-
-  const handleDeleteWorkspace = (workspace: { id: number; name: string }) => {
-    setSelectedWorkspace(workspace);
-    setIsDeleteModalOpen(true);
-  };
+  // const handleDeleteWorkspace = (workspace: { id: number; name: string }) => {
+  //   setSelectedWorkspace(workspace);
+  //   setIsDeleteModalOpen(true);
+  // };
 
   const handleConfirmEdit = async (newName: string) => {
     if (!selectedWorkspace) return;
@@ -610,8 +557,10 @@ export default function Home() {
     if (success) {
       setIsEditModalOpen(false);
       setSelectedWorkspace(null);
-      // Refresh workspaces list
-      fetchWorkspaces();
+      // Refresh workspace details
+      if (workspaceId) {
+        fetchWorkspaceDetails(workspaceId);
+      }
     }
   };
 
@@ -623,8 +572,8 @@ export default function Home() {
     if (success) {
       setIsDeleteModalOpen(false);
       setSelectedWorkspace(null);
-      // Refresh workspaces list
-      fetchWorkspaces();
+      // Navigate back to boards page after deletion
+      router.push("/boards");
     }
   };
 
@@ -662,7 +611,9 @@ export default function Home() {
 
       // Optionally refresh workspace in background to sync with backend
       setTimeout(() => {
-        switchWorkspace(currentWorkspaceId!);
+        if (workspaceId) {
+          fetchWorkspaceDetails(workspaceId);
+        }
       }, 1000);
     } catch (error) {
       console.error("Failed to handle chat click:", error);
@@ -699,7 +650,7 @@ export default function Home() {
             // Extract KB ID from node ID (kb-4 -> 4)
             const kbId = parseInt(kbNodeId.replace("kb-", ""));
 
-            if (currentWorkspaceId) {
+            if (workspaceId) {
               try {
                 // Show loading on the specific KB
                 setKbLoading(kbId, true);
@@ -722,7 +673,7 @@ export default function Home() {
                   const collectionId = nodeData.data?.collectionId;
                   if (collectionId) {
                     await knowledgeBaseApi.linkCollectionToKnowledgeBase(
-                      currentWorkspaceId,
+                      workspaceId,
                       collectionId,
                       kbId,
                       assetHandle as "left" | "right",
@@ -741,7 +692,7 @@ export default function Home() {
                   const assetId = getAssetIdFromComponentId(nodeData.id);
                   if (assetId) {
                     await knowledgeBaseApi.linkAssetToKnowledgeBase(
-                      currentWorkspaceId,
+                      workspaceId,
                       assetId,
                       kbId,
                       assetHandle as "left" | "right",
@@ -758,7 +709,7 @@ export default function Home() {
                 }
 
                 // Refresh workspace
-                switchWorkspace(currentWorkspaceId);
+                fetchWorkspaceDetails(workspaceId);
               } catch (error) {
                 console.error("Failed to link to knowledge base:", error);
                 showToast("Failed to connect asset to chat", "error");
@@ -774,8 +725,8 @@ export default function Home() {
     [
       nodes,
       setEdges,
-      currentWorkspaceId,
-      switchWorkspace,
+      workspaceId,
+      fetchWorkspaceDetails,
       showToast,
       setKbLoading,
     ]
@@ -783,7 +734,7 @@ export default function Home() {
 
   const onNodeDragStop = useCallback(
     async (event: React.MouseEvent, node: Node) => {
-      if (currentWorkspaceId && node.data) {
+      if (workspaceId && node.data) {
         console.log("Node drag stop:", node);
         try {
           let itemType: "asset" | "collection" | "kb" | undefined;
@@ -791,25 +742,9 @@ export default function Home() {
           // Determine the item type and ID based on node type and data
           if (node.id.includes("asset-")) {
             itemType = "asset";
-            // const componentInstance = node.data as ComponentInstance;
-            // const assetId = getAssetIdFromComponentId(componentInstance.id);
-            // if (assetId !== null) {
-            //   itemId = assetId;
-            //   itemType = "asset";
-            // }
           } else if (node.id.includes("collection-")) {
-            // const collectionData = node.data as {
-            //   collectionId?: number;
-            //   id?: number;
-            // };
-            // itemId = collectionData.collectionId || collectionData.id;
             itemType = "collection";
           } else if (node.id.includes("kb-")) {
-            // const kbData = node.data as {
-            //   knowledgeBaseId?: number;
-            //   id?: number;
-            // };
-            // itemId = kbData.knowledgeBaseId || kbData.id;
             itemType = "kb";
           }
 
@@ -824,7 +759,7 @@ export default function Home() {
           console.log(itemId, itemType);
           // Call position API if we have valid data
           if (itemId && itemType) {
-            await updatePosition(currentWorkspaceId, {
+            await updatePosition(workspaceId, {
               id: Number(itemId),
               type: itemType,
               x: Math.round(node.position.x),
@@ -943,17 +878,17 @@ export default function Home() {
             );
 
             // Call backend API to link asset to collection
-            if (currentWorkspaceId && folderInstance.data?.collectionId) {
+            if (workspaceId && folderInstance.data?.collectionId) {
               try {
                 // Get asset ID from component instance
                 const assetId = getAssetIdFromComponentId(draggedInstance.id);
                 if (assetId) {
                   await collectionApi.linkAssetToCollection(
-                    currentWorkspaceId,
+                    workspaceId,
                     assetId,
                     folderInstance.data.collectionId
                   );
-                  switchWorkspace(currentWorkspaceId);
+                  fetchWorkspaceDetails(workspaceId);
                   console.log(
                     `Successfully linked asset ${assetId} to collection ${folderInstance.data.collectionId}`
                   );
@@ -991,10 +926,10 @@ export default function Home() {
       setNodes,
       setComponentInstances,
       setEdges,
-      currentWorkspaceId,
+      workspaceId,
       currentWorkspace,
       showToast,
-      switchWorkspace,
+      fetchWorkspaceDetails,
     ]
   );
 
@@ -1025,98 +960,6 @@ export default function Home() {
       }
     };
 
-    //   setNodes((currentNodes) => {
-    //     const newNodes: Node[] = [
-    //       // Asset nodes
-    //       ...componentInstances.map((instance, index) => {
-    //         const dimensions = getNodeDimensions(instance.type);
-    //         // Find existing node to preserve position
-    //         const existingNode = currentNodes.find((n) => n.id === instance.id);
-    //         return {
-    //           id: instance.id,
-    //           type: "asset",
-    //           position: existingNode
-    //             ? existingNode.position
-    //             : { x: 100 + index * 200, y: 100 },
-    //           data: instance,
-    //           style: { width: dimensions.width, height: dimensions.height },
-    //         };
-    //       }),
-    //       // Knowledge base (chat) nodes
-    //       ...knowledgeBases.map((kb, index) => {
-    //         const kbNodeId = `kb-${kb.id}`;
-    //         const existingKbNode = currentNodes.find((n) => n.id === kbNodeId);
-
-    //         // Find assets linked to this knowledge base
-    //         const linkedAssets = componentInstances.filter((instance) => {
-    //           // Extract asset ID from component instance ID (asset-15 -> 15)
-    //           const assetId = getAssetIdFromComponentId(instance.id);
-    //           if (!assetId || !currentWorkspace?.assets) return false;
-
-    //           // Find the corresponding asset in workspace data
-    //           const workspaceAsset = currentWorkspace.assets.find(
-    //             (a) => a.id === assetId
-    //           );
-    //           return workspaceAsset?.knowledge_base_id === kb.id;
-    //         });
-
-    //         return {
-    //           id: kbNodeId,
-    //           type: "chat",
-    //           position: existingKbNode
-    //             ? existingKbNode.position
-    //             : { x: 400 + index * 300, y: 300 + index * 100 },
-    //           data: {
-    //             attachedAssets: linkedAssets,
-    //             position: existingKbNode?.position || {
-    //               x: 400 + index * 300,
-    //               y: 300 + index * 100,
-    //             },
-    //             knowledgeBase: kb,
-    //             workspace: currentWorkspace,
-    //           },
-    //           style: { width: 800, height: 600 },
-    //         };
-    //       }),
-    //     ];
-    //     return newNodes;
-    //   });
-    // }, [
-    //   componentInstances,
-    //   showChatInFlow,
-    //   attachedAssets,
-    //   knowledgeBases,
-    //   currentWorkspace,
-    //   setNodes,
-    // ]);
-
-    // Create edges for existing asset-knowledge base relationships
-    // useEffect(() => {
-    //   if (!currentWorkspace?.assets || knowledgeBases.length === 0) return;
-
-    //   const existingEdges: Edge[] = [];
-
-    //   currentWorkspace.assets.forEach((asset) => {
-    //     if (asset.knowledge_base_id) {
-    //       // Create edge from asset to knowledge base
-    //       const assetNodeId = `asset-${asset.id}`;
-    //       const kbNodeId = `kb-${asset.knowledge_base_id}`;
-
-    //       existingEdges.push({
-    //         id: `${assetNodeId}-${kbNodeId}`,
-    //         source: assetNodeId,
-    //         target: kbNodeId,
-    //         type: "default",
-    //         style: { stroke: "#4596FF", strokeDasharray: "5,5" },
-    //       });
-    //     }
-    //   });
-
-    //   if (existingEdges.length > 0) {
-    //     console.log("Creating edges for existing relationships:", existingEdges);
-    //     setEdges(existingEdges);
-    //   }
-    // }, [currentWorkspace?.assets, knowledgeBases, setEdges]);
     setNodes((currentNodes) => {
       const newNodes: Node[] = [
         ...componentInstances.map((instance, index) => {
@@ -1341,7 +1184,7 @@ export default function Home() {
       }
 
       // Save to backend if we have a current workspace
-      if (currentWorkspaceId) {
+      if (workspaceId) {
         try {
           const strategy = getAssetCreationStrategy(componentType);
           console.log("📍 Asset creation strategy:", strategy);
@@ -1361,7 +1204,7 @@ export default function Home() {
             const assetCreate = componentInstanceToAssetCreate(newInstance);
             console.log("📝 Asset create data:", assetCreate);
             savedAsset = await assetApi.createLinkAsset(
-              currentWorkspaceId,
+              workspaceId,
               assetCreate
             );
           } else if (strategy.endpoint === "text") {
@@ -1370,7 +1213,7 @@ export default function Home() {
             const assetCreate = componentInstanceToAssetCreate(newInstance);
             console.log("📝 Asset create data:", assetCreate);
             savedAsset = await assetApi.createTextAsset(
-              currentWorkspaceId,
+              workspaceId,
               assetCreate
             );
           } else if (strategy.endpoint === "file") {
@@ -1398,7 +1241,7 @@ export default function Home() {
                 title,
               });
               savedAsset = await assetApi.uploadFileAsset(
-                currentWorkspaceId,
+                workspaceId,
                 fileToUpload,
                 strategy.assetType as "image" | "audio" | "document",
                 title
@@ -1475,7 +1318,7 @@ export default function Home() {
         "🗑️ handleRemoveComponent called with componentId:",
         componentId
       );
-      console.log("🔍 Current workspace ID:", currentWorkspaceId);
+      console.log("🔍 Current workspace ID:", workspaceId);
       console.log(
         "🔍 Is backend asset:",
         isBackendAsset({ id: componentId } as ComponentInstance)
@@ -1498,7 +1341,7 @@ export default function Home() {
       );
 
       // Delete from backend if it's a backend asset or collection
-      if (currentWorkspaceId) {
+      if (workspaceId) {
         try {
           if (componentId.startsWith("collection-")) {
             // Handle collection deletion
@@ -1511,10 +1354,7 @@ export default function Home() {
                 "🔥 Calling deleteCollection API for collection ID:",
                 collectionId
               );
-              await collectionApi.deleteCollection(
-                currentWorkspaceId,
-                collectionId
-              );
+              await collectionApi.deleteCollection(workspaceId, collectionId);
               console.log(
                 "✅ Successfully deleted collection from backend:",
                 collectionId
@@ -1524,7 +1364,7 @@ export default function Home() {
               console.log(
                 "🔄 Refreshing workspace data after collection deletion"
               );
-              switchWorkspace(currentWorkspaceId);
+              fetchWorkspaceDetails(workspaceId);
             }
           } else if (componentId.startsWith("asset-")) {
             // Handle asset deletion (both standalone and within collections)
@@ -1532,7 +1372,7 @@ export default function Home() {
             console.log("🔍 Extracted asset ID:", assetId);
             if (assetId) {
               console.log("🔥 Calling deleteAsset API for asset ID:", assetId);
-              await assetApi.deleteAsset(currentWorkspaceId, assetId);
+              await assetApi.deleteAsset(workspaceId, assetId);
 
               console.log(
                 "✅ Successfully deleted asset from backend:",
@@ -1541,7 +1381,7 @@ export default function Home() {
 
               // Refresh workspace data to ensure UI is in sync
               console.log("🔄 Refreshing workspace data after asset deletion");
-              switchWorkspace(currentWorkspaceId);
+              fetchWorkspaceDetails(workspaceId);
             }
           }
         } catch (error) {
@@ -1589,7 +1429,59 @@ export default function Home() {
         handleUpdateComponent as EventListener
       );
     };
-  }, [setNodes, setEdges, currentWorkspaceId, switchWorkspace]);
+  }, [setNodes, setEdges, workspaceId, fetchWorkspaceDetails]);
+
+  // Handle error state
+  if (workspaceError) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">
+            Error Loading Workspace
+          </h1>
+          <p className="text-gray-600 mb-4">{workspaceError}</p>
+          <button
+            onClick={() => router.push("/boards")}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+          >
+            Go Back to Boards
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle loading state
+  if (workspaceLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  // Handle case where workspace wasn't found
+  if (!currentWorkspace && !workspaceLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">
+            Workspace Not Found
+          </h1>
+          <p className="text-gray-600 mb-4">
+            The workspace you&apos;re looking for doesn&apos;t exist or you
+            don&apos;t have access to it.
+          </p>
+          <button
+            onClick={() => router.push("/boards")}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+          >
+            Go Back to Boards
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="">
@@ -1597,182 +1489,6 @@ export default function Home() {
         <ChatNav />
         <Sidebar onChatClick={handleChatClick} />
 
-        {/* Light Theme Workspace Sidebar */}
-        <div
-          className={`absolute left-0 top-0 h-screen w-80 bg-white shadow-2xl z-40 transform transition-all duration-300 ease-in-out ${
-            isWorkspaceSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
-        >
-          <div className="p-6 h-full flex flex-col">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-8">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-[#8E5EFF] to-[#4596FF] flex items-center justify-center shadow-md">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z"
-                      stroke="white"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M9 22V12H15V22"
-                      stroke="white"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-bold text-gray-800">Boards</h2>
-              </div>
-              <button
-                onClick={() => setIsWorkspaceSidebarOpen(false)}
-                className="text-gray-500 hover:text-gray-700 transition-colors duration-200 text-2xl font-light cursor-pointer hover:bg-gray-100 rounded-lg w-8 h-8 flex items-center justify-center"
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Create New Workspace Button */}
-            <button
-              onClick={createNewWorkspace}
-              className="w-full bg-gradient-to-r from-[#8E5EFF] to-[#4596FF] hover:from-[#9A6AFF] hover:to-[#5BA6FF] focus:ring-2 focus:ring-[#8E5EFF] focus:ring-offset-2 focus:ring-offset-white text-white font-semibold py-3 px-6 rounded-xl mb-6 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl"
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M12 5V19M5 12H19"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span>Create New Board</span>
-            </button>
-
-            {/* Workspaces List */}
-            <div className="flex-1 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-              <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wider mb-4">
-                Your Boards
-              </h3>
-
-              {/* Error Display */}
-              {workspaceError && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                  <p className="text-red-600 text-sm">{workspaceError}</p>
-                  <button
-                    onClick={clearError}
-                    className="text-red-500 text-xs underline mt-1"
-                  >
-                    Dismiss
-                  </button>
-                </div>
-              )}
-
-              {/* Loading State */}
-              {workspaceLoading && (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8E5EFF]"></div>
-                </div>
-              )}
-
-              {/* Workspaces */}
-              {!workspaceLoading &&
-                workspaces.length === 0 &&
-                !workspaceError && (
-                  <div className="text-center py-8 text-gray-500">
-                    <p className="text-sm">No workspaces found</p>
-                    <p className="text-xs mt-1">
-                      Create your first workspace to get started
-                    </p>
-                  </div>
-                )}
-
-              {!workspaceLoading &&
-                workspaces.map((ws) => (
-                  <div
-                    key={ws.id}
-                    className={`relative p-4 rounded-xl cursor-pointer transition-all duration-200 group ${
-                      ws.id === currentWorkspaceId
-                        ? "bg-gradient-to-r from-[#8E5EFF]/10 to-[#4596FF]/10 border-2 border-[#8E5EFF] shadow-lg"
-                        : "bg-gray-50 hover:bg-gray-100 border-2 border-transparent hover:border-gray-200 shadow-sm hover:shadow-md"
-                    }`}
-                  >
-                    {/* Workspace Icon and Content */}
-                    <div className="flex items-center space-x-4">
-                      <div
-                        className="flex-1"
-                        onClick={() => switchWorkspace(ws.id)}
-                      >
-                        <h4
-                          className={`font-semibold truncate ${
-                            ws.id === currentWorkspaceId
-                              ? "text-gray-800"
-                              : "text-gray-700 group-hover:text-gray-800"
-                          } transition-colors duration-200`}
-                          title={ws.name}
-                        >
-                          {ws.name}
-                        </h4>
-                      </div>
-
-                      {/* Action Icons */}
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditWorkspace({ id: ws.id, name: ws.name });
-                          }}
-                          className="p-1 hover:bg-gray-200 rounded transition-colors"
-                          title="Edit workspace"
-                        >
-                          <EditIcon size={16} color="#6B7280" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteWorkspace({ id: ws.id, name: ws.name });
-                          }}
-                          className="p-1 hover:bg-red-100 rounded transition-colors"
-                          title="Delete workspace"
-                        >
-                          <DeleteIcon size={16} color="#EF4444" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </div>
-
-            {/* Footer */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="text-xs text-gray-600 text-center">
-                <p>
-                  Current:{" "}
-                  <span className="text-[#8E5EFF] font-medium">
-                    {currentWorkspace?.name || "No workspace selected"}
-                  </span>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* <LetsGetStarted /> */}
         <div className="absolute inset-0 w-full h-screen overflow-hidden ml-20 sm:ml-24">
           <ReactFlow
             nodes={nodes}
@@ -1788,9 +1504,7 @@ export default function Home() {
             defaultEdgeOptions={{
               style: { stroke: "#4596FF", strokeDasharray: "5,5" },
             }}
-            // noDragClassName="noDrag"
             noWheelClassName="noDrag"
-            // nodesDraggable={true}
           >
             <Controls />
             <Background />

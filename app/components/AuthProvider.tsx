@@ -6,7 +6,7 @@ import { useUserStore } from "../store/userStore";
 import { getAccessToken } from "../utils/cookies";
 
 // Routes that require user data to be fetched
-const protectedRoutes = ["/dashboard", "/chat", "/payment"];
+const protectedRoutes = ["/workspace", "/chat", "/payment", "/boards"];
 
 export default function AuthProvider({
   children,

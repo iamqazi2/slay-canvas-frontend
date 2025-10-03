@@ -836,8 +836,8 @@ export default function SimpleChatInterface({
       await apiClient.delete(`/agent/knowledge-bases/${knowledgeBase.name}`);
       // Show success message
       showToast("Knowledge base deleted successfully", "success");
-      // Navigate to dashboard and refresh to update the UI
-      router.push("/dashboard");
+      // Navigate to boards page and refresh to update the UI
+      router.push("/boards");
       // Refresh the page to update the knowledge bases list
       setTimeout(() => {
         window.location.reload();
