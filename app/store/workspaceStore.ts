@@ -23,13 +23,18 @@ interface WorkspaceState {
   setCurrentWorkspaceId: (id: number | null) => void;
 
   // API Actions
-  fetchWorkspaces: () => Promise<void>;
+  fetchWorkspaces: (options?: {
+    starred?: boolean;
+    archived?: boolean;
+  }) => Promise<void>;
   createWorkspace: (data: WorkspaceCreate) => Promise<Workspace | null>;
   updateWorkspace: (
     id: number,
     data: WorkspaceUpdate
   ) => Promise<Workspace | null>;
   deleteWorkspace: (id: number) => Promise<boolean>;
+  starWorkspace: (id: number, starred: boolean) => Promise<boolean>;
+  archiveWorkspace: (id: number, archived: boolean) => Promise<boolean>;
   fetchWorkspaceDetails: (id: number) => Promise<WorkspaceDetailed | null>;
   switchWorkspace: (id: number) => Promise<void>;
 
@@ -59,11 +64,14 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         set({ currentWorkspaceId });
       },
 
-      fetchWorkspaces: async () => {
+      fetchWorkspaces: async (options?: {
+        starred?: boolean;
+        archived?: boolean;
+      }) => {
         try {
           set({ isLoading: true, error: null });
 
-          const workspaces = await workspaceApi.listWorkspaces();
+          const workspaces = await workspaceApi.listWorkspaces(options);
 
           set({
             workspaces,
@@ -161,6 +169,66 @@ export const useWorkspaceStore = create<WorkspaceState>()(
                 ? error.message
                 : "Failed to delete workspace",
             isLoading: false,
+          });
+          return false;
+        }
+      },
+
+      starWorkspace: async (id: number, starred: boolean) => {
+        try {
+          const updatedWorkspace = await workspaceApi.starWorkspace(
+            id,
+            starred
+          );
+
+          set((state) => ({
+            workspaces: state.workspaces.map((ws) =>
+              ws.id === id ? updatedWorkspace : ws
+            ),
+            currentWorkspace:
+              state.currentWorkspace?.id === id
+                ? { ...state.currentWorkspace, ...updatedWorkspace }
+                : state.currentWorkspace,
+          }));
+
+          return true;
+        } catch (error) {
+          console.error("Failed to star/unstar workspace:", error);
+          set({
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to update workspace",
+          });
+          return false;
+        }
+      },
+
+      archiveWorkspace: async (id: number, archived: boolean) => {
+        try {
+          const updatedWorkspace = await workspaceApi.archiveWorkspace(
+            id,
+            archived
+          );
+
+          set((state) => ({
+            workspaces: state.workspaces.map((ws) =>
+              ws.id === id ? updatedWorkspace : ws
+            ),
+            currentWorkspace:
+              state.currentWorkspace?.id === id
+                ? { ...state.currentWorkspace, ...updatedWorkspace }
+                : state.currentWorkspace,
+          }));
+
+          return true;
+        } catch (error) {
+          console.error("Failed to archive/unarchive workspace:", error);
+          set({
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to update workspace",
           });
           return false;
         }

@@ -17,12 +17,9 @@ import { useRouter } from "next/navigation";
 import { useUserStore } from "../store/userStore";
 import SharePanel from "./SharePanel";
 import NotificationPanel from "./NotificationPanel";
+import Link from "next/link";
 
-type ChatNavProps = {
-  onWorkspaceToggle?: () => void;
-};
-
-export default function ChatNav({ onWorkspaceToggle }: ChatNavProps) {
+export default function ChatNav() {
   const router = useRouter();
   const { logout } = useUserStore();
   const [isSharePanelVisible, setIsSharePanelVisible] =
@@ -59,12 +56,12 @@ export default function ChatNav({ onWorkspaceToggle }: ChatNavProps) {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
               <span className="max-sm:hidden flex items-center gap-3">
-                <div
+                <Link
+                  href={"/boards"}
                   className="cursor-pointer hover:opacity-70"
-                  onClick={onWorkspaceToggle}
                 >
                   <GridIcon />
-                </div>
+                </Link>
                 <Separator />
               </span>
               <span className="cursor-pointer" onClick={() => router.push("/")}>

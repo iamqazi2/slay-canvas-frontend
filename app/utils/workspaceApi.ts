@@ -18,10 +18,26 @@ class WorkspaceApi {
   }
 
   /**
-   * List all workspaces for the current user
+   * List all workspaces for the current user with optional filtering
    */
-  async listWorkspaces(): Promise<Workspace[]> {
-    return await apiClient.get<Workspace[]>("/workspaces");
+  async listWorkspaces(options?: {
+    starred?: boolean;
+    archived?: boolean;
+  }): Promise<Workspace[]> {
+    const params = new URLSearchParams();
+
+    if (options?.starred !== undefined) {
+      params.append("starred", options.starred.toString());
+    }
+
+    if (options?.archived !== undefined) {
+      params.append("archived", options.archived.toString());
+    }
+
+    const queryString = params.toString();
+    const endpoint = queryString ? `/workspaces?${queryString}` : "/workspaces";
+
+    return await apiClient.get<Workspace[]>(endpoint);
   }
 
   /**
@@ -48,6 +64,30 @@ class WorkspaceApi {
     return await apiClient.delete<MessageResponse>(
       `/workspaces/${workspaceId}`
     );
+  }
+
+  /**
+   * Star/unstar a workspace
+   */
+  async starWorkspace(
+    workspaceId: number,
+    starred: boolean
+  ): Promise<Workspace> {
+    return await apiClient.put<Workspace>(`/workspaces/${workspaceId}`, {
+      is_starred: starred,
+    });
+  }
+
+  /**
+   * Archive/unarchive a workspace
+   */
+  async archiveWorkspace(
+    workspaceId: number,
+    archived: boolean
+  ): Promise<Workspace> {
+    return await apiClient.put<Workspace>(`/workspaces/${workspaceId}`, {
+      is_archived: archived,
+    });
   }
 }
 

@@ -91,8 +91,8 @@ const Signup: React.FC<LogoutProps> = ({
           confirmPassword: "",
         });
 
-        // Redirect to dashboard
-        router.push("/dashboard");
+        // Redirect to boards
+        router.push("/boards");
       } else {
         showToast(response.message || "Registration failed", "error");
       }
