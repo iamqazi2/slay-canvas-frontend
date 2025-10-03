@@ -49,7 +49,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       workspaces: [],
       currentWorkspace: null,
       currentWorkspaceId: null,
-      isLoading: false,
+      isLoading: true,
       error: null,
 
       setLoading: (isLoading: boolean) => {
