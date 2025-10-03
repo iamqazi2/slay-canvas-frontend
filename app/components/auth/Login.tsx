@@ -71,8 +71,8 @@ const Login: React.FC<LoginProps> = ({
           confirmPassword: "",
         });
 
-        // Redirect to dashboard or home
-        router.push("/dashboard");
+        // Redirect to boards
+        router.push("/boards");
       } else {
         showToast(response.message || "Login failed", "error");
       }

@@ -1594,11 +1594,7 @@ export default function Home() {
   return (
     <div className="">
       <div className="relative">
-        <ChatNav
-          onWorkspaceToggle={() =>
-            setIsWorkspaceSidebarOpen(!isWorkspaceSidebarOpen)
-          }
-        />
+        <ChatNav />
         <Sidebar onChatClick={handleChatClick} />
 
         {/* Light Theme Workspace Sidebar */}
@@ -1635,7 +1631,7 @@ export default function Home() {
                     />
                   </svg>
                 </div>
-                <h2 className="text-xl font-bold text-gray-800">Workspaces</h2>
+                <h2 className="text-xl font-bold text-gray-800">Boards</h2>
               </div>
               <button
                 onClick={() => setIsWorkspaceSidebarOpen(false)}
@@ -1665,13 +1661,13 @@ export default function Home() {
                   strokeLinejoin="round"
                 />
               </svg>
-              <span>Create New Workspace</span>
+              <span>Create New Board</span>
             </button>
 
             {/* Workspaces List */}
             <div className="flex-1 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
               <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wider mb-4">
-                Your Workspaces
+                Your Boards
               </h3>
 
               {/* Error Display */}

@@ -70,8 +70,8 @@ const FormContent = () => {
 
           showToast("Successfully logged in with Google!", "success");
 
-          // Redirect to dashboard
-          router.push("/dashboard");
+          // Redirect to boards
+          router.push("/boards");
         } catch (error) {
           console.error("Error fetching user data:", error);
           showToast("Failed to fetch user data", "error");
