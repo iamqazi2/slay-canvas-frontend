@@ -41,6 +41,7 @@ interface SimpleChatInterfaceProps {
   attachedAssets?: ComponentInstance[];
   showHandles?: boolean; // Controls whether to show ReactFlow handles
   initialConversationId?: number; // Optional conversation ID to load initially
+  onWorkspaceUpdate?: () => void; // Callback to refresh workspace data
 }
 
 export default function SimpleChatInterface({
@@ -50,6 +51,7 @@ export default function SimpleChatInterface({
   attachedAssets = [],
   showHandles = false,
   initialConversationId,
+  onWorkspaceUpdate,
 }: SimpleChatInterfaceProps) {
   const { showToast } = useToast();
 
@@ -836,6 +838,14 @@ export default function SimpleChatInterface({
       await apiClient.delete(`/agent/knowledge-bases/${knowledgeBase.name}`);
       // Show success message
       showToast("Knowledge base deleted successfully", "success");
+
+      // Refresh workspace data to update the UI
+      if (onWorkspaceUpdate) {
+        onWorkspaceUpdate();
+      }
+
+      // Close the modal
+      setIsDeleteModalOpen(false);
     } catch (error) {
       console.error("Failed to delete knowledge base:", error);
       showToast("Failed to delete knowledge base", "error");

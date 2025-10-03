@@ -325,6 +325,7 @@ const ChatNode = ({
     knowledgeBase: KnowledgeBase;
     workspace?: WorkspaceDetailed;
     isLoading?: boolean;
+    onWorkspaceUpdate?: () => void;
   };
 }) => {
   return (
@@ -343,6 +344,7 @@ const ChatNode = ({
         attachedAssets={data.attachedAssets}
         className="h-full"
         showHandles={true}
+        onWorkspaceUpdate={data.onWorkspaceUpdate}
       />
     </div>
   );
@@ -1057,6 +1059,11 @@ export default function WorkspacePage() {
               knowledgeBase: kb,
               workspace: currentWorkspace,
               isLoading: kbLoadingStates[kb.id] || false, // Add loading state
+              onWorkspaceUpdate: () => {
+                if (workspaceId) {
+                  fetchWorkspaceDetails(workspaceId);
+                }
+              },
             },
             style: { width: 800, height: 600 },
           };
@@ -1074,7 +1081,15 @@ export default function WorkspacePage() {
                   id: "chat-node",
                   type: "chat",
                   position: chatPosition,
-                  data: { attachedAssets: [], position: chatPosition },
+                  data: {
+                    attachedAssets: [],
+                    position: chatPosition,
+                    onWorkspaceUpdate: () => {
+                      if (workspaceId) {
+                        fetchWorkspaceDetails(workspaceId);
+                      }
+                    },
+                  },
                   style: { width: 800, height: 600 },
                 };
               })(),
@@ -1089,6 +1104,8 @@ export default function WorkspacePage() {
     knowledgeBases,
     currentWorkspace,
     kbLoadingStates,
+    workspaceId,
+    fetchWorkspaceDetails,
     setNodes,
   ]);
 
@@ -1447,15 +1464,6 @@ export default function WorkspacePage() {
             Go Back to Boards
           </button>
         </div>
-      </div>
-    );
-  }
-
-  // Handle loading state
-  if (workspaceLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
       </div>
     );
   }
