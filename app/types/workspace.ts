@@ -23,6 +23,8 @@ export interface WorkspaceUpdate {
   settings?: WorkspaceSettings;
   is_public?: boolean;
   collaborator_ids?: number[];
+  is_starred?: boolean;
+  is_archived?: boolean;
 }
 
 export interface WorkspaceInDB extends WorkspaceBase {
@@ -30,6 +32,8 @@ export interface WorkspaceInDB extends WorkspaceBase {
   user_id: number;
   created_at: string;
   updated_at: string;
+  is_starred?: boolean;
+  is_archived?: boolean;
 }
 
 export interface Workspace extends WorkspaceInDB {
