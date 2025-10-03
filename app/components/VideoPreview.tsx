@@ -128,6 +128,11 @@ const VideoPreview = memo(function VideoPreview({
         headerBg: "#E6486B", // Instagram pink
         icon: "/insta-logo.svg",
       },
+      tiktok: {
+        bg: "#FDF2F8", // Same as Instagram
+        headerBg: "#000000", // TikTok black
+        icon: "/tiktok-logo.svg",
+      },
       youtube: {
         bg: "#FEF2F2", // Light red
         headerBg: "#fcb7b7", // YouTube red
@@ -158,7 +163,7 @@ const VideoPreview = memo(function VideoPreview({
       configs[detectedPlatform || ""] || {
         bg: "#F8F9FA",
         headerBg: "#1AB7EA",
-        icon: "/x.png",
+        icon: "/file.svg",
       }
     );
   }, [detectedPlatform]);
@@ -213,15 +218,21 @@ const VideoPreview = memo(function VideoPreview({
         src: `https://player.vimeo.com/video/${v[1]}`,
       };
 
-    // TikTok - prefer embed.js + blockquote snippet
+    // TikTok - use iframe embed for better reliability
     if (/tiktok\.com/i.test(src)) {
-      const html = `<blockquote class="tiktok-embed" cite="${src}" data-video="${src}" style="max-width: 605px;min-width: 325px;" > <section> <a target="_blank" title="TikTok" href="${src}"></a> </section></blockquote>`;
-      return { type: "html" as const, html, provider: "tiktok" as const };
+      const tiktokMatch = src.match(/tiktok\.com\/.*\/video\/(\d+)/);
+      if (tiktokMatch) {
+        const videoId = tiktokMatch[1];
+        return {
+          type: "iframe" as const,
+          src: `https://www.tiktok.com/embed/v2/${videoId}?embed_source=web&show_caption=0&show_share=0&show_author=0&show_logo=0&show_info=0`,
+        };
+      }
     }
 
     // Instagram
     if (/instagram\.com/i.test(src)) {
-      const html = `<blockquote class="instagram-media" data-instgrm-permalink="${src}" data-instgrm-version="14" style="background:#FFF; border:0; border-radius:3px; box-shadow:0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15); margin: 1px; max-width:540px; min-width:326px; padding:0; width:99.375%; width:-webkit-calc(100% - 2px); width:calc(100% - 2px);"></blockquote>`;
+      const html = `<blockquote class="instagram-media" data-instgrm-permalink="${src}" data-instgrm-version="14" style="height: 100%; width: 100%; overflow: hidden; background:#FFF; border:0; border-radius:3px; box-shadow:0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15); margin: 0; max-width: none; min-width: none; padding:0;"></blockquote>`;
       return { type: "html" as const, html, provider: "instagram" as const };
     }
 
@@ -248,7 +259,7 @@ const VideoPreview = memo(function VideoPreview({
 
     // Facebook video/embed
     if (/facebook\.com/i.test(src)) {
-      const html = `<div id="fb-root"></div><div class="fb-video" data-href="${src}" data-width="auto" data-show-text="false"></div>`;
+      const html = `<div id="fb-root"></div><div class="fb-video" data-href="${src}" data-width="500" data-height="600" data-show-text="false" data-allowfullscreen="true" style="height: 100%; width: 100%; overflow: hidden;"></div>`;
       return { type: "html" as const, html, provider: "facebook" as const };
     }
 
@@ -265,12 +276,7 @@ const VideoPreview = memo(function VideoPreview({
     if (!embedPayload || embedPayload.type !== "html") return;
 
     const provider = embedPayload.provider;
-    if (provider === "tiktok") {
-      // TikTok embed script
-      loadScript("https://www.tiktok.com/embed.js", "tiktok-embed-js").catch(
-        () => {}
-      );
-    } else if (provider === "instagram") {
+    if (provider === "instagram") {
       loadScript("https://www.instagram.com/embed.js", "instagram-embed-js")
         .then(() => {
           // Instagram requires window.instgrm && window.instgrm.Embeds.process()
@@ -353,6 +359,27 @@ const VideoPreview = memo(function VideoPreview({
     }
   }, [embedPayload?.type, embedPayload?.html, embedPayload?.provider]);
 
+  // Additional effect to ensure Facebook embeds are processed after render
+  useEffect(() => {
+    if (
+      embedPayload?.type === "html" &&
+      embedPayload?.provider === "facebook"
+    ) {
+      // Process Facebook embeds after a short delay to ensure DOM is ready
+      const timeoutId = setTimeout(() => {
+        if (
+          window.FB &&
+          window.FB.XFBML &&
+          typeof window.FB.XFBML.parse === "function"
+        ) {
+          window.FB.XFBML.parse();
+        }
+      }, 300);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [embedPayload?.type, embedPayload?.html, embedPayload?.provider]);
+
   // Memoize media style to prevent unnecessary re-renders
   const mediaStyle = useMemo(
     (): React.CSSProperties => ({
@@ -385,6 +412,9 @@ const VideoPreview = memo(function VideoPreview({
     }
 
     if (embedPayload.type === "iframe") {
+      const iframeStyle = detectedPlatform === "tiktok"
+        ? { ...mediaStyle, pointerEvents: "none" as const }
+        : mediaStyle;
       return (
         <iframe
           src={embedPayload.src}
@@ -392,7 +422,7 @@ const VideoPreview = memo(function VideoPreview({
           frameBorder={0}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
           allowFullScreen
-          style={mediaStyle}
+          style={iframeStyle}
           onError={() => {
             console.warn("Iframe failed to load:", embedPayload.src);
           }}
@@ -407,7 +437,7 @@ const VideoPreview = memo(function VideoPreview({
           style={{
             width: "100%",
             height: "100%",
-            overflow: "auto",
+            overflow: "hidden",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -522,13 +552,15 @@ const VideoPreview = memo(function VideoPreview({
   // Content area with video/image
   const isSocialVideo =
     detectedPlatform &&
-    ["instagram", "twitter", "facebook"].includes(detectedPlatform);
+    ["instagram", "tiktok", "facebook"].includes(detectedPlatform);
+  const contentHeight =
+    detectedPlatform === "tiktok" ? 500 : isSocialVideo ? 600 : 320;
   const contentStyle: React.CSSProperties = {
     width: "100%",
-    height: isSocialVideo ? 520 : 320,
+    height: contentHeight,
     position: "relative",
     background: "#000",
-    overflow: isSocialVideo ? "auto" : "hidden",
+    overflow: "hidden",
   };
 
   // Helper render function for video content

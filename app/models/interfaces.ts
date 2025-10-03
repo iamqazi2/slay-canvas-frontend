@@ -21,6 +21,7 @@ export interface VideoItem {
     | "instagram"
     | "facebook"
     | "twitter"
+    | "tiktok"
     | "X"
     | "direct"
     | "other";

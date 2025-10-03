@@ -16,9 +16,9 @@ import {
   FileIcon,
   FolderIcon,
   GlobeIcon,
-  GridIconNew,
   LockIcon,
   NotificationIcon,
+  SocialMediaIcon,
   TrashIcon,
   UserIcon,
   WifiIcon,
@@ -86,6 +86,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
   const [isWebLinkPopup, setIsWebLinkPopup] = useState(false);
   const [isTextPopup, setIsTextPopup] = useState(false);
   const [isPlusPopup, setIsPlusPopup] = useState(false);
+  const [isSocialDropdownOpen, setIsSocialDropdownOpen] = useState(false);
   const [wikiUrl, setWikiUrl] = useState("");
   const [webLinkUrl, setWebLinkUrl] = useState("");
   const [textContent, setTextContent] = useState("");
@@ -343,8 +344,9 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
     if (url.includes("instagram.com")) return "instagram";
     if (url.includes("facebook.com") || url.includes("fb.watch"))
       return "facebook";
-    if (url.includes("tiktok.com")) return "twitter";
-    if (url.includes("twitter.com") || url.includes("x.com")) return "X";
+    if (url.includes("tiktok.com")) return "tiktok";
+    if (url.includes("twitter.com")) return "twitter";
+    if (url.includes("x.com")) return "X";
     if (url.match(/\.(mp4|avi|mov|wmv|flv|webm|ogg)$/i)) return "direct";
     return "other";
   };
@@ -458,6 +460,14 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
           )}&show_text=false`;
         }
         break;
+      case "tiktok":
+        title = "TikTok Video";
+        description = "Watch on TikTok";
+        author = "TikTok";
+        platform = "TikTok";
+        // TikTok embed URL
+        url = inputUrl; // For now, keep original; can add embed logic if needed
+        break;
       case "twitter":
         title = "Twitter";
         description = "Watch on Twitter";
@@ -512,8 +522,8 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
 
   return (
     <>
-      <div className="sticky left-2 sm:left-4 mt-3 w-16 sm:w-20">
-        <div className="w-12 sm:w-16 bg-white rounded-2xl shadow-lg p-3 sm:p-5 flex flex-col items-center gap-3 sm:gap-5 z-50">
+      <div className="absolute left-2 sm:left-4 mt-3 w-16 sm:w-20">
+        <div className="w-12 sm:w-16 bg-white rounded-2xl shadow-lg p-3 sm:p-5 flex flex-col items-center gap-3 sm:gap-5 z-[1000]">
           {/* Top Section - Chat Icon with Star */}
           <div
             onClick={() => onChatClick()}
@@ -530,51 +540,121 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
           <div className="w-6 sm:w-8 h-px bg-gray-200"></div>
 
           {/* Main Icon List */}
-          <div className="flex flex-col items-center gap-6 sm:gap-10">
+          <div className="flex flex-col items-center gap-6 sm:gap-10 relative">
             {/* Social Media Group Icon - Video Collection */}
-            <div className=" bg-[#F0F5F8] transition-opacity grid grid-cols-2 p-[4px] rounded-md gap-1">
-              <Image
-                className="cursor-pointer"
-                src="/x.png"
-                height={15}
-                width={15}
-                alt="X"
-                onClick={() => {
-                  setVideoModalHeading("Add X");
-                  setIsVideoPopup(true);
-                }}
-              />
-              <Image
-                className="cursor-pointer"
-                src="/youtube.svg"
-                height={15}
-                width={15}
-                alt="YouTube"
-                onClick={() => {
-                  setVideoModalHeading("Add YouTube Video");
-                  setIsVideoPopup(true);
-                }}
-              />
-              <Image
-                className="cursor-pointer"
-                src="/insta.svg"
-                height={15}
-                width={15}
-                alt="Instagram"
-                onClick={() => {
-                  setVideoModalHeading("Add Instagram Video");
-                  setIsVideoPopup(true);
-                }}
-              />
-              <Image
-                className="cursor-pointer"
-                src="/plus.svg"
-                height={15}
-                width={15}
-                alt="Add Video"
-                onClick={() => setIsPlusPopup(true)}
-              />
+            <div
+              onClick={() => setIsSocialDropdownOpen(!isSocialDropdownOpen)}
+              className="cursor-pointer hover:opacity-70 transition-opacity"
+            >
+              <SocialMediaIcon size={32} />
             </div>
+
+            {/* Social Media Dropdown */}
+            {isSocialDropdownOpen && (
+              <div className="absolute left-10 top-2 mt-2 bg-gray-200 shadow-lg rounded-md py-2 overflow-clip !z-[2000] w-32">
+                <div className="grid grid-cols-3">
+                  <div
+                    className=" rounded-md py-1 flex items-center justify-center cursor-pointer hover:opacity-70 transition-opacity"
+                    onClick={() => {
+                      setVideoModalHeading("Add Instagram Video");
+                      setIsVideoPopup(true);
+                      setIsSocialDropdownOpen(false);
+                    }}
+                  >
+                    <Image
+                      src="/insta.svg"
+                      height={20}
+                      width={20}
+                      alt="Instagram"
+                    />
+                  </div>
+                  <div
+                    className=" rounded-md py-1 flex items-center justify-center cursor-pointer hover:opacity-70 transition-opacity"
+                    onClick={() => {
+                      setVideoModalHeading("Add Facebook Video");
+                      setIsVideoPopup(true);
+                      setIsSocialDropdownOpen(false);
+                    }}
+                  >
+                    <Image
+                      src="/fb.png"
+                      height={20}
+                      width={20}
+                      alt="Facebook"
+                    />
+                  </div>
+                  {/* <div
+                    className=" rounded-md py-1 flex items-center justify-center cursor-pointer hover:opacity-70 transition-opacity"
+                    onClick={() => {
+                      setVideoModalHeading("Add Twitter Video");
+                      setIsVideoPopup(true);
+                      setIsSocialDropdownOpen(false);
+                    }}
+                  >
+                    <Image
+                      src="/twitter.png"
+                      height={20}
+                      width={20}
+                      alt="Twitter"
+                    />
+                  </div> */}
+                  <div
+                    className=" rounded-md py-1 flex items-center justify-center cursor-pointer hover:opacity-70 transition-opacity"
+                    onClick={() => {
+                      setVideoModalHeading("Add TikTok Video");
+                      setIsVideoPopup(true);
+                      setIsSocialDropdownOpen(false);
+                    }}
+                  >
+                    <Image
+                      src="/tiktok.svg"
+                      height={20}
+                      width={20}
+                      alt="TikTok"
+                    />
+                  </div>
+                  <div
+                    className=" rounded-md py-1 flex items-center justify-center cursor-pointer hover:opacity-70 transition-opacity"
+                    onClick={() => {
+                      setVideoModalHeading("Add YouTube Video");
+                      setIsVideoPopup(true);
+                      setIsSocialDropdownOpen(false);
+                    }}
+                  >
+                    <Image
+                      src="/youtube.svg"
+                      height={20}
+                      width={20}
+                      alt="YouTube"
+                    />
+                  </div>
+                  <div
+                    className=" rounded-md py-1 flex items-center justify-center cursor-pointer hover:opacity-70 transition-opacity"
+                    onClick={() => {
+                      setVideoModalHeading("Add X");
+                      setIsVideoPopup(true);
+                      setIsSocialDropdownOpen(false);
+                    }}
+                  >
+                    <Image src="/x.png" height={20} width={20} alt="X" />
+                  </div>
+                  <div
+                    className=" rounded-md py-1 flex items-center justify-center cursor-pointer hover:opacity-70 transition-opacity"
+                    onClick={() => {
+                      setIsPlusPopup(true);
+                      setIsSocialDropdownOpen(false);
+                    }}
+                  >
+                    <Image
+                      src="/plus.svg"
+                      height={20}
+                      width={20}
+                      alt="Add Video"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Gallery Icon - Image Collection */}
             <div
@@ -647,7 +727,7 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
           </div>
         </div>
         {/* Bottom Section - Dark Button with Wifi Icon */}
-        <button className="mt-3 w-12 sm:w-16 h-10 sm:h-12 bg-black rounded-xl flex items-center justify-center hover:bg-gray-700 transition-colors">
+        <button className="mt-3 w-12 sm:w-16 h-10 sm:h-12  rounded-xl flex items-center justify-center hover:bg-gray-700 transition-colors">
           <WifiIcon width={20} height={20} className="sm:w-6 sm:h-6" />
         </button>
       </div>
@@ -774,10 +854,6 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
       <PlusModal
         isOpen={isPlusPopup}
         onClose={() => setIsPlusPopup(false)}
-        onFacebookVideo={() => {
-          setVideoModalHeading("Add Facebook Video");
-          setIsVideoPopup(true);
-        }}
         onDeviceImport={() => {
           // Create a special input handler for social video uploads
           const input = document.createElement("input");

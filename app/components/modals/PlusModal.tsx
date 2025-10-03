@@ -6,14 +6,12 @@ import Button from "../Button";
 interface PlusModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onFacebookVideo: () => void;
   onDeviceImport: () => void;
 }
 
 export default function PlusModal({
   isOpen,
   onClose,
-  onFacebookVideo,
   onDeviceImport,
 }: PlusModalProps) {
   return (
@@ -26,16 +24,6 @@ export default function PlusModal({
       title="Add Video"
     >
       <div className="flex flex-col w-full items-center gap-4">
-        <Button
-          onClick={() => {
-            onFacebookVideo();
-            onClose();
-          }}
-          variant="gradient"
-          className="w-full"
-        >
-          Upload Facebook Video
-        </Button>
         <Button
           onClick={() => {
             onDeviceImport();
