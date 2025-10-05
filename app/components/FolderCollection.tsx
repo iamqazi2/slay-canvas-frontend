@@ -325,6 +325,13 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
     }
   }, [id, inline, name, assets]);
 
+  // Sync assets state with initialData when it changes
+  useEffect(() => {
+    if (initialData?.assets) {
+      setAssets(initialData.assets);
+    }
+  }, [initialData?.assets]);
+
   // Handle drop of assets
   const handleDrop = useCallback(
     async (e: React.DragEvent) => {
