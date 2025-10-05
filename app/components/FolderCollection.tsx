@@ -59,7 +59,7 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
-  // Use refs to track initial values without causing re-renders
+  // Use refs to track initial values without causing re-renders added
   const initialNameRef = useRef<string>(initialData?.name || "Collection");
 
   const renderAssetComponent = (asset: AssetItem) => {
