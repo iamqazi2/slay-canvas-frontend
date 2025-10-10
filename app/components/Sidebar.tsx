@@ -727,7 +727,19 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
           </div>
         </div>
         {/* Bottom Section - Dark Button with Wifi Icon */}
-        <button className="mt-3 w-12 sm:w-16 h-10 sm:h-12  rounded-xl flex items-center justify-center hover:bg-gray-700 transition-colors">
+        <button
+          onClick={() => {
+            window.dispatchEvent(
+              new CustomEvent("createComponent", {
+                detail: {
+                  componentType: "multiStepChat",
+                  data: {},
+                },
+              })
+            );
+          }}
+          className="mt-3 w-12 sm:w-16 h-10 sm:h-12  bg-black rounded-xl flex items-center justify-center hover:bg-gray-700 transition-colors"
+        >
           <WifiIcon width={20} height={20} className="sm:w-6 sm:h-6" />
         </button>
       </div>

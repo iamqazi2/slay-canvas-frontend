@@ -4,7 +4,6 @@ import { knowledgeBaseApi } from "@/app/utils/knowledgeBaseApi";
 import { updatePosition } from "@/app/utils/positionApi";
 import { useCallback, useEffect, useState } from "react";
 import { useToast } from "../../components/ui/Toast";
-
 import { ConnectionMode } from "@xyflow/react";
 import { useParams, useRouter } from "next/navigation";
 import ReactFlow, {
@@ -31,6 +30,7 @@ import {
   VideoPreview,
   WebLink,
   WikipediaLink,
+  MultiStepChatCard,
 } from "../../components";
 import AudioPlayer from "../../components/AudioPlayer";
 import FolderCollection from "../../components/FolderCollection";
@@ -202,6 +202,12 @@ const renderComponent = (instance: ComponentInstance) => {
             name: data?.name || data?.title,
             assets: data?.assets,
           }}
+        />
+      );
+    case "multiStepChat":
+      return (
+        <MultiStepChatCard
+          key={id}
         />
       );
     default:
@@ -957,6 +963,8 @@ export default function WorkspacePage() {
         case "folderCollection":
           // For resizable nodes, use initial dimensions
           return { width: 400, height: 300 };
+        case "multiStepChat":
+          return { width: 800, height: 600 };
         default:
           return { width: 300, height: 200 };
       }
