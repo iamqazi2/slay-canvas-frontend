@@ -61,6 +61,11 @@ const NotebookLMFlow = ({
     SearchResult[]
   >([]);
   const [currentStep, setCurrentStep] = useState<Step>(() => {
+    // If there are already assets linked to the search KB, start from chat step
+    if (searchAssets && searchAssets.length > 0) {
+      return "chat";
+    }
+
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("notebookCurrentStep");
       return (saved as Step) || "context";
@@ -470,7 +475,7 @@ const NotebookLMFlow = ({
             onClick={
               isMaximized
                 ? () => window.history.back()
-                : () => router.push("/fullscreen")
+                : () => router.push(`/chat?kb=${searchKb?.collection_name}`)
             }
             className="text-white hover:bg-gray-800  rounded"
           >

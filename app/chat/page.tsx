@@ -1,6 +1,7 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import MultiStepChatInterface from "../components/MultiStepChatInterface";
 import ChatNav from "../components/New-Navbar";
 import SimpleChatInterface from "../components/SimpleChatInterface";
 import { Asset, Collection, KnowledgeBase } from "../types/workspace";
@@ -132,31 +133,55 @@ const ChatPage = () => {
     <>
       <ChatNav />
       <div className="h-[calc(100vh-78px)]">
-        <SimpleChatInterface
-          knowledgeBase={knowledgeBase}
-          workspace={
-            workspaceData
-              ? {
-                  id: knowledgeBase?.id || 0,
-                  name: knowledgeBase?.name || "",
-                  description: knowledgeBase?.description,
-                  settings: {},
-                  is_public: false,
-                  user_id: 0,
-                  created_at: knowledgeBase?.created_at || "",
-                  updated_at: knowledgeBase?.created_at || "",
-                  collaborators: [],
-                  knowledge_bases: [],
-                  assets: workspaceData.assets,
-                  collections: workspaceData.collections,
-                }
-              : undefined
-          }
-          className="h-full"
-          initialConversationId={
-            conversationId ? parseInt(conversationId) : undefined
-          }
-        />
+        {knowledgeBase.name.includes("kb_search") ? (
+          <MultiStepChatInterface
+            isFullscreen={true}
+            workspace={
+              workspaceData
+                ? {
+                    id: knowledgeBase?.id || 0,
+                    name: knowledgeBase?.name || "",
+                    description: knowledgeBase?.description,
+                    settings: {},
+                    is_public: false,
+                    user_id: 0,
+                    created_at: knowledgeBase?.created_at || "",
+                    updated_at: knowledgeBase?.created_at || "",
+                    collaborators: [],
+                    knowledge_bases: [knowledgeBase],
+                    assets: workspaceData.assets,
+                    collections: workspaceData.collections,
+                  }
+                : undefined
+            }
+          />
+        ) : (
+          <SimpleChatInterface
+            knowledgeBase={knowledgeBase}
+            workspace={
+              workspaceData
+                ? {
+                    id: knowledgeBase?.id || 0,
+                    name: knowledgeBase?.name || "",
+                    description: knowledgeBase?.description,
+                    settings: {},
+                    is_public: false,
+                    user_id: 0,
+                    created_at: knowledgeBase?.created_at || "",
+                    updated_at: knowledgeBase?.created_at || "",
+                    collaborators: [],
+                    knowledge_bases: [],
+                    assets: workspaceData.assets,
+                    collections: workspaceData.collections,
+                  }
+                : undefined
+            }
+            className="h-full"
+            initialConversationId={
+              conversationId ? parseInt(conversationId) : undefined
+            }
+          />
+        )}
       </div>
     </>
   );
