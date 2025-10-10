@@ -2,10 +2,9 @@
 import { assetApi } from "@/app/utils/assetApi";
 import { knowledgeBaseApi } from "@/app/utils/knowledgeBaseApi";
 import { updatePosition } from "@/app/utils/positionApi";
-import { useCallback, useEffect, useState } from "react";
-import { useToast } from "../../components/ui/Toast";
 import { ConnectionMode } from "@xyflow/react";
 import { useParams, useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import ReactFlow, {
   addEdge,
   Background,
@@ -23,6 +22,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import {
   ImageCollection,
+  MultiStepChatCard,
   PdfDocument,
   Sidebar,
   SimpleChatInterface,
@@ -30,13 +30,13 @@ import {
   VideoPreview,
   WebLink,
   WikipediaLink,
-  MultiStepChatCard,
 } from "../../components";
 import AudioPlayer from "../../components/AudioPlayer";
 import FolderCollection from "../../components/FolderCollection";
 import ChatNav from "../../components/New-Navbar";
 import DeleteWorkspaceModal from "../../components/modals/DeleteWorkspaceModal";
 import EditWorkspaceModal from "../../components/modals/EditWorkspaceModal";
+import { useToast } from "../../components/ui/Toast";
 import { useUserStore } from "../../store/userStore";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import {
@@ -205,11 +205,7 @@ const renderComponent = (instance: ComponentInstance) => {
         />
       );
     case "multiStepChat":
-      return (
-        <MultiStepChatCard
-          key={id}
-        />
-      );
+      return <MultiStepChatCard key={id} />;
     default:
       return null;
   }
@@ -334,6 +330,9 @@ const ChatNode = ({
     onWorkspaceUpdate?: () => void;
   };
 }) => {
+  // Check if this is a search knowledge base
+  const isSearchKB = data.knowledgeBase.name.includes("kb_search");
+
   return (
     <div className="w-full h-full relative">
       {data.isLoading && (
@@ -344,14 +343,18 @@ const ChatNode = ({
           </div>
         </div>
       )}
-      <SimpleChatInterface
-        knowledgeBase={data.knowledgeBase}
-        workspace={data.workspace}
-        attachedAssets={data.attachedAssets}
-        className="h-full"
-        showHandles={true}
-        onWorkspaceUpdate={data.onWorkspaceUpdate}
-      />
+      {isSearchKB ? (
+        <MultiStepChatCard workspace={data.workspace} isFullscreen={false} />
+      ) : (
+        <SimpleChatInterface
+          knowledgeBase={data.knowledgeBase}
+          workspace={data.workspace}
+          attachedAssets={data.attachedAssets}
+          className="h-full"
+          showHandles={true}
+          onWorkspaceUpdate={data.onWorkspaceUpdate}
+        />
+      )}
     </div>
   );
 };
@@ -413,10 +416,21 @@ export default function WorkspacePage() {
     if (currentWorkspace) {
       let allComponentInstances: ComponentInstance[] = [];
 
-      // Load assets (excluding those that are already in collections)
+      // Find search knowledge bases
+      const searchKBs = currentWorkspace.knowledge_bases
+        ? currentWorkspace.knowledge_bases.filter((kb) =>
+            kb.name.includes("kb_search")
+          )
+        : [];
+      const searchKBIds = searchKBs.map((kb) => kb.id);
+
+      // Load assets (excluding those that are already in collections OR linked to search KBs)
       if (currentWorkspace.assets) {
         const standaloneAssets = currentWorkspace.assets.filter(
-          (asset) => !asset.collection_id
+          (asset) =>
+            !asset.collection_id &&
+            (!asset.knowledge_base_id ||
+              !searchKBIds.includes(asset.knowledge_base_id))
         );
         const workspaceAssets = assetsToComponentInstances(standaloneAssets);
         allComponentInstances = [...allComponentInstances, ...workspaceAssets];
@@ -1204,6 +1218,14 @@ export default function WorkspacePage() {
       if (componentType === "folderCollection") {
         console.log(
           "🔄 Skipping asset creation for folderCollection - handled by collection API"
+        );
+        return;
+      }
+
+      // Skip backend asset creation for multiStepChat since it's a UI-only component
+      if (componentType === "multiStepChat") {
+        console.log(
+          "🔄 Skipping asset creation for multiStepChat - UI-only component"
         );
         return;
       }

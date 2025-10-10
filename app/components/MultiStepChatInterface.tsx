@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Sparkles, ChevronLeft } from "lucide-react";
+import { Asset, KnowledgeBase, WorkspaceDetailed } from "@/app/types/workspace";
+import { ChevronLeft, Sparkles } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { apiClient } from "../utils/apiClient";
 import { WifiIcon } from "./icons";
 
 type Step = "context" | "assets" | "chat";
@@ -13,15 +15,51 @@ interface Source {
   description: string;
   type: "article" | "pdf";
   selected: boolean;
+  url?: string;
+}
+
+interface SearchResult {
+  title: string;
+  url: string;
+  snippet: string;
+  score: number | null;
+}
+
+interface SearchResponse {
+  results: SearchResult[];
+  query: string;
+  total_results: number;
+  error: string | null;
 }
 
 const NotebookLMFlow = ({
   isFullscreen = false,
+  workspace,
 }: {
   isFullscreen?: boolean;
+  workspace?: WorkspaceDetailed;
 }) => {
   const router = useRouter();
+  const params = useParams();
+  const workspaceId = params?.id ? parseInt(params.id as string) : undefined;
+
+  // Find the search knowledge base
+  const searchKb = workspace?.knowledge_bases.find((kb: KnowledgeBase) =>
+    kb.name.includes("kb_search")
+  );
+
+  // Get assets linked to the search knowledge base
+  const searchAssets =
+    workspace?.assets.filter(
+      (asset: Asset) => asset.knowledge_base_id === searchKb?.id
+    ) || [];
+
   const [isMaximized] = useState(isFullscreen);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [originalSearchResults, setOriginalSearchResults] = useState<
+    SearchResult[]
+  >([]);
   const [currentStep, setCurrentStep] = useState<Step>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("notebookCurrentStep");
@@ -141,10 +179,41 @@ const NotebookLMFlow = ({
     }
   }, [chatInput]);
 
-  const handleContextSubmit = () => {
+  const handleContextSubmit = async () => {
     if (contextInput.trim()) {
+      setIsLoading(true);
       setSearchQuery(contextInput);
       setCurrentStep("assets");
+
+      try {
+        const data = await apiClient.post<SearchResponse>("/search/web", {
+          query: contextInput.trim(),
+          count: 10,
+          use_rerank: false,
+          search_engine: "langsearch",
+        });
+
+        // Store original search results for later API call
+        setOriginalSearchResults(data.results || []);
+
+        // Convert search results to sources format
+        const newSources: Source[] =
+          data.results?.map((result: SearchResult, index: number) => ({
+            id: index + 1,
+            title: result.title,
+            description: result.snippet,
+            type: result.url.includes(".pdf") ? "pdf" : "article",
+            selected: true,
+            url: result.url,
+          })) || [];
+
+        setSources(newSources);
+      } catch (error) {
+        console.error("Search error:", error);
+        // Keep existing sources as fallback
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -159,11 +228,209 @@ const NotebookLMFlow = ({
     setSources(sources.map((s) => ({ ...s, selected: !allSelected })));
   };
 
-  const handleImportBoard = () => {
-    setCurrentStep("chat");
+  const handleImportBoard = async () => {
+    console.log("🔥 Import Board clicked!");
+    console.log("🔥 URL params:", params);
+    console.log("🔥 Parsed workspaceId:", workspaceId);
+    console.log(
+      "🔥 Selected sources:",
+      sources.filter((source) => source.selected)
+    );
+    console.log("🔥 Original search results:", originalSearchResults);
+
+    if (!workspaceId) {
+      console.error("❌ Workspace ID is required but not found in URL params");
+      console.error("❌ Current params:", params);
+      return;
+    }
+
+    setIsImporting(true);
+
+    try {
+      const selectedTitles = sources
+        .filter((source) => source.selected)
+        .map((source) => source.title);
+
+      console.log("🚀 Making API call with payload:", {
+        workspace_id: workspaceId,
+        selected_titles: selectedTitles,
+        search_results: originalSearchResults,
+      });
+
+      await apiClient.post("/search/select-and-create-kb", {
+        workspace_id: workspaceId,
+        selected_titles: selectedTitles,
+        search_results: originalSearchResults,
+      });
+
+      console.log("✅ API call successful!");
+      setCurrentStep("chat");
+    } catch (error) {
+      console.error("❌ Error creating knowledge base:", error);
+      // Still proceed to chat step even if API call fails
+      setCurrentStep("chat");
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const selectedCount = sources.filter((s) => s.selected).length;
+
+  // Helper function to render asset icon based on type
+  const renderAssetIcon = (asset: Asset) => {
+    switch (asset.type) {
+      case "internet":
+        return (
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            className="text-blue-600"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <line
+              x1="2"
+              y1="12"
+              x2="22"
+              y2="12"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <path
+              d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+          </svg>
+        );
+      case "text":
+        return (
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            className="text-gray-600"
+          >
+            <path
+              d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <polyline
+              points="14,2 14,8 20,8"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <line
+              x1="16"
+              y1="13"
+              x2="8"
+              y2="13"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <line
+              x1="16"
+              y1="17"
+              x2="8"
+              y2="17"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <polyline
+              points="10,9 9,9 8,9"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+          </svg>
+        );
+      case "pdf":
+        return (
+          <div className="w-6 h-6 bg-red-500 rounded flex items-center justify-center text-white text-xs font-bold">
+            PDF
+          </div>
+        );
+      default:
+        return (
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            className="text-gray-400"
+          >
+            <rect
+              x="4"
+              y="4"
+              width="16"
+              height="16"
+              rx="2"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+          </svg>
+        );
+    }
+  };
+
+  // Skeleton loader component
+  const SkeletonLoader = () => (
+    <div className="p-8">
+      <div className="bg-[#4596FF]/10 rounded-xl p-4 mb-6">
+        <div className="flex items-start gap-2">
+          <span className="text-gray-600 font-medium">Searched:</span>
+          <span className="text-gray-900 font-semibold flex-1">
+            {searchQuery}
+          </span>
+        </div>
+      </div>
+
+      <div className="animate-pulse">
+        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2 mb-8"></div>
+
+        <div className="flex items-center justify-between mb-6">
+          <div className="h-6 bg-gray-200 rounded w-32"></div>
+          <div className="w-6 h-6 bg-gray-200 rounded"></div>
+        </div>
+
+        <div className="space-y-4 mb-8">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              className="flex items-start gap-4 p-4 border border-gray-200 rounded-xl"
+            >
+              <div className="w-12 h-12 bg-gray-200 rounded flex-shrink-0"></div>
+              <div className="flex-1">
+                <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-full mb-1"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+              </div>
+              <div className="w-6 h-6 bg-gray-200 rounded flex-shrink-0"></div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="h-5 bg-gray-200 rounded w-32"></div>
+          <div className="h-10 bg-gray-200 rounded-full w-36"></div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Don't render if no search knowledge base is found
+  if (!searchKb && currentStep === "chat") {
+    return null;
+  }
 
   return (
     <div
@@ -293,10 +560,32 @@ const NotebookLMFlow = ({
                 </button>
                 <button
                   onClick={handleContextSubmit}
-                  disabled={!contextInput.trim()}
-                  className="px-8 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  disabled={!contextInput.trim() || isLoading}
+                  className="px-8 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center gap-2"
                 >
-                  Submit
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      Searching...
+                    </>
+                  ) : (
+                    "Submit"
+                  )}
                 </button>
               </div>
             </div>
@@ -304,129 +593,44 @@ const NotebookLMFlow = ({
 
           {/* Step 2: Assets Selection */}
           {currentStep === "assets" && (
-            <div className="p-8">
-              <div className="bg-[#4596FF]/10 rounded-xl p-4 mb-6">
-                <div className="flex items-start gap-2">
-                  <span className="text-gray-600 font-medium">Searched:</span>
-                  <span className="text-gray-900 font-semibold flex-1">{searchQuery}</span>
-                </div>
-              </div>
-
-              <p className="text-gray-700 mb-8 leading-relaxed">
-                This selection of sources explores the fascinating connections
-                between mythological figures and the names of geographic
-                features across different cultures and celestial bodies.
-              </p>
-
-              <div className="flex items-center justify-between mb-6">
-                <button
-                  onClick={toggleAllSources}
-                  className="text-gray-700 font-semibold hover:text-gray-900"
-                >
-                  Select all sources
-                </button>
-                <div
-                  className={`w-6 h-6 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${
-                    sources.every((s) => s.selected)
-                      ? "bg-blue-600 border-blue-600"
-                      : "border-gray-300 hover:border-gray-400"
-                  }`}
-                  onClick={toggleAllSources}
-                >
-                  {sources.every((s) => s.selected) && (
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path
-                        d="M3 8L6.5 11.5L13 5"
-                        stroke="white"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-4 mb-8">
-                {sources.map((source) => (
-                  <div
-                    key={source.id}
-                    className="flex items-start gap-4 p-4 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
-                    onClick={() => toggleSource(source.id)}
-                  >
-                    <div className="w-12 h-12 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
-                      {source.type === "pdf" ? (
-                        <div className="w-8 h-8 bg-red-500 rounded flex items-center justify-center text-white text-xs font-bold">
-                          PDF
-                        </div>
-                      ) : (
-                        <svg
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <rect
-                            x="4"
-                            y="4"
-                            width="16"
-                            height="16"
-                            rx="2"
-                            stroke="#3B82F6"
-                            strokeWidth="2"
-                          />
-                          <line
-                            x1="4"
-                            y1="8"
-                            x2="20"
-                            y2="8"
-                            stroke="#3B82F6"
-                            strokeWidth="2"
-                          />
-                          <line
-                            x1="8"
-                            y1="4"
-                            x2="8"
-                            y2="8"
-                            stroke="#3B82F6"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                      )}
+            <>
+              {isLoading ? (
+                <SkeletonLoader />
+              ) : (
+                <div className="p-8">
+                  <div className="bg-[#4596FF]/10 rounded-xl p-4 mb-6">
+                    <div className="flex items-start gap-2">
+                      <span className="text-gray-600 font-medium">
+                        Searched:
+                      </span>
+                      <span className="text-gray-900 font-semibold flex-1">
+                        {searchQuery}
+                      </span>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between gap-4">
-                        <h3 className="font-medium text-gray-900 mb-1">
-                          {source.title}
-                        </h3>
-                        <svg
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          className="flex-shrink-0 text-gray-400"
-                        >
-                          <path
-                            d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </div>
-                      <p className="text-gray-600 text-sm">
-                        {source.description}
-                      </p>
-                    </div>
-                    <div
-                      className={`w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                        source.selected
-                          ? "bg-blue-600 border-blue-600"
-                          : "border-gray-300"
-                      }`}
+                  </div>
+
+                  <p className="text-gray-700 mb-8 leading-relaxed">
+                    {sources.length > 0
+                      ? `Found ${sources.length} relevant sources for your search. Review and select the sources you'd like to include in your research.`
+                      : "This selection of sources explores the fascinating connections between mythological figures and the names of geographic features across different cultures and celestial bodies."}
+                  </p>
+
+                  <div className="flex items-center justify-between mb-6">
+                    <button
+                      onClick={toggleAllSources}
+                      className="text-gray-700 font-semibold hover:text-gray-900"
                     >
-                      {source.selected && (
+                      Select all sources
+                    </button>
+                    <div
+                      className={`w-6 h-6 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${
+                        sources.every((s) => s.selected)
+                          ? "bg-blue-600 border-blue-600"
+                          : "border-gray-300 hover:border-gray-400"
+                      }`}
+                      onClick={toggleAllSources}
+                    >
+                      {sources.every((s) => s.selected) && (
                         <svg
                           width="16"
                           height="16"
@@ -444,25 +648,160 @@ const NotebookLMFlow = ({
                       )}
                     </div>
                   </div>
-                ))}
-              </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">
-                  {selectedCount === sources.length
-                    ? sources.length
-                    : selectedCount}{" "}
-                  sources selected
-                </span>
-                <button
-                  onClick={handleImportBoard}
-                  disabled={selectedCount === 0}
-                  className="px-8 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                >
-                  Import as a Board
-                </button>
-              </div>
-            </div>
+                  <div className="space-y-4 mb-8">
+                    {sources.slice(0, 1).map((source) => (
+                      <div
+                        key={source.id}
+                        className="flex items-start gap-4 p-4 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
+                        onClick={() => toggleSource(source.id)}
+                      >
+                        <div className="w-12 h-12 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
+                          {source.type === "pdf" ? (
+                            <div className="w-8 h-8 bg-red-500 rounded flex items-center justify-center text-white text-xs font-bold">
+                              PDF
+                            </div>
+                          ) : (
+                            <svg
+                              width="24"
+                              height="24"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                            >
+                              <rect
+                                x="4"
+                                y="4"
+                                width="16"
+                                height="16"
+                                rx="2"
+                                stroke="#3B82F6"
+                                strokeWidth="2"
+                              />
+                              <line
+                                x1="4"
+                                y1="8"
+                                x2="20"
+                                y2="8"
+                                stroke="#3B82F6"
+                                strokeWidth="2"
+                              />
+                              <line
+                                x1="8"
+                                y1="4"
+                                x2="8"
+                                y2="8"
+                                stroke="#3B82F6"
+                                strokeWidth="2"
+                              />
+                            </svg>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between gap-4">
+                            <h3 className="font-medium text-gray-900 mb-1">
+                              {source.title}
+                            </h3>
+                            {source.url && (
+                              <a
+                                href={source.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+                              >
+                                <svg
+                                  width="20"
+                                  height="20"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  className="flex-shrink-0"
+                                >
+                                  <path
+                                    d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </a>
+                            )}
+                          </div>
+                          <p className="text-gray-600 text-sm">
+                            {source.description}
+                          </p>
+                        </div>
+                        <div
+                          className={`w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                            source.selected
+                              ? "bg-blue-600 border-blue-600"
+                              : "border-gray-300"
+                          }`}
+                        >
+                          {source.selected && (
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 16 16"
+                              fill="none"
+                            >
+                              <path
+                                d="M3 8L6.5 11.5L13 5"
+                                stroke="white"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">
+                      {selectedCount === sources.length
+                        ? sources.length
+                        : selectedCount}{" "}
+                      sources selected
+                    </span>
+                    <button
+                      onClick={handleImportBoard}
+                      disabled={selectedCount === 0 || isImporting}
+                      className="px-8 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center gap-2"
+                    >
+                      {isImporting ? (
+                        <>
+                          <svg
+                            className="animate-spin h-4 w-4"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              fill="none"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
+                          </svg>
+                          Creating Board...
+                        </>
+                      ) : (
+                        "Import as a Board"
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* Step 3: Chat Interface */}
@@ -515,37 +854,15 @@ const NotebookLMFlow = ({
                     />
                   </svg>
                 </button>
-                {sources.slice(0, 3).map((source) => (
+                {searchAssets.map((asset) => (
                   <button
-                    key={source.id}
-                    className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center hover:bg-red-200"
+                    key={asset.id}
+                    className="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center hover:bg-gray-100 border border-gray-200"
+                    title={asset.title}
                   >
-                    <div className="w-8 h-8 bg-red-500 rounded flex items-center justify-center text-white text-xs font-bold">
-                      PDF
-                    </div>
+                    {renderAssetIcon(asset)}
                   </button>
                 ))}
-                <button className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center hover:bg-blue-200">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <rect
-                      x="4"
-                      y="4"
-                      width="16"
-                      height="16"
-                      rx="2"
-                      stroke="#3B82F6"
-                      strokeWidth="2"
-                    />
-                    <line
-                      x1="4"
-                      y1="8"
-                      x2="20"
-                      y2="8"
-                      stroke="#3B82F6"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                </button>
                 <button className="mt-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center hover:bg-blue-200">
                   <Sparkles className="text-blue-600" size={20} />
                 </button>
@@ -556,31 +873,15 @@ const NotebookLMFlow = ({
                 <div className="flex">
                   <div className="bg-white rounded-xl border border-gray-200 p-8 mb-6">
                     <h2 className="text-xl font-semibold text-gray-900 mb-4 break-words">
-                      Cultural Meanings and Symbolism of Color, Especially
-                      Yellow
+                      {searchQuery || "Web Search Results"}
                     </h2>
                     <p className="text-gray-700 leading-relaxed mb-4 break-words">
-                      These sources collectively examine the multifaceted
-                      symbolism of colours and the literary genre of
-                      coming-of-age narratives. Several texts highlight how
-                      colour meanings are profoundly influenced by cultural,
-                      historical, and psychological factors, showing significant
-                      variations across Western, Eastern, and other global
-                      societies, even within colours like the same hue yellow,
-                      which can represent everything from divinity and joy to
-                      madness, illness, and betrayal. Concurrently, other
-                      sources explore coming-of-age stories, tracing their
-                      evolution from the traditional Bildungsroman to more
-                      diverse modern narratives that address themes such as
-                      identity formation, trauma, and the experiences of
-                      marginalised groups, including queer Asian immigrants.
-                      They underscore how traumatic events can profoundly affect
-                      an individual&apos;s developmental journey and how
-                      literary expression can serve as a means of processing
-                      these complex experiences.
+                      {searchKb
+                        ? `Knowledge base "${searchKb.name}" has been created with ${searchAssets.length} assets from your web search. You can now chat with this curated knowledge base.`
+                        : "These sources collectively examine the multifaceted symbolism of colours and the literary genre of coming-of-age narratives. Several texts highlight how colour meanings are profoundly influenced by cultural, historical, and psychological factors, showing significant variations across Western, Eastern, and other global societies, even within colours like the same hue yellow, which can represent everything from divinity and joy to madness, illness, and betrayal. Concurrently, other sources explore coming-of-age stories, tracing their evolution from the traditional Bildungsroman to more diverse modern narratives that address themes such as identity formation, trauma, and the experiences of marginalised groups, including queer Asian immigrants. They underscore how traumatic events can profoundly affect an individual's developmental journey and how literary expression can serve as a means of processing these complex experiences."}
                     </p>
                     <div className="flex items-center gap-2 text-gray-500 text-sm">
-                      <span>{sources.length} Sources</span>
+                      <span>{searchAssets.length} Assets</span>
                     </div>
                     <button className="mt-4 flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700">
                       <svg
