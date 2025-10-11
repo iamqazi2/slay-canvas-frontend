@@ -24,16 +24,16 @@ const NotebookLMFlow = ({
   workspace,
   onWorkspaceUpdate,
   externalLoading = false,
+  workspaceId,
 }: {
   isFullscreen?: boolean;
   workspace?: WorkspaceDetailed;
   onWorkspaceUpdate?: () => void;
   externalLoading?: boolean;
+  workspaceId?: number;
 }) => {
   const router = useRouter();
   const params = useParams();
-  const workspaceId =
-    workspace?.id || (params?.id ? parseInt(params.id as string) : undefined);
 
   // Find the search knowledge base
   const searchKb = workspace?.knowledge_bases.find((kb: KnowledgeBase) =>
@@ -49,6 +49,7 @@ const NotebookLMFlow = ({
   const [isMaximized] = useState(isFullscreen);
   const [isLoading, setIsLoading] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isLinkingToExistingKb, setIsLinkingToExistingKb] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAttachModalOpen, setIsAttachModalOpen] = useState(false);
   const [isAttaching, setIsAttaching] = useState(false);
@@ -275,22 +276,33 @@ const NotebookLMFlow = ({
         .filter((source) => source.selected)
         .map((source) => source.title);
 
-      console.log("🚀 Making API call with payload:", {
-        workspace_id: workspaceId,
-        selected_titles: selectedTitles,
-        search_results: originalSearchResults,
-      });
+      // Check if we have an existing search KB - if yes, use link API, else use create API
+      const hasExistingKb = searchKb && searchKb.id;
+      setIsLinkingToExistingKb(!!hasExistingKb);
 
-      const response = await apiClient.post("/search/select-and-create-kb", {
+      const apiEndpoint = hasExistingKb
+        ? "/search/select-and-link-kb"
+        : "/search/select-and-create-kb";
+
+      const payload = {
         workspace_id: workspaceId,
+        knowledge_base_id: hasExistingKb ? searchKb.id : 0,
         selected_titles: selectedTitles,
         search_results: originalSearchResults,
-      });
+      };
+
+      console.log(
+        `🚀 Making API call to ${apiEndpoint} with payload:`,
+        payload
+      );
+
+      const response = await apiClient.post(apiEndpoint, payload);
 
       console.log("✅ API call successful!");
 
-      // Store the created KB name from response
+      // Store the created KB name from response (only for create API)
       if (
+        !hasExistingKb &&
         response &&
         (response as { knowledge_base_name?: string }).knowledge_base_name
       ) {
@@ -299,15 +311,34 @@ const NotebookLMFlow = ({
         );
       }
 
-      setIsKbCreated(true); // Mark that KB was created
+      setIsKbCreated(true); // Mark that KB was created/updated
       setCurrentStep("chat");
+
+      // Trigger workspace update to refresh the UI with new assets
+      onWorkspaceUpdate?.();
     } catch (error) {
-      console.error("❌ Error creating knowledge base:", error);
+      console.error("❌ Error creating/updating knowledge base:", error);
       // Still proceed to chat step even if API call fails
-      setIsKbCreated(true); // Mark that KB was created (or attempted)
+      setIsKbCreated(true); // Mark that KB was created/updated (or attempted)
       setCurrentStep("chat");
+
+      // Trigger workspace update even on error to refresh any partial updates
+      onWorkspaceUpdate?.();
     } finally {
       setIsImporting(false);
+      setIsLinkingToExistingKb(false);
+    }
+  };
+
+  // Handle back navigation to step 1
+  const handleBackToContext = () => {
+    setCurrentStep("context");
+    // Clear any previous search data
+    setSources([]);
+    setOriginalSearchResults([]);
+    setContextInput("");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("notebookContextInput");
     }
   };
 
@@ -659,7 +690,11 @@ const NotebookLMFlow = ({
   }
 
   return (
-    <div className={isMaximized ? "" : "flex items-center justify-center p-4"}>
+    <div
+      className={
+        isMaximized ? "h-full" : "flex items-center justify-center p-4"
+      }
+    >
       <div
         className={
           isMaximized
@@ -681,7 +716,9 @@ const NotebookLMFlow = ({
                 {isLoading
                   ? "Searching..."
                   : isImporting
-                  ? "Creating Knowledge Base..."
+                  ? isLinkingToExistingKb
+                    ? "Adding to Knowledge Base..."
+                    : "Creating Knowledge Base..."
                   : isDeleting
                   ? "Cleaning up..."
                   : isAttaching
@@ -827,7 +864,7 @@ const NotebookLMFlow = ({
         )}
 
         {/* Content */}
-        <div className="">
+        <div className="h-full">
           {/* Step 1: Context Input */}
           {currentStep === "context" && (
             <ContextStep
@@ -849,6 +886,7 @@ const NotebookLMFlow = ({
               selectedCount={selectedCount}
               handleImportBoard={handleImportBoard}
               isImporting={isImporting}
+              hasExistingKb={!!searchKb}
             />
           )}
 
@@ -881,6 +919,7 @@ const NotebookLMFlow = ({
               handleDeleteNote={handleDeleteNote}
               messagesContainerRef={messagesContainerRef}
               renderAssetIcon={renderAssetIcon}
+              handleBackToContext={handleBackToContext}
             />
           )}
         </div>

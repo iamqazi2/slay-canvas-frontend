@@ -280,6 +280,8 @@ const ChatPage = () => {
         {knowledgeBase.name.includes("kb_search") ? (
           <MultiStepChatInterface
             isFullscreen={true}
+            workspaceId={workspaceId ?? undefined}
+            onWorkspaceUpdate={fetchKnowledgeBase}
             externalLoading={isCreatingAsset}
             workspace={
               workspaceData

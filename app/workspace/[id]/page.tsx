@@ -214,6 +214,7 @@ const renderComponent = (
           key={id}
           workspace={workspace}
           onWorkspaceUpdate={onWorkspaceUpdate}
+          workspaceId={workspace?.id}
         />
       );
     default:
@@ -366,6 +367,7 @@ const ChatNode = ({
           workspace={data.workspace}
           isFullscreen={false}
           onWorkspaceUpdate={data.onWorkspaceUpdate}
+          workspaceId={data.workspace?.id}
         />
       ) : (
         <SimpleChatInterface

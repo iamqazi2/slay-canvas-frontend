@@ -32,6 +32,7 @@ interface ChatStepProps {
   handleDeleteNote: (noteId: number) => void;
   messagesContainerRef: React.RefObject<HTMLDivElement | null>;
   renderAssetIcon: (asset: Asset) => React.ReactElement;
+  handleBackToContext: () => void;
   isFullscreen?: boolean;
 }
 
@@ -60,6 +61,7 @@ const ChatStep: React.FC<ChatStepProps> = ({
   handleDeleteNote,
   messagesContainerRef,
   renderAssetIcon,
+  handleBackToContext,
   isFullscreen = false,
 }) => {
   return (
@@ -219,7 +221,11 @@ const ChatStep: React.FC<ChatStepProps> = ({
                 {renderAssetIcon(asset)}
               </button>
             ))}
-            <button className="mt-auto min-w-12 min-h-12 bg-blue-100 rounded-full flex items-center justify-center hover:bg-blue-200">
+            <button
+              onClick={handleBackToContext}
+              className="mt-auto min-w-12 min-h-12 bg-blue-100 rounded-full flex items-center justify-center hover:bg-blue-200"
+              title="Back to search"
+            >
               <Sparkles className="text-blue-600" size={20} />
             </button>
           </>

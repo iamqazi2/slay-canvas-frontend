@@ -9,6 +9,7 @@ interface AssetsStepProps {
   selectedCount: number;
   handleImportBoard: () => void;
   isImporting: boolean;
+  hasExistingKb?: boolean; // New prop to determine if KB already exists
 }
 
 const SkeletonLoader = ({ searchQuery }: { searchQuery: string }) => (
@@ -65,13 +66,14 @@ const AssetsStep: React.FC<AssetsStepProps> = ({
   selectedCount,
   handleImportBoard,
   isImporting,
+  hasExistingKb = false,
 }) => {
   return (
     <>
       {isLoading ? (
         <SkeletonLoader searchQuery={searchQuery} />
       ) : (
-        <div className="p-8">
+        <div className="p-8 h-full flex flex-col">
           <div className="bg-[#4596FF]/10 rounded-xl p-4 mb-6">
             <div className="flex items-start gap-2">
               <span className="text-gray-600 font-medium">Searched:</span>
@@ -116,8 +118,8 @@ const AssetsStep: React.FC<AssetsStepProps> = ({
             </div>
           </div>
 
-          <div className="space-y-4 mb-8">
-            {sources.slice(0, 2).map((source) => (
+          <div className="space-y-4 mb-8 flex-1 overflow-y-scroll">
+            {sources.map((source) => (
               <div
                 key={source.id}
                 className="flex items-start gap-4 p-4 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
@@ -244,8 +246,10 @@ const AssetsStep: React.FC<AssetsStepProps> = ({
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  Creating Board...
+                  {hasExistingKb ? "Adding to Board..." : "Creating Board..."}
                 </>
+              ) : hasExistingKb ? (
+                "Add to Board"
               ) : (
                 "Import as a Board"
               )}
