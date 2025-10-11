@@ -1337,7 +1337,7 @@ const NotebookLMFlow = ({
             <div className="flex h-[calc(100vh-161px)]">
               {/* Sidebar */}
               <div
-                className={`bg-white border-r border-gray-200 flex flex-col items-center py-6 gap-4 px-2 transition-all duration-300 h-full overflow-auto ${
+                className={`bg-white border-r border-gray-200 flex flex-col py-6 gap-4 px-2 transition-all duration-300 h-full overflow-auto ${
                   isSidebarExpanded ? "w-80" : "w-20"
                 }`}
               >
