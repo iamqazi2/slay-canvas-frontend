@@ -719,15 +719,7 @@ const NotebookLMFlow = ({
 
   // Get selected asset titles for API call
   const getSelectedAssetTitles = (): string[] => {
-    if (selectedAssets.size === 0) {
-      // If no assets selected, return empty array (no selective search)
-      return [];
-    }
-    if (selectedAssets.size === searchAssets.length) {
-      // If all assets are selected, return empty array (search all content, no selective filtering)
-      return [];
-    }
-    // Only return specific asset titles when partial selection is made
+    // Always return the titles of selected assets
     return searchAssets
       .filter((asset) => selectedAssets.has(asset.id))
       .map((asset) => asset.title);
