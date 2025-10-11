@@ -42,6 +42,13 @@ interface KnowledgeBaseApiResponse {
   }>;
   assets: Asset[];
   collections: Collection[];
+  notes: Array<{
+    id: number;
+    content: string;
+    role: "user" | "agent";
+    created_at: string;
+    notes: boolean;
+  }>;
 }
 
 const ChatPage = () => {
@@ -54,6 +61,13 @@ const ChatPage = () => {
   const [workspaceData, setWorkspaceData] = useState<{
     assets: Asset[];
     collections: Collection[];
+    notes: Array<{
+      id: number;
+      content: string;
+      role: "user" | "agent";
+      created_at: string;
+      notes: boolean;
+    }>;
   } | null>(null);
   const [workspaceId, setWorkspaceId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,6 +105,7 @@ const ChatPage = () => {
       setWorkspaceData({
         assets: kbData.assets || [],
         collections: kbData.collections || [],
+        notes: kbData.notes || [],
       });
 
       // Store the workspace ID from the response
@@ -272,7 +287,9 @@ const ChatPage = () => {
                     created_at: knowledgeBase?.created_at || "",
                     updated_at: knowledgeBase?.created_at || "",
                     collaborators: [],
-                    knowledge_bases: [knowledgeBase],
+                    knowledge_bases: [
+                      { ...knowledgeBase, notes: workspaceData.notes },
+                    ],
                     assets: workspaceData.assets,
                     collections: workspaceData.collections,
                   }

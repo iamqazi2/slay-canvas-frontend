@@ -85,8 +85,19 @@ interface Message {
   user_id: number;
 }
 
+interface Note {
+  id: number;
+  content: string;
+  role: "user" | "agent";
+  created_at: string;
+  notes: boolean;
+}
+
 // Message Component
-const MessageComponent: React.FC<{ message: Message }> = ({ message }) => {
+const MessageComponent: React.FC<{
+  message: Message;
+  onSaveNote?: (content: string) => void;
+}> = ({ message, onSaveNote }) => {
   const isUser = message.role === "user";
 
   return (
@@ -144,6 +155,32 @@ const MessageComponent: React.FC<{ message: Message }> = ({ message }) => {
               {message.content}
             </ReactMarkdown>
           </div>
+
+          {/* Save to Notes button for AI responses */}
+          {!isUser && onSaveNote && (
+            <div className="mt-3 pt-2 border-t border-gray-100">
+              <button
+                onClick={() => onSaveNote(message.content)}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                  <polyline points="17,21 17,13 7,13 7,21" />
+                  <polyline points="7,3 7,8 15,8" />
+                </svg>
+                Save to Notes
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -183,6 +220,9 @@ const NotebookLMFlow = ({
     () => new Set(searchAssets.map((asset) => asset.id))
   );
   const [messages, setMessages] = useState<Message[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [expandedNotes, setExpandedNotes] = useState<Set<number>>(new Set());
+  const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -254,6 +294,72 @@ const NotebookLMFlow = ({
       localStorage.setItem("notebookChatInput", chatInput);
     }
   }, [chatInput]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setDropdownOpen(null);
+    };
+
+    if (dropdownOpen !== null) {
+      document.addEventListener("click", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [dropdownOpen]);
+
+  // Load notes from workspace data (backend already sends notes)
+  useEffect(() => {
+    if (searchKb?.notes) {
+      setNotes(searchKb.notes);
+    }
+  }, [searchKb]);
+
+  // Save note function
+  const handleSaveNote = async (
+    content: string,
+    role: "user" | "agent" = "agent"
+  ) => {
+    if (!searchKb?.name) return;
+
+    try {
+      const response = await apiClient.post(
+        `/agent/knowledge-bases/${
+          searchKb.name
+        }/notes?content=${encodeURIComponent(content)}&role=${role}`
+      );
+
+      if (response) {
+        // Add the new note to the beginning of the list
+        const newNote: Note = {
+          id: (response as { id: number }).id || Date.now(),
+          content: content,
+          role: role,
+          created_at: new Date().toISOString(),
+          notes: true,
+        };
+        setNotes((prev) => [newNote, ...prev]);
+      }
+    } catch (error) {
+      console.error("Failed to save note:", error);
+    }
+  };
+
+  // Delete note function
+  const handleDeleteNote = async (noteId: number) => {
+    if (!searchKb?.name) return;
+
+    try {
+      await apiClient.delete(
+        `/agent/knowledge-bases/${searchKb.name}/notes/${noteId}`
+      );
+      setNotes((prev) => prev.filter((note) => note.id !== noteId));
+    } catch (error) {
+      console.error("Failed to delete note:", error);
+    }
+  };
 
   const handleContextSubmit = async () => {
     if (contextInput.trim()) {
@@ -1520,13 +1626,14 @@ const NotebookLMFlow = ({
                         </div>
 
                         <h2 className="text-2xl text-center font-medium text-gray-800 mb-4">
-                          How can we assist you today?
+                          {searchKb?.name || "How can we assist you today?"}
                         </h2>
 
                         <p className="text-base text-gray-500 leading-relaxed mb-4">
-                          {searchKb
-                            ? `Get expert guidance from your knowledge base "${searchKb.name}". Ask any question and get AI-powered responses based on your search results.`
-                            : "Get expert guidance from your curated web search results. Ask any question and get AI-powered responses based on your selected content."}
+                          {searchKb?.description ||
+                            (searchKb
+                              ? `Get expert guidance from your knowledge base "${searchKb.name}". Ask any question and get AI-powered responses based on your search results.`
+                              : "Get expert guidance from your curated web search results. Ask any question and get AI-powered responses based on your selected content.")}
                         </p>
 
                         <div className="mt-4 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
@@ -1544,6 +1651,7 @@ const NotebookLMFlow = ({
                           <MessageComponent
                             key={message.id}
                             message={message}
+                            onSaveNote={handleSaveNote}
                           />
                         ))}
 
@@ -1612,6 +1720,174 @@ const NotebookLMFlow = ({
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Notes Sidebar */}
+              <div className="w-80 bg-white border-l border-gray-200 flex flex-col h-full">
+                <div className="p-4 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-800">Notes</h3>
+                  <p className="text-sm text-gray-500">Saved responses</p>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4">
+                  {notes.length === 0 ? (
+                    <div className="text-center text-gray-500 py-8">
+                      <svg
+                        width="48"
+                        height="48"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1"
+                        className="mx-auto mb-3 text-gray-300"
+                      >
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                        <polyline points="17,21 17,13 7,13 7,21" />
+                        <polyline points="7,3 7,8 15,8" />
+                      </svg>
+                      <p className="text-sm">No notes saved yet</p>
+                      <p className="text-xs mt-1">
+                        Save AI responses to keep them for later
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {notes.map((note) => {
+                        const isExpanded = expandedNotes.has(note.id);
+                        const isDropdownOpen = dropdownOpen === note.id;
+
+                        return (
+                          <div
+                            key={note.id}
+                            className="bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
+                          >
+                            {/* Single Line Note Header */}
+                            <div className="flex items-center justify-between p-3">
+                              <div
+                                onClick={() => {
+                                  setExpandedNotes((prev) => {
+                                    const newSet = new Set(prev);
+                                    if (newSet.has(note.id)) {
+                                      newSet.delete(note.id);
+                                    } else {
+                                      newSet.add(note.id);
+                                    }
+                                    return newSet;
+                                  });
+                                }}
+                                className="flex-1 cursor-pointer"
+                              >
+                                <p className="text-sm text-gray-800 line-clamp-1">
+                                  {note.content.length > 50
+                                    ? `${note.content.substring(0, 50)}...`
+                                    : note.content}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {new Date(
+                                    note.created_at
+                                  ).toLocaleDateString()}
+                                </p>
+                              </div>
+
+                              {/* Three Dots Menu */}
+                              <div className="relative">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDropdownOpen(
+                                      isDropdownOpen ? null : note.id
+                                    );
+                                  }}
+                                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                >
+                                  <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                  >
+                                    <circle cx="12" cy="12" r="1" />
+                                    <circle cx="19" cy="12" r="1" />
+                                    <circle cx="5" cy="12" r="1" />
+                                  </svg>
+                                </button>
+
+                                {/* Dropdown Menu */}
+                                {isDropdownOpen && (
+                                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[120px]">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteNote(note.id);
+                                        setDropdownOpen(null);
+                                      }}
+                                      className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors rounded-lg"
+                                    >
+                                      Delete note
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Expanded Content */}
+                            {isExpanded && (
+                              <div className="border-t border-gray-100 p-3">
+                                <div className="text-sm text-gray-700">
+                                  <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                      p: ({ children }) => (
+                                        <p className="mb-2 last:mb-0">
+                                          {children}
+                                        </p>
+                                      ),
+                                      ul: ({ children }) => (
+                                        <ul className="list-disc ml-4 mb-2">
+                                          {children}
+                                        </ul>
+                                      ),
+                                      ol: ({ children }) => (
+                                        <ol className="list-decimal ml-4 mb-2">
+                                          {children}
+                                        </ol>
+                                      ),
+                                      li: ({ children }) => (
+                                        <li className="mb-1">{children}</li>
+                                      ),
+                                      code: ({ children }) => (
+                                        <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
+                                          {children}
+                                        </code>
+                                      ),
+                                      h1: ({ children }) => (
+                                        <h1 className="font-semibold text-base mb-2">
+                                          {children}
+                                        </h1>
+                                      ),
+                                      h2: ({ children }) => (
+                                        <h2 className="font-semibold text-sm mb-2">
+                                          {children}
+                                        </h2>
+                                      ),
+                                      h3: ({ children }) => (
+                                        <h3 className="font-semibold text-sm mb-1">
+                                          {children}
+                                        </h3>
+                                      ),
+                                    }}
+                                  >
+                                    {note.content}
+                                  </ReactMarkdown>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -58,6 +58,13 @@ export interface KnowledgeBase {
   position_x: number;
   position_y: number;
   conversations?: Conversation[];
+  notes?: Array<{
+    id: number;
+    content: string;
+    role: "user" | "agent";
+    created_at: string;
+    notes: boolean;
+  }>;
 }
 
 export interface Conversation {
