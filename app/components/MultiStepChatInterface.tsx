@@ -25,26 +25,41 @@ const NotebookLMFlow = ({
   onWorkspaceUpdate,
   externalLoading = false,
   workspaceId,
+  useExistingSearchKb = false, // New prop to control whether to use existing search KB
 }: {
   isFullscreen?: boolean;
   workspace?: WorkspaceDetailed;
   onWorkspaceUpdate?: () => void;
   externalLoading?: boolean;
   workspaceId?: number;
+  useExistingSearchKb?: boolean; // New prop to control whether to use existing search KB
 }) => {
   const router = useRouter();
   const params = useParams();
 
-  // Find the search knowledge base
-  const searchKb = workspace?.knowledge_bases.find((kb: KnowledgeBase) =>
-    kb.name.includes("kb_search")
-  );
+  // Only find the search knowledge base if explicitly told to use existing one
+  const searchKb = useExistingSearchKb
+    ? workspace?.knowledge_bases.find((kb: KnowledgeBase) =>
+        kb.name.includes("kb_search")
+      )
+    : undefined;
+
+  // Debug logging for search KB
+  console.log("MultiStepChatInterface - Search KB lookup:", {
+    useExistingSearchKb,
+    workspaceKbs:
+      workspace?.knowledge_bases?.map((kb) => ({ id: kb.id, name: kb.name })) ||
+      [],
+    foundSearchKb: searchKb ? { id: searchKb.id, name: searchKb.name } : null,
+  });
 
   // Get assets linked to the search knowledge base
   const searchAssets =
-    workspace?.assets.filter(
-      (asset: Asset) => asset.knowledge_base_id === searchKb?.id
-    ) || [];
+    (searchKb &&
+      workspace?.assets.filter(
+        (asset: Asset) => asset.knowledge_base_id === searchKb.id
+      )) ||
+    [];
 
   const [isMaximized] = useState(isFullscreen);
   const [isLoading, setIsLoading] = useState(false);
@@ -72,71 +87,46 @@ const NotebookLMFlow = ({
   const [originalSearchResults, setOriginalSearchResults] = useState<
     SearchResult[]
   >([]);
+
   const [currentStep, setCurrentStep] = useState<Step>(() => {
-    // If there are already assets linked to the search KB, start from chat step
-    if (searchAssets && searchAssets.length > 0) {
+    // Debug logging
+    console.log("MultiStepChatInterface - Initial step determination:", {
+      useExistingSearchKb,
+      searchKb: searchKb ? { id: searchKb.id, name: searchKb.name } : null,
+      searchAssetsLength: searchAssets?.length || 0,
+      searchAssets:
+        searchAssets?.map((a) => ({ id: a.id, title: a.title })) || [],
+    });
+
+    // If using existing search KB and it has assets, start from chat step
+    if (
+      useExistingSearchKb &&
+      searchKb &&
+      searchAssets &&
+      searchAssets.length > 0
+    ) {
+      console.log("Starting from chat step - existing KB with assets found");
       return "chat";
     }
 
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("notebookCurrentStep");
-      return (saved as Step) || "context";
+    // If using existing search KB but no specific assets, check if KB has any content
+    if (useExistingSearchKb && searchKb) {
+      // KB exists but no assets found in current workspace filter - still go to chat
+      // This handles cases where assets might be filtered differently
+      console.log(
+        "Starting from chat step - existing KB found (no assets in current filter)"
+      );
+      return "chat";
     }
+
+    console.log("Starting from context step - no existing KB or fresh start");
     return "context";
   });
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("notebookCurrentStep", currentStep);
-    }
-  }, [currentStep]);
-
-  const [contextInput, setContextInput] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("notebookContextInput") || "";
-    }
-    return "";
-  });
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("notebookContextInput", contextInput);
-    }
-  }, [contextInput]);
-
-  const [searchQuery, setSearchQuery] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("notebookSearchQuery") || "";
-    }
-    return "";
-  });
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("notebookSearchQuery", searchQuery);
-    }
-  }, [searchQuery]);
-
+  const [contextInput, setContextInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [sources, setSources] = useState<Source[]>([]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("notebookSources", JSON.stringify(sources));
-    }
-  }, [sources]);
-
-  const [chatInput, setChatInput] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("notebookChatInput") || "";
-    }
-    return "";
-  });
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("notebookChatInput", chatInput);
-    }
-  }, [chatInput]);
+  const [chatInput, setChatInput] = useState("");
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -337,9 +327,6 @@ const NotebookLMFlow = ({
     setSources([]);
     setOriginalSearchResults([]);
     setContextInput("");
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("notebookContextInput");
-    }
   };
 
   const selectedCount = sources.filter((s) => s.selected).length;

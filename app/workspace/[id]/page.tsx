@@ -215,6 +215,7 @@ const renderComponent = (
           workspace={workspace}
           onWorkspaceUpdate={onWorkspaceUpdate}
           workspaceId={workspace?.id}
+          useExistingSearchKb={false} // Standalone components don't use existing search KBs
         />
       );
     default:
@@ -412,6 +413,7 @@ const ChatNode = ({
           isFullscreen={false}
           onWorkspaceUpdate={data.onWorkspaceUpdate}
           workspaceId={data.workspace?.id}
+          useExistingSearchKb={true} // Search KB nodes use existing search KBs
         />
       ) : (
         <SimpleChatInterface

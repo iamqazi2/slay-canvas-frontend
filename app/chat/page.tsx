@@ -283,6 +283,7 @@ const ChatPage = () => {
             workspaceId={workspaceId ?? undefined}
             onWorkspaceUpdate={fetchKnowledgeBase}
             externalLoading={isCreatingAsset}
+            useExistingSearchKb={true}
             workspace={
               workspaceData
                 ? {
