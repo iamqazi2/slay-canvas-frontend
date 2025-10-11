@@ -1,6 +1,6 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import MultiStepChatInterface from "../components/MultiStepChatInterface";
 import ChatNav from "../components/New-Navbar";
 import SimpleChatInterface from "../components/SimpleChatInterface";
@@ -59,55 +59,55 @@ const ChatPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchKnowledgeBase = async () => {
-      if (!kbName) {
-        setError("No knowledge base specified");
-        setLoading(false);
-        return;
-      }
+  const fetchKnowledgeBase = useCallback(async () => {
+    if (!kbName) {
+      setError("No knowledge base specified");
+      setLoading(false);
+      return;
+    }
 
-      try {
-        setLoading(true);
+    try {
+      setLoading(true);
 
-        // Fetch knowledge base with conversations
-        const kbData = await apiClient.get<KnowledgeBaseApiResponse>(
-          `/agent/knowledge-bases/${kbName}`
-        );
+      // Fetch knowledge base with conversations
+      const kbData = await apiClient.get<KnowledgeBaseApiResponse>(
+        `/agent/knowledge-bases/${kbName}`
+      );
 
-        // Transform the data to match KnowledgeBase interface
-        const transformedKB: KnowledgeBase = {
-          id: kbData.stats.id,
-          name: kbData.name,
-          description: kbData.description,
-          collection_name: kbData.stats.collection_name,
-          is_active: kbData.stats.is_active,
-          created_at: kbData.created_at,
-          conversations: kbData.conversations,
-          position_x: 0,
-          position_y: 0,
-        };
+      // Transform the data to match KnowledgeBase interface
+      const transformedKB: KnowledgeBase = {
+        id: kbData.stats.id,
+        name: kbData.name,
+        description: kbData.description,
+        collection_name: kbData.stats.collection_name,
+        is_active: kbData.stats.is_active,
+        created_at: kbData.created_at,
+        conversations: kbData.conversations,
+        position_x: 0,
+        position_y: 0,
+      };
 
-        // Store assets and collections for the chat interface
-        setWorkspaceData({
-          assets: kbData.assets || [],
-          collections: kbData.collections || [],
-        });
+      // Store assets and collections for the chat interface
+      setWorkspaceData({
+        assets: kbData.assets || [],
+        collections: kbData.collections || [],
+      });
 
-        // Store the workspace ID from the response
-        setWorkspaceId(kbData.stats.workspace_id);
+      // Store the workspace ID from the response
+      setWorkspaceId(kbData.stats.workspace_id);
 
-        setKnowledgeBase(transformedKB);
-      } catch (err) {
-        console.error("Failed to fetch knowledge base:", err);
-        setError("Failed to load knowledge base");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchKnowledgeBase();
+      setKnowledgeBase(transformedKB);
+    } catch (err) {
+      console.error("Failed to fetch knowledge base:", err);
+      setError("Failed to load knowledge base");
+    } finally {
+      setLoading(false);
+    }
   }, [kbName]);
+
+  useEffect(() => {
+    fetchKnowledgeBase();
+  }, [fetchKnowledgeBase]);
 
   // Handle component creation events (similar to workspace page)
   useEffect(() => {
@@ -199,8 +199,8 @@ const ChatPage = () => {
 
           console.log("✅ Asset linked to knowledge base successfully");
 
-          // Refresh the page to show the new asset
-          window.location.reload();
+          // Refresh the knowledge base data to show the new asset
+          await fetchKnowledgeBase();
         }
       } catch (error) {
         console.error("❌ Failed to save asset to backend:", error);
@@ -221,7 +221,7 @@ const ChatPage = () => {
         handleCreateComponent as unknown as EventListener
       );
     };
-  }, [knowledgeBase, workspaceData, workspaceId]);
+  }, [knowledgeBase, workspaceData, workspaceId, fetchKnowledgeBase]);
 
   if (loading) {
     return (
