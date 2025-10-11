@@ -224,6 +224,8 @@ const NotebookLMFlow = ({
   const [expandedNotes, setExpandedNotes] = useState<Set<number>>(new Set());
   const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isKbCreated, setIsKbCreated] = useState(false); // Track if KB was just created
+  const [createdKbName, setCreatedKbName] = useState<string | null>(null); // Store the created KB name
   const [conversationId, setConversationId] = useState<number | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [originalSearchResults, setOriginalSearchResults] = useState<
@@ -322,13 +324,14 @@ const NotebookLMFlow = ({
     content: string,
     role: "user" | "agent" = "agent"
   ) => {
-    if (!searchKb?.name) return;
+    const kbName = searchKb?.name || createdKbName;
+    if (!kbName) return;
 
     try {
       const response = await apiClient.post(
-        `/agent/knowledge-bases/${
-          searchKb.name
-        }/notes?content=${encodeURIComponent(content)}&role=${role}`
+        `/knowledge-bases/${kbName}/notes?content=${encodeURIComponent(
+          content
+        )}&role=${role}`
       );
 
       if (response) {
@@ -349,12 +352,11 @@ const NotebookLMFlow = ({
 
   // Delete note function
   const handleDeleteNote = async (noteId: number) => {
-    if (!searchKb?.name) return;
+    const kbName = searchKb?.name || createdKbName;
+    if (!kbName) return;
 
     try {
-      await apiClient.delete(
-        `/agent/knowledge-bases/${searchKb.name}/notes/${noteId}`
-      );
+      await apiClient.delete(`/knowledge-bases/${kbName}/notes/${noteId}`);
       setNotes((prev) => prev.filter((note) => note.id !== noteId));
     } catch (error) {
       console.error("Failed to delete note:", error);
@@ -662,17 +664,30 @@ const NotebookLMFlow = ({
         search_results: originalSearchResults,
       });
 
-      await apiClient.post("/search/select-and-create-kb", {
+      const response = await apiClient.post("/search/select-and-create-kb", {
         workspace_id: workspaceId,
         selected_titles: selectedTitles,
         search_results: originalSearchResults,
       });
 
       console.log("✅ API call successful!");
+
+      // Store the created KB name from response
+      if (
+        response &&
+        (response as { knowledge_base_name?: string }).knowledge_base_name
+      ) {
+        setCreatedKbName(
+          (response as { knowledge_base_name: string }).knowledge_base_name
+        );
+      }
+
+      setIsKbCreated(true); // Mark that KB was created
       setCurrentStep("chat");
     } catch (error) {
       console.error("❌ Error creating knowledge base:", error);
       // Still proceed to chat step even if API call fails
+      setIsKbCreated(true); // Mark that KB was created (or attempted)
       setCurrentStep("chat");
     } finally {
       setIsImporting(false);
@@ -720,7 +735,18 @@ const NotebookLMFlow = ({
 
   // Send chat message with selective search
   const sendChatMessage = async (messageText: string) => {
-    if (!searchKb || !messageText.trim() || !workspaceId || isStreaming) return;
+    // Use searchKb name if available, otherwise use the created KB name
+    const kbName = searchKb?.name || createdKbName;
+
+    if (!kbName || !messageText.trim() || !workspaceId || isStreaming) {
+      console.log("❌ Missing requirements for chat:", {
+        kbName,
+        messageText: messageText.trim(),
+        workspaceId,
+        isStreaming,
+      });
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now(),
@@ -740,14 +766,14 @@ const NotebookLMFlow = ({
       // Use existing conversation ID or the one from searchKb
       const existingConversationId =
         conversationId ||
-        (searchKb.conversations && searchKb.conversations.length > 0
+        (searchKb?.conversations && searchKb.conversations.length > 0
           ? searchKb.conversations[0].id
           : null);
 
       const stream = await chatApi.sendMessage({
         message: messageText.trim(),
         model: "gpt-4o-mini",
-        knowledge_base_name: searchKb.name,
+        knowledge_base_name: kbName,
         conversation_id: existingConversationId,
         document_titles: selectedAssetTitles,
       });
@@ -1066,7 +1092,8 @@ const NotebookLMFlow = ({
 
   // Only show chat step if search knowledge base exists, otherwise start from context
   // If no searchKb exists, user should go through context -> assets -> chat flow
-  if (!searchKb && currentStep === "chat") {
+  // Don't reset if we just created a KB (it might not be in workspace prop yet)
+  if (!searchKb && currentStep === "chat" && !isKbCreated) {
     // Reset to context step if no search KB exists yet
     setCurrentStep("context");
   }
@@ -1284,7 +1311,7 @@ const NotebookLMFlow = ({
                   </div>
 
                   <div className="space-y-4 mb-8">
-                    {sources.slice(0, 1).map((source) => (
+                    {sources.slice(0, 2).map((source) => (
                       <div
                         key={source.id}
                         className="flex items-start gap-4 p-4 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
