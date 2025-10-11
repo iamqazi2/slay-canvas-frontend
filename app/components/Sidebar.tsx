@@ -738,9 +738,32 @@ export default function Sidebar({ onChatClick }: SidebarProps) {
               })
             );
           }}
-          className="mt-3 w-12 sm:w-16 h-10 sm:h-12  bg-black rounded-xl flex items-center justify-center hover:bg-gray-700 transition-colors"
+          className="mt-3 w-12 sm:w-16 h-10 sm:h-12  bg-black rounded-xl flex items-center justify-center hover:bg-gray-800 cursor-pointer transition-colors"
         >
-          <WifiIcon width={20} height={20} className="sm:w-6 sm:h-6" />
+          <svg
+            width="29"
+            height="28"
+            viewBox="0 0 29 28"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <g clip-path="url(#clip0_44_261)">
+              <path
+                d="M14.3016 3.73457C6.57007 3.73457 0.302734 9.9494 0.302734 17.6179V24.2667H2.8834V23.6041C2.8834 20.4937 5.4244 17.9726 8.5604 17.9726C11.6964 17.9726 14.2374 20.4926 14.2374 23.6041V24.2667H16.8181V23.6041C16.8181 19.0809 13.1197 15.4152 8.5604 15.4152C6.85471 15.413 5.18991 15.9374 3.7934 16.9167C4.51367 15.5045 5.61081 14.3193 6.9633 13.4923C8.31578 12.6653 9.8708 12.2289 11.4561 12.2314C16.1892 12.2314 20.0276 16.0394 20.0276 20.7329V24.2667H22.6082V20.7317C22.6082 14.6242 17.6149 9.67056 11.4549 9.67056C8.79749 9.66484 6.22536 10.6081 4.20173 12.3306C5.17982 10.5029 6.63639 8.9755 8.41563 7.91182C10.1949 6.84815 12.2298 6.2882 14.3027 6.2919C20.6097 6.2919 25.7221 11.3622 25.7221 17.6167V24.2667H28.3027V17.6167C28.3016 9.94823 22.0342 3.73457 14.3016 3.73457Z"
+                fill="white"
+              />
+            </g>
+            <defs>
+              <clipPath id="clip0_44_261">
+                <rect
+                  width="28"
+                  height="28"
+                  fill="white"
+                  transform="translate(0.302734)"
+                />
+              </clipPath>
+            </defs>
+          </svg>
         </button>
       </div>
 
