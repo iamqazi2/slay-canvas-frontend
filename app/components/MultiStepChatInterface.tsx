@@ -855,6 +855,7 @@ const NotebookLMFlow = ({
           {/* Step 3: Chat Interface */}
           {currentStep === "chat" && (
             <ChatStep
+              isFullscreen={isMaximized}
               searchKb={searchKb}
               searchAssets={searchAssets}
               messages={messages}
