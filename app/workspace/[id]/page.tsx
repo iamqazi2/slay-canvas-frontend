@@ -352,7 +352,8 @@ const ChatNode = ({
 
   return (
     <div className="w-full h-full relative">
-      {data.isLoading && (
+      {/* Only show loading overlay for non-search KBs */}
+      {!isSearchKB && data.isLoading && (
         <div className="absolute inset-0 bg-white/10 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
           <div className="flex flex-col items-center gap-2">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4596FF]"></div>

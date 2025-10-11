@@ -47,6 +47,7 @@ const NotebookLMFlow = ({
   const [isMaximized] = useState(isFullscreen);
   const [isLoading, setIsLoading] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isAttachModalOpen, setIsAttachModalOpen] = useState(false);
   const [isAttaching, setIsAttaching] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
@@ -658,11 +659,29 @@ const NotebookLMFlow = ({
       <div
         className={
           isMaximized
-            ? "w-full h-full bg-[#F0F5F8] overflow-hidden"
-            : "w-full max-w-4xl bg-[#F0F5F8] rounded-2xl shadow-lg overflow-hidden"
+            ? "w-full h-full bg-[#F0F5F8] overflow-hidden relative"
+            : "w-full max-w-4xl bg-[#F0F5F8] rounded-2xl shadow-lg overflow-hidden relative"
         }
         style={isMaximized ? {} : { height: "87vh" }}
       >
+        {/* Loading Overlay */}
+        {(isLoading || isImporting || isDeleting) && (
+          <div className="absolute inset-0 bg-white/10 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
+            <div className="flex flex-col items-center gap-2">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4596FF]"></div>
+              <span className="text-sm text-gray-600">
+                {isLoading
+                  ? "Searching..."
+                  : isImporting
+                  ? "Creating Knowledge Base..."
+                  : isDeleting
+                  ? "Cleaning up..."
+                  : "Loading..."}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         {!isMaximized && (
           <div className="bg-black border-1 border-black text-white px-6 py-4 flex items-center justify-between">
@@ -758,6 +777,7 @@ const NotebookLMFlow = ({
                   console.log(onWorkspaceUpdate);
                   if (kbName) {
                     try {
+                      setIsDeleting(true);
                       await apiClient.delete(
                         `/agent/knowledge-bases/${kbName}`
                       );
@@ -766,6 +786,8 @@ const NotebookLMFlow = ({
                       onWorkspaceUpdate?.();
                     } catch (error) {
                       console.error("Failed to delete knowledge base:", error);
+                    } finally {
+                      setIsDeleting(false);
                     }
                   } else {
                     onWorkspaceUpdate?.();

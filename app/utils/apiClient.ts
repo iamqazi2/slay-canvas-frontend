@@ -32,7 +32,10 @@ class AuthenticatedFetch {
     // Check if this is a selective-search endpoint or link-to-kb endpoint
     const isSelectiveSearch =
       endpoint.includes("/selective-search") || endpoint.includes("positions");
-    const isLinkToKb = endpoint.includes("/link-to-kb");
+    const isLinkToKb =
+      endpoint.includes("/link-to-kb") ||
+      endpoint.includes("select-and-create-kb") ||
+      endpoint.includes("web");
 
     // Prepare headers
     const requestHeaders: Record<string, string> = {
