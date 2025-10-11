@@ -35,6 +35,7 @@ class AuthenticatedFetch {
     const isLinkToKb =
       endpoint.includes("/link-to-kb") ||
       endpoint.includes("select-and-create-kb") ||
+      endpoint.includes("select-and-link-kb") ||
       endpoint.includes("web") ||
       endpoint.includes("link-kb-to-kb");
 
