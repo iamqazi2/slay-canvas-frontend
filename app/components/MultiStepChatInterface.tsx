@@ -755,6 +755,7 @@ const NotebookLMFlow = ({
                 onClick={async () => {
                   // Delete knowledge base when closing
                   const kbName = searchKb?.name || createdKbName;
+                  console.log(onWorkspaceUpdate);
                   if (kbName) {
                     try {
                       await apiClient.delete(
@@ -766,12 +767,8 @@ const NotebookLMFlow = ({
                     } catch (error) {
                       console.error("Failed to delete knowledge base:", error);
                     }
-                  }
-                  // Navigate back to workspace instead of using history.back()
-                  if (workspaceId) {
-                    router.push(`/workspace/${workspaceId}`);
                   } else {
-                    window.history.back();
+                    onWorkspaceUpdate?.();
                   }
                 }}
                 className="text-white hover:bg-red-600 rounded p-1 transition-colors"

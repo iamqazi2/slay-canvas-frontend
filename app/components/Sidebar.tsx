@@ -21,7 +21,6 @@ import {
   SocialMediaIcon,
   TrashIcon,
   UserIcon,
-  WifiIcon,
 } from "./icons";
 import AudioModal from "./modals/AudioModal";
 import DocumentModal from "./modals/DocumentModal";

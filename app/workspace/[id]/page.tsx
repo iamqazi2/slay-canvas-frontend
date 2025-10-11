@@ -86,7 +86,11 @@ interface ComponentInstance {
   backendCollection?: Collection;
 }
 
-const renderComponent = (instance: ComponentInstance) => {
+const renderComponent = (
+  instance: ComponentInstance,
+  workspace?: WorkspaceDetailed,
+  onWorkspaceUpdate?: () => void
+) => {
   const { id, type, data } = instance;
 
   switch (type) {
@@ -205,14 +209,27 @@ const renderComponent = (instance: ComponentInstance) => {
         />
       );
     case "multiStepChat":
-      return <MultiStepChatCard key={id} />;
+      return (
+        <MultiStepChatCard
+          key={id}
+          workspace={workspace}
+          onWorkspaceUpdate={onWorkspaceUpdate}
+        />
+      );
     default:
       return null;
   }
 };
 
 // Custom Node Components
-const AssetNode = ({ data }: { data: ComponentInstance }) => {
+const AssetNode = ({
+  data,
+}: {
+  data: ComponentInstance & {
+    workspace?: WorkspaceDetailed;
+    onWorkspaceUpdate?: () => void;
+  };
+}) => {
   const handleDragStart = (e: React.DragEvent) => {
     // Set drag data for the asset
     const dragData = {
@@ -313,7 +330,7 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
           zIndex: 1000,
         }}
       />
-      {renderComponent(data)}
+      {renderComponent(data, data.workspace, data.onWorkspaceUpdate)}
     </div>
   );
 };
@@ -344,7 +361,11 @@ const ChatNode = ({
         </div>
       )}
       {isSearchKB ? (
-        <MultiStepChatCard workspace={data.workspace} isFullscreen={false} />
+        <MultiStepChatCard
+          workspace={data.workspace}
+          isFullscreen={false}
+          onWorkspaceUpdate={data.onWorkspaceUpdate}
+        />
       ) : (
         <SimpleChatInterface
           knowledgeBase={data.knowledgeBase}
@@ -1036,7 +1057,15 @@ export default function WorkspacePage() {
             id: instance.id,
             type: "asset",
             position: existingNode ? existingNode.position : backendPosition, // Use backend position instead of default
-            data: instance,
+            data: {
+              ...instance,
+              workspace: currentWorkspace,
+              onWorkspaceUpdate: () => {
+                if (workspaceId) {
+                  fetchWorkspaceDetails(workspaceId);
+                }
+              },
+            },
             width: existingNode?.width || dimensions.width,
             height: existingNode?.height || dimensions.height,
             style:
