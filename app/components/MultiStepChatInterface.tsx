@@ -699,9 +699,11 @@ const NotebookLMFlow = ({
     </div>
   );
 
-  // Don't render if no search knowledge base is found
+  // Only show chat step if search knowledge base exists, otherwise start from context
+  // If no searchKb exists, user should go through context -> assets -> chat flow
   if (!searchKb && currentStep === "chat") {
-    return null;
+    // Reset to context step if no search KB exists yet
+    setCurrentStep("context");
   }
 
   return (
@@ -723,11 +725,10 @@ const NotebookLMFlow = ({
         {/* Header */}
         <div className="bg-black border-1 border-black text-white px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {currentStep !== "context" && (
+            {currentStep !== "context" && currentStep !== "chat" && (
               <button
                 onClick={() => {
                   if (currentStep === "assets") setCurrentStep("context");
-                  if (currentStep === "chat") setCurrentStep("assets");
                 }}
                 className="text-white hover:bg-gray-800  rounded mr-2"
               >
@@ -738,48 +739,50 @@ const NotebookLMFlow = ({
               <WifiIcon width={40} height={40} className="" />
             </div>
           </div>
-          <button
-            onClick={
-              isMaximized
-                ? () => window.history.back()
-                : () => router.push(`/chat?kb=${searchKb?.collection_name}`)
-            }
-            className="text-white hover:bg-gray-800  rounded"
-          >
-            {isMaximized ? (
-              <svg
-                width="50"
-                height="50"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M17.303 6.22217V8.44439C17.303 9.03376 17.5371 9.59899 17.9539 10.0157C18.3706 10.4325 18.9359 10.6666 19.5252 10.6666H21.7475M17.303 21.7777V19.5555C17.303 18.9661 17.5371 18.4009 17.9539 17.9842C18.3706 17.5674 18.9359 17.3333 19.5252 17.3333H21.7475M6.19189 10.6666H8.41412C9.00349 10.6666 9.56872 10.4325 9.98546 10.0157C10.4022 9.59899 10.6363 9.03376 10.6363 8.44439V6.22217M6.19189 17.3333H8.41412C9.00349 17.3333 9.56872 17.5674 9.98546 17.9842C10.4022 18.4009 10.6363 18.9661 10.6363 19.5555V21.7777"
-                  stroke="white"
-                  strokeWidth="1.66667"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            ) : (
-              <svg
-                width="50"
-                height="50"
-                viewBox="0 0 28 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M17.303 21.7777V19.5555C17.303 18.9661 17.5371 18.4009 17.9539 17.9842C18.3706 17.5674 18.9359 17.3333 19.5252 17.3333H21.7475M17.303 6.22217V8.44439C17.303 9.03376 17.5371 9.59899 17.9539 10.0157C18.3706 10.4325 18.9359 10.6666 19.5252 10.6666H21.7475M6.19189 17.3333H8.41412C9.00349 17.3333 9.56872 17.5674 9.98546 17.9842C10.4022 18.4009 10.6363 18.9661 10.6363 19.5555V21.7777M6.19189 10.6666H8.41412C9.00349 10.6666 9.56872 10.4325 9.98546 10.0157C10.4022 9.59899 10.6363 9.03376 10.6363 8.44439V6.22217"
-                  stroke="white"
-                  strokeWidth="1.66667"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            )}
-          </button>
+          {currentStep === "chat" && (
+            <button
+              onClick={
+                isMaximized
+                  ? () => window.history.back()
+                  : () => router.push(`/chat?kb=${searchKb?.collection_name}`)
+              }
+              className="text-white hover:bg-gray-800  rounded"
+            >
+              {isMaximized ? (
+                <svg
+                  width="50"
+                  height="50"
+                  viewBox="0 0 28 28"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M17.303 6.22217V8.44439C17.303 9.03376 17.5371 9.59899 17.9539 10.0157C18.3706 10.4325 18.9359 10.6666 19.5252 10.6666H21.7475M17.303 21.7777V19.5555C17.303 18.9661 17.5371 18.4009 17.9539 17.9842C18.3706 17.5674 18.9359 17.3333 19.5252 17.3333H21.7475M6.19189 10.6666H8.41412C9.00349 10.6666 9.56872 10.4325 9.98546 10.0157C10.4022 9.59899 10.6363 9.03376 10.6363 8.44439V6.22217M6.19189 17.3333H8.41412C9.00349 17.3333 9.56872 17.5674 9.98546 17.9842C10.4022 18.4009 10.6363 18.9661 10.6363 19.5555V21.7777"
+                    stroke="white"
+                    strokeWidth="1.66667"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  width="50"
+                  height="50"
+                  viewBox="0 0 28 28"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M17.303 21.7777V19.5555C17.303 18.9661 17.5371 18.4009 17.9539 17.9842C18.3706 17.5674 18.9359 17.3333 19.5252 17.3333H21.7475M17.303 6.22217V8.44439C17.303 9.03376 17.5371 9.59899 17.9539 10.0157C18.3706 10.4325 18.9359 10.6666 19.5252 10.6666H21.7475M6.19189 17.3333H8.41412C9.00349 17.3333 9.56872 17.5674 9.98546 17.9842C10.4022 18.4009 10.6363 18.9661 10.6363 19.5555V21.7777M6.19189 10.6666H8.41412C9.00349 10.6666 9.56872 10.4325 9.98546 10.0157C10.4022 9.59899 10.6363 9.03376 10.6363 8.44439V6.22217"
+                    stroke="white"
+                    strokeWidth="1.66667"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Content */}
