@@ -128,6 +128,51 @@ const NotebookLMFlow = ({
   const [sources, setSources] = useState<Source[]>([]);
   const [chatInput, setChatInput] = useState("");
 
+  // Function to restore chat state from localStorage
+  const restoreChatState = () => {
+    try {
+      const savedState = localStorage.getItem("multiStepChatState");
+      if (savedState) {
+        const chatState = JSON.parse(savedState);
+        const {
+          messages: savedMessages,
+          notes: savedNotes,
+          conversationId: savedConversationId,
+        } = chatState;
+
+        // Check if the saved state is recent (within last 5 minutes)
+        const timeDiff = Date.now() - chatState.timestamp;
+        if (timeDiff < 5 * 60 * 1000) {
+          // 5 minutes
+          console.log("Restoring chat state from localStorage:", chatState);
+
+          if (savedMessages && Array.isArray(savedMessages)) {
+            setMessages(savedMessages);
+          }
+
+          if (savedNotes && Array.isArray(savedNotes)) {
+            setNotes(savedNotes);
+          }
+
+          if (savedConversationId) {
+            setConversationId(savedConversationId);
+          }
+
+          // Clear the localStorage after restoration
+          localStorage.removeItem("multiStepChatState");
+          return true;
+        } else {
+          console.log("Saved chat state is too old, ignoring");
+          localStorage.removeItem("multiStepChatState");
+        }
+      }
+    } catch (error) {
+      console.error("Error restoring chat state:", error);
+      localStorage.removeItem("multiStepChatState");
+    }
+    return false;
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = () => {
@@ -149,6 +194,13 @@ const NotebookLMFlow = ({
       setNotes(searchKb.notes);
     }
   }, [searchKb]);
+
+  // Restore chat state from localStorage when component mounts in fullscreen mode
+  useEffect(() => {
+    if (isFullscreen && useExistingSearchKb) {
+      restoreChatState();
+    }
+  }, [isFullscreen, useExistingSearchKb]);
 
   // Save note function
   const handleSaveNote = async (
@@ -765,8 +817,21 @@ const NotebookLMFlow = ({
                   onClick={
                     isMaximized
                       ? () => window.history.back()
-                      : () =>
-                          router.push(`/chat?kb=${searchKb?.collection_name}`)
+                      : () => {
+                          // Save current chat state to localStorage before navigation
+                          const chatState = {
+                            messages,
+                            notes,
+                            currentStep,
+                            conversationId,
+                            timestamp: Date.now(),
+                          };
+                          localStorage.setItem(
+                            "multiStepChatState",
+                            JSON.stringify(chatState)
+                          );
+                          router.push(`/chat?kb=${searchKb?.collection_name}`);
+                        }
                   }
                   className="text-white hover:bg-gray-800 rounded p-1"
                   title={isMaximized ? "Minimize" : "Maximize"}
