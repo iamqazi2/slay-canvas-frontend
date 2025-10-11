@@ -6,19 +6,18 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { apiClient } from "../utils/apiClient";
 import { chatApi } from "../utils/chatApi";
-import {
-  Step,
-  Source,
-  SearchResult,
-  SearchResponse,
-  Message,
-  Note,
-} from "./types/multiStepChatTypes";
-import WifiIcon from "./icons/WifiIcon";
 import AttachmentModal from "./AttachmentModal";
-import ContextStep from "./steps/ContextStep";
 import AssetsStep from "./steps/AssetsStep";
 import ChatStep from "./steps/ChatStep";
+import ContextStep from "./steps/ContextStep";
+import {
+  Message,
+  Note,
+  SearchResponse,
+  SearchResult,
+  Source,
+  Step,
+} from "./types/multiStepChatTypes";
 
 const NotebookLMFlow = ({
   isFullscreen = false,
@@ -51,6 +50,7 @@ const NotebookLMFlow = ({
   const [isAttachModalOpen, setIsAttachModalOpen] = useState(false);
   const [isAttaching, setIsAttaching] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
+  const [isNotesExpanded, setIsNotesExpanded] = useState(true);
   const [selectedAssets, setSelectedAssets] = useState<Set<number>>(
     () => new Set(searchAssets.map((asset) => asset.id))
   );
@@ -333,8 +333,10 @@ const NotebookLMFlow = ({
   const getSelectedAssetTitles = (): string[] => {
     // Always return the titles of selected assets
     return searchAssets
-      .filter((asset) => selectedAssets.has(asset.id))
-      .map((asset) => asset.title);
+      .filter(
+        (asset) => selectedAssets.has(asset.id) && typeof asset.url === "string"
+      )
+      .map((asset) => asset.url as string);
   };
 
   // Send chat message with selective search
@@ -831,6 +833,8 @@ const NotebookLMFlow = ({
               toggleAllAssets={toggleAllAssets}
               isSidebarExpanded={isSidebarExpanded}
               setIsSidebarExpanded={setIsSidebarExpanded}
+              isNotesExpanded={isNotesExpanded}
+              setIsNotesExpanded={setIsNotesExpanded}
               isAttachModalOpen={isAttachModalOpen}
               setIsAttachModalOpen={setIsAttachModalOpen}
               chatInput={chatInput}
