@@ -212,7 +212,7 @@ const NotebookLMFlow = ({
 
     try {
       const response = await apiClient.post(
-        `/knowledge-bases/${kbName}/notes?content=${encodeURIComponent(
+        `/agent/knowledge-bases/${kbName}/notes?content=${encodeURIComponent(
           content
         )}&role=${role}`
       );

@@ -3,7 +3,6 @@ import { Loader2, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import MessageComponent from "../MessageComponent";
-import WifiIcon from "../icons/WifiIcon";
 import { Message, Note } from "../types/multiStepChatTypes";
 
 interface ChatStepProps {
@@ -240,29 +239,106 @@ const ChatStep: React.FC<ChatStepProps> = ({
           className="flex-1 overflow-y-auto bg-gradient-to-b from-white to-[#F1F5F8] min-h-0"
         >
           {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center px-6 py-8">
-              <div className="text-center flex flex-col items-center justify-center max-w-lg">
-                <div className="mb-8">
-                  <WifiIcon width={80} height={80} />
-                </div>
+            <div className="h-full flex flex-col px-6 py-8">
+              <div className="flex flex-col max-w-lg">
+                {/* Show KB Description as formatted markdown */}
+                {searchKb?.description ? (
+                  <div className="w-full max-w-2xl">
+                    <div className="prose prose-gray max-w-none text-left">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          h1: (props) => (
+                            <h1
+                              className="text-2xl font-bold text-gray-800 mb-4"
+                              {...props}
+                            />
+                          ),
+                          h2: (props) => (
+                            <h2
+                              className="text-xl font-semibold text-gray-800 mb-3"
+                              {...props}
+                            />
+                          ),
+                          h3: (props) => (
+                            <h3
+                              className="text-lg font-medium text-gray-800 mb-2"
+                              {...props}
+                            />
+                          ),
+                          p: (props) => (
+                            <p
+                              className="text-gray-700 mb-3 leading-relaxed"
+                              {...props}
+                            />
+                          ),
+                          ul: (props) => (
+                            <ul
+                              className="list-disc list-inside text-gray-700 mb-3 space-y-1"
+                              {...props}
+                            />
+                          ),
+                          ol: (props) => (
+                            <ol
+                              className="list-decimal list-inside text-gray-700 mb-3 space-y-1"
+                              {...props}
+                            />
+                          ),
+                          li: (props) => (
+                            <li className="text-gray-700" {...props} />
+                          ),
+                          strong: (props) => (
+                            <strong
+                              className="font-semibold text-gray-800"
+                              {...props}
+                            />
+                          ),
+                          em: (props) => (
+                            <em className="italic text-gray-700" {...props} />
+                          ),
+                          code: (props) => (
+                            <code
+                              className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800"
+                              {...props}
+                            />
+                          ),
+                          pre: (props) => (
+                            <pre
+                              className="bg-gray-100 p-3 rounded-lg overflow-x-auto text-sm font-mono text-gray-800 mb-3"
+                              {...props}
+                            />
+                          ),
+                          blockquote: (props) => (
+                            <blockquote
+                              className="border-l-4 border-blue-300 pl-4 py-2 bg-blue-50 rounded-r-lg text-gray-700 mb-3"
+                              {...props}
+                            />
+                          ),
+                          a: (props) => (
+                            <a
+                              className="text-blue-600 hover:text-blue-800 underline"
+                              {...props}
+                            />
+                          ),
+                        }}
+                      >
+                        {searchKb.description}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <h2 className="text-2xl text-center font-medium text-gray-800 mb-4">
+                      {searchKb?.name || "How can we assist you today?"}
+                    </h2>
 
-                <h2 className="text-2xl text-center font-medium text-gray-800 mb-4">
-                  {searchKb?.name || "How can we assist you today?"}
-                </h2>
-
-                <p className="text-base text-gray-500 leading-relaxed mb-4">
-                  {searchKb?.description ||
-                    (searchKb
-                      ? `Get expert guidance from your knowledge base "${searchKb.name}". Ask any question and get AI-powered responses based on your search results.`
-                      : "Get expert guidance from your curated web search results. Ask any question and get AI-powered responses based on your selected content.")}
-                </p>
-
-                <div className="mt-4 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-sm text-blue-700">
-                    <span className="font-medium">Assets:</span>{" "}
-                    {searchAssets.length} sources
-                  </p>
-                </div>
+                    <p className="text-base text-gray-500 leading-relaxed mb-4">
+                      {searchKb
+                        ? `Get expert guidance from your knowledge base "${searchKb.name}". Ask any question and get AI-powered responses based on your search results.`
+                        : "Get expert guidance from your curated web search results. Ask any question and get AI-powered responses based on your selected content."}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           ) : (
@@ -343,21 +419,29 @@ const ChatStep: React.FC<ChatStepProps> = ({
 
       {/* Notes Sidebar */}
       <div
-        className={`bg-white border-l border-gray-200 flex flex-col transition-all duration-300 h-full overflow-auto ${
+        className={`bg-white border-l border-gray-200 flex flex-col transition-all duration-500 ease-in-out h-full overflow-hidden ${
           isNotesExpanded ? "w-80" : "w-20"
         }`}
       >
         {/* Expand/Collapse Button */}
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-          {isNotesExpanded && (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800">Notes</h3>
-              <p className="text-sm text-gray-500">Saved responses</p>
-            </div>
-          )}
+        <div className="p-4 border-b border-gray-200 flex items-center justify-between transition-all duration-300">
+          <div
+            className={`transition-all duration-300 ${
+              isNotesExpanded
+                ? "opacity-100 transform translate-x-0"
+                : "opacity-0 transform -translate-x-4"
+            }`}
+          >
+            {isNotesExpanded && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">Notes</h3>
+                <p className="text-sm text-gray-500">Saved responses</p>
+              </div>
+            )}
+          </div>
           <button
             onClick={() => setIsNotesExpanded(!isNotesExpanded)}
-            className="min-w-8 min-h-8 bg-gray-100 rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors"
+            className="min-w-8 min-h-8 bg-gray-100 rounded-lg flex items-center justify-center hover:bg-gray-200 transition-all duration-200 hover:scale-105"
             title={isNotesExpanded ? "Collapse notes" : "Expand notes"}
           >
             <svg
@@ -365,7 +449,7 @@ const ChatStep: React.FC<ChatStepProps> = ({
               height="20"
               viewBox="0 0 24 24"
               fill="none"
-              className={`transform transition-transform duration-200 ${
+              className={`transform transition-transform duration-300 ease-in-out ${
                 isNotesExpanded ? "rotate-180" : ""
               }`}
             >
@@ -383,164 +467,186 @@ const ChatStep: React.FC<ChatStepProps> = ({
         <div className="flex-1 overflow-y-auto p-4">
           {isNotesExpanded ? (
             /* Expanded Notes View */
-            notes.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
-                <svg
-                  width="48"
-                  height="48"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1"
-                  className="mx-auto mb-3 text-gray-300"
-                >
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                  <polyline points="17,21 17,13 7,13 7,21" />
-                  <polyline points="7,3 7,8 15,8" />
-                </svg>
-                <p className="text-sm">No notes saved yet</p>
-                <p className="text-xs mt-1">
-                  Save AI responses to keep them for later
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {notes.map((note) => {
-                  const isExpanded = expandedNotes.has(note.id);
-                  const isDropdownOpen = dropdownOpen === note.id;
+            <div
+              className={`transition-all duration-300 ${
+                isNotesExpanded
+                  ? "opacity-100 transform translate-x-0"
+                  : "opacity-0 transform translate-x-4"
+              }`}
+            >
+              {notes.length === 0 ? (
+                <div className="text-center text-gray-500 py-8">
+                  <svg
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1"
+                    className="mx-auto mb-3 text-gray-300"
+                  >
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                    <polyline points="17,21 17,13 7,13 7,21" />
+                    <polyline points="7,3 7,8 15,8" />
+                  </svg>
+                  <p className="text-sm">No notes saved yet</p>
+                  <p className="text-xs mt-1">
+                    Save AI responses to keep them for later
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {notes.map((note) => {
+                    const isExpanded = expandedNotes.has(note.id);
+                    const isDropdownOpen = dropdownOpen === note.id;
 
-                  return (
-                    <div
-                      key={note.id}
-                      className="bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
-                    >
-                      {/* Single Line Note Header */}
-                      <div className="flex items-center justify-between p-3">
-                        <div
-                          onClick={() => {
-                            setExpandedNotes((prev) => {
-                              const newSet = new Set(prev);
-                              if (newSet.has(note.id)) {
-                                newSet.delete(note.id);
-                              } else {
-                                newSet.add(note.id);
-                              }
-                              return newSet;
-                            });
-                          }}
-                          className="flex-1 cursor-pointer"
-                        >
-                          <p className="text-sm text-gray-800 line-clamp-1">
-                            {note.content.length > 50
-                              ? `${note.content.substring(0, 50)}...`
-                              : note.content}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {new Date(note.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-
-                        {/* Three Dots Menu */}
-                        <div className="relative">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDropdownOpen(isDropdownOpen ? null : note.id);
+                    return (
+                      <div
+                        key={note.id}
+                        className="bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-sm"
+                      >
+                        {/* Single Line Note Header */}
+                        <div className="flex items-center justify-between p-3">
+                          <div
+                            onClick={() => {
+                              setExpandedNotes((prev) => {
+                                const newSet = new Set(prev);
+                                if (newSet.has(note.id)) {
+                                  newSet.delete(note.id);
+                                } else {
+                                  newSet.add(note.id);
+                                }
+                                return newSet;
+                              });
                             }}
-                            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                            className="flex-1 cursor-pointer"
                           >
-                            <svg
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="currentColor"
-                            >
-                              <circle cx="12" cy="12" r="1" />
-                              <circle cx="19" cy="12" r="1" />
-                              <circle cx="5" cy="12" r="1" />
-                            </svg>
-                          </button>
+                            <p className="text-sm text-gray-800 line-clamp-1">
+                              {note.content.length > 50
+                                ? `${note.content.substring(0, 50)}...`
+                                : note.content}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {new Date(note.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
 
-                          {/* Dropdown Menu */}
-                          {isDropdownOpen && (
-                            <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[120px]">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteNote(note.id);
-                                  setDropdownOpen(null);
-                                }}
-                                className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors rounded-lg"
-                              >
-                                Delete note
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Expanded Content */}
-                      {isExpanded && (
-                        <div className="border-t border-gray-100 p-3">
-                          <div className="text-sm text-gray-700">
-                            <ReactMarkdown
-                              remarkPlugins={[remarkGfm]}
-                              components={{
-                                p: ({ children }) => (
-                                  <p className="mb-2 last:mb-0">{children}</p>
-                                ),
-                                ul: ({ children }) => (
-                                  <ul className="list-disc ml-4 mb-2">
-                                    {children}
-                                  </ul>
-                                ),
-                                ol: ({ children }) => (
-                                  <ol className="list-decimal ml-4 mb-2">
-                                    {children}
-                                  </ol>
-                                ),
-                                li: ({ children }) => (
-                                  <li className="mb-1">{children}</li>
-                                ),
-                                code: ({ children }) => (
-                                  <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
-                                    {children}
-                                  </code>
-                                ),
-                                h1: ({ children }) => (
-                                  <h1 className="font-semibold text-base mb-2">
-                                    {children}
-                                  </h1>
-                                ),
-                                h2: ({ children }) => (
-                                  <h2 className="font-semibold text-sm mb-2">
-                                    {children}
-                                  </h2>
-                                ),
-                                h3: ({ children }) => (
-                                  <h3 className="font-semibold text-sm mb-1">
-                                    {children}
-                                  </h3>
-                                ),
+                          {/* Three Dots Menu */}
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDropdownOpen(
+                                  isDropdownOpen ? null : note.id
+                                );
                               }}
+                              className="p-1 text-gray-400 hover:text-gray-600 transition-all duration-200 hover:scale-110"
                             >
-                              {note.content}
-                            </ReactMarkdown>
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                              >
+                                <circle cx="12" cy="12" r="1" />
+                                <circle cx="19" cy="12" r="1" />
+                                <circle cx="5" cy="12" r="1" />
+                              </svg>
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {isDropdownOpen && (
+                              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[120px] animate-in fade-in duration-200">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteNote(note.id);
+                                    setDropdownOpen(null);
+                                  }}
+                                  className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors rounded-lg"
+                                >
+                                  Delete note
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )
+
+                        {/* Expanded Content */}
+                        <div
+                          className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                            isExpanded
+                              ? "max-h-96 opacity-100"
+                              : "max-h-0 opacity-0"
+                          }`}
+                        >
+                          <div className="border-t border-gray-100 p-3">
+                            <div className="text-sm text-gray-700">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  p: ({ children }) => (
+                                    <p className="mb-2 last:mb-0">{children}</p>
+                                  ),
+                                  ul: ({ children }) => (
+                                    <ul className="list-disc ml-4 mb-2">
+                                      {children}
+                                    </ul>
+                                  ),
+                                  ol: ({ children }) => (
+                                    <ol className="list-decimal ml-4 mb-2">
+                                      {children}
+                                    </ol>
+                                  ),
+                                  li: ({ children }) => (
+                                    <li className="mb-1">{children}</li>
+                                  ),
+                                  code: ({ children }) => (
+                                    <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
+                                      {children}
+                                    </code>
+                                  ),
+                                  h1: ({ children }) => (
+                                    <h1 className="font-semibold text-base mb-2">
+                                      {children}
+                                    </h1>
+                                  ),
+                                  h2: ({ children }) => (
+                                    <h2 className="font-semibold text-sm mb-2">
+                                      {children}
+                                    </h2>
+                                  ),
+                                  h3: ({ children }) => (
+                                    <h3 className="font-semibold text-sm mb-1">
+                                      {children}
+                                    </h3>
+                                  ),
+                                }}
+                              >
+                                {note.content}
+                              </ReactMarkdown>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           ) : (
             /* Collapsed Notes View */
-            <div className="flex flex-col items-center gap-2">
+            <div
+              className={`flex flex-col items-center gap-2 transition-all duration-300 ${
+                !isNotesExpanded
+                  ? "opacity-100 transform translate-x-0"
+                  : "opacity-0 transform -translate-x-4"
+              }`}
+            >
               {notes.slice(0, 5).map((note) => (
                 <button
                   key={note.id}
-                  className="min-w-12 min-h-12 bg-blue-50 rounded-lg flex items-center justify-center hover:bg-blue-100 border border-blue-200 transition-colors"
+                  className="min-w-12 min-h-12 bg-blue-50 rounded-lg flex items-center justify-center hover:bg-blue-100 border border-blue-200 transition-all duration-200 hover:scale-105"
                   title={
                     note.content.length > 50
                       ? `${note.content.substring(0, 50)}...`
