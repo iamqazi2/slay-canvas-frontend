@@ -71,6 +71,7 @@ const ChatPage = () => {
   } | null>(null);
   const [workspaceId, setWorkspaceId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isCreatingAsset, setIsCreatingAsset] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchKnowledgeBase = useCallback(async () => {
@@ -140,6 +141,8 @@ const ChatPage = () => {
         componentType,
         data,
       });
+
+      setIsCreatingAsset(true);
 
       // Create a temporary component instance for asset creation
       const newInstance = {
@@ -220,6 +223,8 @@ const ChatPage = () => {
       } catch (error) {
         console.error("❌ Failed to save asset to backend:", error);
         alert("Failed to create asset. Please try again.");
+      } finally {
+        setIsCreatingAsset(false);
       }
     };
 
@@ -275,6 +280,7 @@ const ChatPage = () => {
         {knowledgeBase.name.includes("kb_search") ? (
           <MultiStepChatInterface
             isFullscreen={true}
+            externalLoading={isCreatingAsset}
             workspace={
               workspaceData
                 ? {

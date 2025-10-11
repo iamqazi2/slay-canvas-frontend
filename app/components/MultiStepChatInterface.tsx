@@ -23,10 +23,12 @@ const NotebookLMFlow = ({
   isFullscreen = false,
   workspace,
   onWorkspaceUpdate,
+  externalLoading = false,
 }: {
   isFullscreen?: boolean;
   workspace?: WorkspaceDetailed;
   onWorkspaceUpdate?: () => void;
+  externalLoading?: boolean;
 }) => {
   const router = useRouter();
   const params = useParams();
@@ -51,7 +53,9 @@ const NotebookLMFlow = ({
   const [isAttachModalOpen, setIsAttachModalOpen] = useState(false);
   const [isAttaching, setIsAttaching] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
-  const [isNotesExpanded, setIsNotesExpanded] = useState(true);
+  const [isNotesExpanded, setIsNotesExpanded] = useState(
+    isMaximized ? true : false
+  );
   const [selectedAssets, setSelectedAssets] = useState<Set<number>>(
     () => new Set(searchAssets.map((asset) => asset.id))
   );
@@ -662,10 +666,14 @@ const NotebookLMFlow = ({
             ? "w-full h-full bg-[#F0F5F8] overflow-hidden relative"
             : "w-full max-w-4xl bg-[#F0F5F8] rounded-2xl shadow-lg overflow-hidden relative"
         }
-        style={isMaximized ? {} : { height: "87vh" }}
+        // style={isMaximized ? {} : { height: "87vh" }}
       >
         {/* Loading Overlay */}
-        {(isLoading || isImporting || isDeleting) && (
+        {(isLoading ||
+          isImporting ||
+          isDeleting ||
+          isAttaching ||
+          externalLoading) && (
           <div className="absolute inset-0 bg-white/10 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
             <div className="flex flex-col items-center gap-2">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4596FF]"></div>
@@ -676,6 +684,10 @@ const NotebookLMFlow = ({
                   ? "Creating Knowledge Base..."
                   : isDeleting
                   ? "Cleaning up..."
+                  : isAttaching
+                  ? "Uploading..."
+                  : externalLoading
+                  ? "Creating Asset..."
                   : "Loading..."}
               </span>
             </div>

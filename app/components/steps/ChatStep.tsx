@@ -32,6 +32,7 @@ interface ChatStepProps {
   handleDeleteNote: (noteId: number) => void;
   messagesContainerRef: React.RefObject<HTMLDivElement | null>;
   renderAssetIcon: (asset: Asset) => React.ReactElement;
+  isFullscreen?: boolean;
 }
 
 const ChatStep: React.FC<ChatStepProps> = ({
@@ -59,9 +60,14 @@ const ChatStep: React.FC<ChatStepProps> = ({
   handleDeleteNote,
   messagesContainerRef,
   renderAssetIcon,
+  isFullscreen = false,
 }) => {
   return (
-    <div className="flex h-[calc(100vh-77px)]">
+    <div
+      className={`flex ${
+        isFullscreen ? "h-[calc(100vh-77px)]" : "h-[calc(700px)]"
+      }`}
+    >
       {/* Sidebar */}
       <div
         className={`bg-white border-r border-gray-200 flex flex-col py-6 gap-4 px-2 transition-all duration-300 h-full overflow-auto ${
