@@ -6,6 +6,12 @@ import ChatNav from "../components/New-Navbar";
 import SimpleChatInterface from "../components/SimpleChatInterface";
 import { Asset, Collection, KnowledgeBase } from "../types/workspace";
 import { apiClient } from "../utils/apiClient";
+import { assetApi } from "../utils/assetApi";
+import {
+  componentInstanceToAssetCreate,
+  getAssetCreationStrategy,
+} from "../utils/assetUtils";
+import { knowledgeBaseApi } from "../utils/knowledgeBaseApi";
 
 interface KnowledgeBaseApiResponse {
   name: string;
@@ -49,6 +55,7 @@ const ChatPage = () => {
     assets: Asset[];
     collections: Collection[];
   } | null>(null);
+  const [workspaceId, setWorkspaceId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,6 +94,9 @@ const ChatPage = () => {
           collections: kbData.collections || [],
         });
 
+        // Store the workspace ID from the response
+        setWorkspaceId(kbData.stats.workspace_id);
+
         setKnowledgeBase(transformedKB);
       } catch (err) {
         console.error("Failed to fetch knowledge base:", err);
@@ -98,6 +108,120 @@ const ChatPage = () => {
 
     fetchKnowledgeBase();
   }, [kbName]);
+
+  // Handle component creation events (similar to workspace page)
+  useEffect(() => {
+    const handleCreateComponent = async (event: CustomEvent) => {
+      const { componentType, data } = event.detail;
+
+      if (!knowledgeBase || !workspaceData || !workspaceId) {
+        console.error(
+          "No knowledge base, workspace data, or workspace ID available"
+        );
+        return;
+      }
+
+      console.log("🔧 Chat page handleCreateComponent called with:", {
+        componentType,
+        data,
+      });
+
+      // Create a temporary component instance for asset creation
+      const newInstance = {
+        id: `${componentType}-${Date.now()}`,
+        type: componentType,
+        data: data,
+      };
+
+      try {
+        const strategy = getAssetCreationStrategy(componentType);
+        console.log("📍 Asset creation strategy:", strategy);
+
+        let savedAsset;
+
+        if (strategy.endpoint === "link") {
+          // Handle social, wiki, internet links
+          console.log("🔗 Creating link asset");
+          const assetCreate = componentInstanceToAssetCreate(newInstance);
+          console.log("📝 Asset create data:", assetCreate);
+          savedAsset = await assetApi.createLinkAsset(
+            workspaceId, // Using actual workspace ID from KB response
+            assetCreate
+          );
+        } else if (strategy.endpoint === "text") {
+          // Handle text content
+          console.log("📄 Creating text asset");
+          const assetCreate = componentInstanceToAssetCreate(newInstance);
+          console.log("📝 Asset create data:", assetCreate);
+          savedAsset = await assetApi.createTextAsset(
+            workspaceId, // Using actual workspace ID from KB response
+            assetCreate
+          );
+        } else if (strategy.endpoint === "file") {
+          // Check for file in data.file or data.files
+          const fileToUpload = data?.file || (data?.files && data.files[0]);
+
+          if (fileToUpload) {
+            // Handle file uploads (image, audio, document)
+            console.log("📁 Creating file asset");
+            const title = data?.title || fileToUpload?.name || "Uploaded File";
+            console.log("📂 File upload details:", {
+              fileName: fileToUpload.name,
+              fileType: fileToUpload.type,
+              assetType: strategy.assetType,
+              title,
+            });
+            savedAsset = await assetApi.uploadFileAsset(
+              workspaceId, // Using actual workspace ID from KB response
+              fileToUpload,
+              strategy.assetType as "image" | "audio" | "document",
+              title
+            );
+          } else {
+            console.error(
+              "❌ No file provided for file asset type:",
+              componentType
+            );
+            return;
+          }
+        }
+
+        // If asset was created successfully, link it to the knowledge base
+        if (savedAsset) {
+          console.log("✅ Asset saved successfully:", savedAsset);
+
+          // Link asset to the current knowledge base
+          await knowledgeBaseApi.linkAssetToKnowledgeBase(
+            workspaceId, // Using actual workspace ID
+            savedAsset.id,
+            knowledgeBase.id
+          );
+
+          console.log("✅ Asset linked to knowledge base successfully");
+
+          // Refresh the page to show the new asset
+          window.location.reload();
+        }
+      } catch (error) {
+        console.error("❌ Failed to save asset to backend:", error);
+        alert("Failed to create asset. Please try again.");
+      }
+    };
+
+    // Add event listener
+    window.addEventListener(
+      "createComponent",
+      handleCreateComponent as unknown as EventListener
+    );
+
+    // Cleanup
+    return () => {
+      window.removeEventListener(
+        "createComponent",
+        handleCreateComponent as unknown as EventListener
+      );
+    };
+  }, [knowledgeBase, workspaceData, workspaceId]);
 
   if (loading) {
     return (
