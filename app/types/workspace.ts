@@ -57,6 +57,10 @@ export interface KnowledgeBase {
   created_at: string;
   position_x: number;
   position_y: number;
+  // KB-to-KB connection fields
+  linked_kb_id?: number;
+  kb_connection_asset_handle?: string; // "left" or "right"
+  kb_connection_kb_handle?: string; // "left" or "right"
   conversations?: Conversation[];
   notes?: Array<{
     id: number;

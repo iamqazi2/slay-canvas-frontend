@@ -353,6 +353,50 @@ const ChatNode = ({
 
   return (
     <div className="w-full h-full relative">
+      {/* Left handle */}
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="left"
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+        style={{
+          background: "#F0F5F7",
+          width: "24px",
+          height: "24px",
+          border: "1px solid rgba(69, 150, 255, 0.1)",
+          boxShadow: "0 0 8px rgba(69, 150, 255, 0.3)",
+          left: "-28px",
+          top: "55%",
+          transform: "translateY(-50%)",
+          zIndex: 1000,
+        }}
+      />
+
+      {/* Right handle */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+        style={{
+          background: "#F0F5F7",
+          width: "24px",
+          height: "24px",
+          border: "1px solid rgba(69, 150, 255, 0.1)",
+          boxShadow: "0 0 8px rgba(69, 150, 255, 0.3)",
+          right: "-28px",
+          top: "55%",
+          transform: "translateY(-50%)",
+          zIndex: 1000,
+        }}
+      />
+
       {/* Only show loading overlay for non-search KBs */}
       {!isSearchKB && data.isLoading && (
         <div className="absolute inset-0 bg-white/10 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
@@ -683,7 +727,94 @@ export default function WorkspacePage() {
       if (targetIsKB || sourceIsKB) {
         setEdges((eds) => addEdge(params, eds));
 
-        // Determine which asset/collection and which KB are being connected
+        // Handle KB-to-KB connections
+        if (targetIsKB && sourceIsKB) {
+          const sourceKbId = parseInt(params.source!.replace("kb-", ""));
+          const targetKbId = parseInt(params.target!.replace("kb-", ""));
+
+          // Find the knowledge bases
+          const sourceKb = knowledgeBases.find((kb) => kb.id === sourceKbId);
+          const targetKb = knowledgeBases.find((kb) => kb.id === targetKbId);
+
+          // Only allow kb_search to connect to normal KB
+          if (
+            sourceKb?.name.includes("kb_search") ||
+            targetKb?.name.includes("kb_search")
+          ) {
+            // Determine which is the search KB and which is the normal KB
+            const searchKbId = sourceKb?.name.includes("kb_search")
+              ? sourceKbId
+              : targetKbId;
+            const normalKbId = sourceKb?.name.includes("kb_search")
+              ? targetKbId
+              : sourceKbId;
+
+            if (workspaceId) {
+              try {
+                // Show loading on both KBs
+                setKbLoading(sourceKbId, true);
+                setKbLoading(targetKbId, true);
+
+                // Determine handles
+                const sourceHandle = params.sourceHandle || "right";
+                const targetHandle = params.targetHandle || "left";
+
+                console.log("🔗 Linking KB to KB:", {
+                  sourceKbId: searchKbId,
+                  targetKbId: normalKbId,
+                  sourceHandle,
+                  targetHandle,
+                });
+
+                // Call the KB-to-KB linking API
+                await knowledgeBaseApi.linkKbToKb({
+                  source_kb_id: searchKbId,
+                  target_kb_id: normalKbId,
+                  workspace_id: workspaceId,
+                  kb_connection_asset_handle: sourceKb?.name.includes(
+                    "kb_search"
+                  )
+                    ? sourceHandle
+                    : targetHandle,
+                  kb_connection_kb_handle: sourceKb?.name.includes("kb_search")
+                    ? targetHandle
+                    : sourceHandle,
+                });
+
+                console.log(
+                  `✅ Successfully linked search KB ${searchKbId} to normal KB ${normalKbId}`
+                );
+                showToast("Knowledge bases successfully connected", "success");
+
+                // Refresh workspace
+                fetchWorkspaceDetails(workspaceId);
+              } catch (error) {
+                console.error("Failed to link knowledge bases:", error);
+                showToast("Failed to connect knowledge bases", "error");
+              } finally {
+                // Hide loading on both KBs
+                setKbLoading(sourceKbId, false);
+                setKbLoading(targetKbId, false);
+              }
+            }
+          } else {
+            // Remove the edge if connection is not allowed
+            setEdges((eds) =>
+              eds.filter(
+                (edge) =>
+                  edge.id !==
+                  `reactflow__edge-${params.source}${params.sourceHandle}-${params.target}${params.targetHandle}`
+              )
+            );
+            showToast(
+              "Only search knowledge bases can connect to other knowledge bases",
+              "warning"
+            );
+          }
+          return; // Exit early for KB-to-KB connections
+        }
+
+        // Handle asset/collection to KB connections (existing logic)
         const nodeId = targetIsKB ? params.source : params.target;
         const kbNodeId = targetIsKB ? params.target : params.source;
 
@@ -775,6 +906,7 @@ export default function WorkspacePage() {
       fetchWorkspaceDetails,
       showToast,
       setKbLoading,
+      knowledgeBases,
     ]
   );
 
@@ -1217,6 +1349,27 @@ export default function WorkspacePage() {
       });
     }
 
+    // Create edges for knowledge base to knowledge base relationships
+    if (currentWorkspace.knowledge_bases) {
+      currentWorkspace.knowledge_bases.forEach((kb) => {
+        if (kb.linked_kb_id) {
+          // Create edge from source KB to target KB
+          const sourceKbNodeId = `kb-${kb.id}`;
+          const targetKbNodeId = `kb-${kb.linked_kb_id}`;
+
+          existingEdges.push({
+            id: `${sourceKbNodeId}-${targetKbNodeId}`,
+            source: sourceKbNodeId,
+            target: targetKbNodeId,
+            sourceHandle: kb.kb_connection_asset_handle || "right",
+            targetHandle: kb.kb_connection_kb_handle || "left",
+            type: "default",
+            style: { stroke: "#FF9500", strokeDasharray: "5,5" }, // Different color for KB-KB connections
+          });
+        }
+      });
+    }
+
     if (existingEdges.length > 0) {
       console.log("Creating edges for existing relationships:", existingEdges);
       setEdges(existingEdges);
@@ -1224,6 +1377,7 @@ export default function WorkspacePage() {
   }, [
     currentWorkspace?.assets,
     currentWorkspace?.collections,
+    currentWorkspace?.knowledge_bases,
     knowledgeBases,
     setEdges,
   ]);
