@@ -664,131 +664,136 @@ const NotebookLMFlow = ({
         style={isMaximized ? {} : { height: "87vh" }}
       >
         {/* Header */}
-        <div className="bg-black border-1 border-black text-white px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {currentStep !== "context" && currentStep !== "chat" && (
-              <button
-                onClick={() => {
-                  if (currentStep === "assets") setCurrentStep("context");
-                }}
-                className="text-white hover:bg-gray-800  rounded mr-2"
-              >
-                <ChevronLeft size={20} />
-              </button>
-            )}
-            <div className="flex items-center gap-2">
-              <svg
-                width="29"
-                height="28"
-                viewBox="0 0 29 28"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <g clip-path="url(#clip0_44_261)">
-                  <path
-                    d="M14.3016 3.73457C6.57007 3.73457 0.302734 9.9494 0.302734 17.6179V24.2667H2.8834V23.6041C2.8834 20.4937 5.4244 17.9726 8.5604 17.9726C11.6964 17.9726 14.2374 20.4926 14.2374 23.6041V24.2667H16.8181V23.6041C16.8181 19.0809 13.1197 15.4152 8.5604 15.4152C6.85471 15.413 5.18991 15.9374 3.7934 16.9167C4.51367 15.5045 5.61081 14.3193 6.9633 13.4923C8.31578 12.6653 9.8708 12.2289 11.4561 12.2314C16.1892 12.2314 20.0276 16.0394 20.0276 20.7329V24.2667H22.6082V20.7317C22.6082 14.6242 17.6149 9.67056 11.4549 9.67056C8.79749 9.66484 6.22536 10.6081 4.20173 12.3306C5.17982 10.5029 6.63639 8.9755 8.41563 7.91182C10.1949 6.84815 12.2298 6.2882 14.3027 6.2919C20.6097 6.2919 25.7221 11.3622 25.7221 17.6167V24.2667H28.3027V17.6167C28.3016 9.94823 22.0342 3.73457 14.3016 3.73457Z"
-                    fill="white"
-                  />
-                </g>
-                <defs>
-                  <clipPath id="clip0_44_261">
-                    <rect
-                      width="28"
-                      height="28"
+        {!isMaximized && (
+          <div className="bg-black border-1 border-black text-white px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {currentStep !== "context" && currentStep !== "chat" && (
+                <button
+                  onClick={() => {
+                    if (currentStep === "assets") setCurrentStep("context");
+                  }}
+                  className="text-white hover:bg-gray-800  rounded mr-2"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+              )}
+              <div className="flex items-center gap-2">
+                <svg
+                  width="29"
+                  height="28"
+                  viewBox="0 0 29 28"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <g clip-path="url(#clip0_44_261)">
+                    <path
+                      d="M14.3016 3.73457C6.57007 3.73457 0.302734 9.9494 0.302734 17.6179V24.2667H2.8834V23.6041C2.8834 20.4937 5.4244 17.9726 8.5604 17.9726C11.6964 17.9726 14.2374 20.4926 14.2374 23.6041V24.2667H16.8181V23.6041C16.8181 19.0809 13.1197 15.4152 8.5604 15.4152C6.85471 15.413 5.18991 15.9374 3.7934 16.9167C4.51367 15.5045 5.61081 14.3193 6.9633 13.4923C8.31578 12.6653 9.8708 12.2289 11.4561 12.2314C16.1892 12.2314 20.0276 16.0394 20.0276 20.7329V24.2667H22.6082V20.7317C22.6082 14.6242 17.6149 9.67056 11.4549 9.67056C8.79749 9.66484 6.22536 10.6081 4.20173 12.3306C5.17982 10.5029 6.63639 8.9755 8.41563 7.91182C10.1949 6.84815 12.2298 6.2882 14.3027 6.2919C20.6097 6.2919 25.7221 11.3622 25.7221 17.6167V24.2667H28.3027V17.6167C28.3016 9.94823 22.0342 3.73457 14.3016 3.73457Z"
                       fill="white"
-                      transform="translate(0.302734)"
                     />
-                  </clipPath>
-                </defs>
-              </svg>
+                  </g>
+                  <defs>
+                    <clipPath id="clip0_44_261">
+                      <rect
+                        width="28"
+                        height="28"
+                        fill="white"
+                        transform="translate(0.302734)"
+                      />
+                    </clipPath>
+                  </defs>
+                </svg>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {currentStep === "chat" && (
+                <button
+                  onClick={
+                    isMaximized
+                      ? () => window.history.back()
+                      : () =>
+                          router.push(`/chat?kb=${searchKb?.collection_name}`)
+                  }
+                  className="text-white hover:bg-gray-800 rounded p-1"
+                  title={isMaximized ? "Minimize" : "Maximize"}
+                >
+                  {isMaximized ? (
+                    <svg
+                      width="40"
+                      height="40"
+                      viewBox="0 0 28 28"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M17.303 6.22217V8.44439C17.303 9.03376 17.5371 9.59899 17.9539 10.0157C18.3706 10.4325 18.9359 10.6666 19.5252 10.6666H21.7475M17.303 21.7777V19.5555C17.303 18.9661 17.5371 18.4009 17.9539 17.9842C18.3706 17.5674 18.9359 17.3333 19.5252 17.3333H21.7475M6.19189 10.6666H8.41412C9.00349 10.6666 9.56872 10.4325 9.98546 10.0157C10.4022 9.59899 10.6363 9.03376 10.6363 8.44439V6.22217M6.19189 17.3333H8.41412C9.00349 17.3333 9.56872 17.5674 9.98546 17.9842C10.4022 18.4009 10.6363 18.9661 10.6363 19.5555V21.7777"
+                        stroke="white"
+                        strokeWidth="1.66667"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      width="40"
+                      height="40"
+                      viewBox="0 0 28 28"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M17.303 21.7777V19.5555C17.303 18.9661 17.5371 18.4009 17.9539 17.9842C18.3706 17.5674 18.9359 17.3333 19.5252 17.3333H21.7475M17.303 6.22217V8.44439C17.303 9.03376 17.5371 9.59899 17.9539 10.0157C18.3706 10.4325 18.9359 10.6666 19.5252 10.6666H21.7475M6.19189 17.3333H8.41412C9.00349 17.3333 9.56872 17.5674 9.98546 17.9842C10.4022 18.4009 10.6363 18.9661 10.6363 19.5555V21.7777M6.19189 10.6666H8.41412C9.00349 10.6666 9.56872 10.4325 9.98546 10.0157C10.4022 9.59899 10.6363 9.03376 10.6363 8.44439V6.22217"
+                        stroke="white"
+                        strokeWidth="1.66667"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                </button>
+              )}
+              <button
+                onClick={async () => {
+                  // Delete knowledge base when closing
+                  const kbName = searchKb?.name || createdKbName;
+                  if (kbName) {
+                    try {
+                      await apiClient.delete(
+                        `/agent/knowledge-bases/${kbName}`
+                      );
+                      console.log("Knowledge base deleted successfully");
+                      // Trigger workspace update to refresh the UI in real-time
+                      onWorkspaceUpdate?.();
+                    } catch (error) {
+                      console.error("Failed to delete knowledge base:", error);
+                    }
+                  }
+                  // Navigate back to workspace instead of using history.back()
+                  if (workspaceId) {
+                    router.push(`/workspace/${workspaceId}`);
+                  } else {
+                    window.history.back();
+                  }
+                }}
+                className="text-white hover:bg-red-600 rounded p-1 transition-colors"
+                title="Close and delete knowledge base"
+              >
+                <svg
+                  width="40"
+                  height="40"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {currentStep === "chat" && (
-              <button
-                onClick={
-                  isMaximized
-                    ? () => window.history.back()
-                    : () => router.push(`/chat?kb=${searchKb?.collection_name}`)
-                }
-                className="text-white hover:bg-gray-800 rounded p-1"
-                title={isMaximized ? "Minimize" : "Maximize"}
-              >
-                {isMaximized ? (
-                  <svg
-                    width="40"
-                    height="40"
-                    viewBox="0 0 28 28"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M17.303 6.22217V8.44439C17.303 9.03376 17.5371 9.59899 17.9539 10.0157C18.3706 10.4325 18.9359 10.6666 19.5252 10.6666H21.7475M17.303 21.7777V19.5555C17.303 18.9661 17.5371 18.4009 17.9539 17.9842C18.3706 17.5674 18.9359 17.3333 19.5252 17.3333H21.7475M6.19189 10.6666H8.41412C9.00349 10.6666 9.56872 10.4325 9.98546 10.0157C10.4022 9.59899 10.6363 9.03376 10.6363 8.44439V6.22217M6.19189 17.3333H8.41412C9.00349 17.3333 9.56872 17.5674 9.98546 17.9842C10.4022 18.4009 10.6363 18.9661 10.6363 19.5555V21.7777"
-                      stroke="white"
-                      strokeWidth="1.66667"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    width="40"
-                    height="40"
-                    viewBox="0 0 28 28"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M17.303 21.7777V19.5555C17.303 18.9661 17.5371 18.4009 17.9539 17.9842C18.3706 17.5674 18.9359 17.3333 19.5252 17.3333H21.7475M17.303 6.22217V8.44439C17.303 9.03376 17.5371 9.59899 17.9539 10.0157C18.3706 10.4325 18.9359 10.6666 19.5252 10.6666H21.7475M6.19189 17.3333H8.41412C9.00349 17.3333 9.56872 17.5674 9.98546 17.9842C10.4022 18.4009 10.6363 18.9661 10.6363 19.5555V21.7777M6.19189 10.6666H8.41412C9.00349 10.6666 9.56872 10.4325 9.98546 10.0157C10.4022 9.59899 10.6363 9.03376 10.6363 8.44439V6.22217"
-                      stroke="white"
-                      strokeWidth="1.66667"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                )}
-              </button>
-            )}
-            <button
-              onClick={async () => {
-                // Delete knowledge base when closing
-                const kbName = searchKb?.name || createdKbName;
-                if (kbName) {
-                  try {
-                    await apiClient.delete(`/agent/knowledge-bases/${kbName}`);
-                    console.log("Knowledge base deleted successfully");
-                    // Trigger workspace update to refresh the UI in real-time
-                    onWorkspaceUpdate?.();
-                  } catch (error) {
-                    console.error("Failed to delete knowledge base:", error);
-                  }
-                }
-                // Navigate back to workspace instead of using history.back()
-                if (workspaceId) {
-                  router.push(`/workspace/${workspaceId}`);
-                } else {
-                  window.history.back();
-                }
-              }}
-              className="text-white hover:bg-red-600 rounded p-1 transition-colors"
-              title="Close and delete knowledge base"
-            >
-              <svg
-                width="40"
-                height="40"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* Content */}
         <div className="">

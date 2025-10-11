@@ -61,7 +61,7 @@ const ChatStep: React.FC<ChatStepProps> = ({
   renderAssetIcon,
 }) => {
   return (
-    <div className="flex h-[calc(100vh-161px)]">
+    <div className="flex h-[calc(100vh-77px)]">
       {/* Sidebar */}
       <div
         className={`bg-white border-r border-gray-200 flex flex-col py-6 gap-4 px-2 transition-all duration-300 h-full overflow-auto ${
