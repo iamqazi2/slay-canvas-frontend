@@ -107,65 +107,7 @@ const NotebookLMFlow = ({
     }
   }, [searchQuery]);
 
-  const [sources, setSources] = useState<Source[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("notebookSources");
-      return saved
-        ? JSON.parse(saved)
-        : [
-            {
-              id: 1,
-              title: "Mythological figures and the names of geographic",
-              description:
-                "Uncover how Venus's geography is predominantly named after women and goddesses.",
-              type: "article",
-              selected: true,
-            },
-            {
-              id: 2,
-              title: "Chinese mythological geography - Wikipedia",
-              description:
-                "You'll find an excellent overview of Chinese mythological geography.",
-              type: "pdf",
-              selected: true,
-            },
-            {
-              id: 3,
-              title: "6 Famous Greek Mythology Locations -",
-              description:
-                "Uncover how Venus's geography is predominantly named after women and goddesses.",
-              type: "article",
-              selected: true,
-            },
-          ];
-    }
-    return [
-      {
-        id: 1,
-        title: "Mythological figures and the names of geographic",
-        description:
-          "Uncover how Venus's geography is predominantly named after women and goddesses.",
-        type: "article",
-        selected: true,
-      },
-      {
-        id: 2,
-        title: "Chinese mythological geography - Wikipedia",
-        description:
-          "You'll find an excellent overview of Chinese mythological geography.",
-        type: "pdf",
-        selected: true,
-      },
-      {
-        id: 3,
-        title: "6 Famous Greek Mythology Locations -",
-        description:
-          "Uncover how Venus's geography is predominantly named after women and goddesses.",
-        type: "article",
-        selected: true,
-      },
-    ];
-  });
+  const [sources, setSources] = useState<Source[]>([]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
