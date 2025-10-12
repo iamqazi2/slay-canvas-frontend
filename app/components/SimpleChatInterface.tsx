@@ -71,6 +71,7 @@ export default function SimpleChatInterface({
   const [isStreaming, setIsStreaming] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -971,90 +972,155 @@ export default function SimpleChatInterface({
 
       <div className="border-1 border-black/10 shadow-md flex h-full min-h-0 noDrag">
         {/* Left Sidebar */}
-        <div className="w-[200px] min-w-[180px] max-w-[220px] bg-white border-r border-gray-200 flex flex-col min-h-0">
-          {/* Top Section */}
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center ">
-              <LogoIcon size={28} />
-              <span className="text-sm"> SlayCanvas ChatBot</span>
-            </div>
-          </div>
-
-          {/* Recent Chats Section */}
-          <div className="flex-1 pt-4 px-4 overflow-y-auto">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-medium text-gray-700">
-                Recent Chats
-              </h3>
-              <button
-                className="text-xs text-[#1279FF] font-medium hover:text-[#0D6EFD] transition-colors"
-                onClick={handleNewChat}
+        <div className="bg-white flex flex-col justify-between">
+          <div
+            className={`bg-white shadow-xl h-full border-[1px] border-black/10 flex flex-col py-6 gap-4 px-2 m-4 rounded-[16px] transition-all duration-300 ${
+              isSidebarExpanded ? "w-80" : "w-20"
+            }`}
+          >
+            {/* Expand/Collapse Button */}
+            <button
+              onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+              className="min-w-12 min-h-12 flex items-center justify-center transition-all duration-300"
+              title={isSidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
+            >
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 21 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
               >
-                New Chat +
-              </button>
-            </div>
+                <path
+                  d="M7.70142 1.5V18.5M1.70142 7.4C1.70142 5.16 1.70142 4.04 2.13742 3.184C2.5209 2.43139 3.1328 1.81949 3.88542 1.436C4.74142 1 5.86142 1 8.10142 1H13.3014C15.5414 1 16.6614 1 17.5174 1.436C18.27 1.81949 18.8819 2.43139 19.2654 3.184C19.7014 4.04 19.7014 5.16 19.7014 7.4V12.6C19.7014 14.84 19.7014 15.96 19.2654 16.816C18.8819 17.5686 18.27 18.1805 17.5174 18.564C16.6614 19 15.5414 19 13.3014 19H8.10142C5.86142 19 4.74142 19 3.88542 18.564C3.1328 18.1805 2.5209 17.5686 2.13742 16.816C1.70142 15.96 1.70142 14.84 1.70142 12.6V7.4Z"
+                  stroke="#1E1E1E"
+                  strokeOpacity="0.8"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
 
-            <div className="space-y-1">
-              {recentChats.length === 0 && !isLoading && (
-                <div className="text-xs text-gray-500 text-center py-4">
-                  No conversations yet. Start a new chat!
-                </div>
-              )}
-
-              {recentChats.map((chat, index) => (
-                <div
-                  key={chat.id}
-                  className={`flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors ${
-                    selectedChat === index
-                      ? "bg-[#4596FF99] text-white"
-                      : " hover:bg-gray-50"
-                  }`}
-                  onClick={() => handleChatClick(index)}
-                >
-                  <div className="flex items-center gap-2">
-                    <ChatIcon
-                      fill={selectedChat === index ? "#fff" : "#1E1E1E"}
-                    />
-                    <span
-                      className={`text-xs truncate ${
-                        selectedChat === index ? "text-white" : "text-[#424242]"
-                      }`}
-                    >
-                      {chat.name.length > 18
-                        ? `${chat.name.substring(0, 18)}..`
-                        : chat.name}
-                    </span>
+            {isSidebarExpanded ? (
+              /* Expanded Sidebar View */
+              <div className="flex flex-col gap-4 w-full px-2 flex-1 overflow-hidden">
+                {/* Top Section */}
+                <div className="pb-4 border-b border-gray-200">
+                  <div className="flex items-center">
+                    <LogoIcon size={28} />
+                    <span className="text-sm ml-2">SlayCanvas ChatBot</span>
                   </div>
-                  {/* <button className="p-1 hover:bg-gray-200 rounded transition-colors">
-                    <MoreIcon
-                      fill={selectedChat === index ? "#fff" : "#1E1E1E"}
-                    />
-                  </button> */}
                 </div>
-              ))}
-            </div>
+
+                {/* Recent Chats Section */}
+                <div className="flex-1 overflow-y-auto">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-xs font-medium text-gray-700">
+                      Recent Chats
+                    </h3>
+                    <button
+                      className="text-xs text-[#1279FF] font-medium hover:text-[#0D6EFD] transition-colors"
+                      onClick={handleNewChat}
+                    >
+                      New Chat +
+                    </button>
+                  </div>
+
+                  <div className="space-y-1">
+                    {recentChats.length === 0 && !isLoading && (
+                      <div className="text-xs text-gray-500 text-center py-4">
+                        No conversations yet. Start a new chat!
+                      </div>
+                    )}
+
+                    {recentChats.map((chat, index) => (
+                      <div
+                        key={chat.id}
+                        className={`flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors ${
+                          selectedChat === index
+                            ? "bg-[#4596FF99] text-white"
+                            : " hover:bg-gray-50"
+                        }`}
+                        onClick={() => handleChatClick(index)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <ChatIcon
+                            fill={selectedChat === index ? "#fff" : "#1E1E1E"}
+                          />
+                          <span
+                            className={`text-xs truncate ${
+                              selectedChat === index
+                                ? "text-white"
+                                : "text-[#424242]"
+                            }`}
+                          >
+                            {chat.name.length > 18
+                              ? `${chat.name.substring(0, 18)}..`
+                              : chat.name}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bottom Action Button */}
+                <div className="pt-4 border-t border-gray-200">
+                  {pathname !== "/chat" ? (
+                    <button
+                      className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors w-full"
+                      onClick={() =>
+                        router.push(`/chat?kb=${knowledgeBase.name}`)
+                      }
+                    >
+                      <MaximizeIcon />
+                      <span>Maximize the Chat</span>
+                    </button>
+                  ) : (
+                    <button
+                      className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors w-full"
+                      onClick={() => router.push(`/workspace/${workspaceId}`)}
+                    >
+                      <MinimizeIcon />
+                      <span>Minimize the Chat</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Collapsed Sidebar View */
+              <div className="flex flex-col items-center gap-4 flex-1 justify-between">
+                {/* Chat icon in collapsed mode */}
+                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <ChatIcon fill="#1E1E1E" />
+                </div>
+
+                {/* Maximize/Minimize icon in collapsed mode */}
+                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                  {pathname !== "/chat" ? (
+                    <button
+                      onClick={() =>
+                        router.push(`/chat?kb=${knowledgeBase.name}`)
+                      }
+                      className="w-full h-full flex items-center justify-center"
+                      title="Maximize the Chat"
+                    >
+                      <MaximizeIcon />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => router.push(`/workspace/${workspaceId}`)}
+                      className="w-full h-full flex items-center justify-center"
+                      title="Minimize the Chat"
+                    >
+                      <MinimizeIcon />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-          {pathname !== "/chat" ? (
-            <div
-              className="p-4 border-t border-gray-200"
-              onClick={() => router.push(`/chat?kb=${knowledgeBase.name}`)}
-            >
-              <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">
-                <MaximizeIcon />
-                <span>Maximize the Chat</span>
-              </button>
-            </div>
-          ) : (
-            <div
-              className="p-4 border-t border-gray-200"
-              onClick={() => router.push(`/workspace/${workspaceId}`)}
-            >
-              <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">
-                <MinimizeIcon />
-                <span>Minimize the Chat</span>
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Main Content Area */}

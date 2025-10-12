@@ -425,11 +425,11 @@ export default function WorkspacePage() {
 
   // Viewport state for persistence across page refreshes
   const [viewport, setViewport] = useState(() => {
-    if (typeof window !== 'undefined' && workspaceId) {
+    if (typeof window !== "undefined" && workspaceId) {
       const saved = localStorage.getItem(`workspace-${workspaceId}-viewport`);
-      return saved ? JSON.parse(saved) : { x: 0, y: 0, zoom: 1 };
+      return saved ? JSON.parse(saved) : { x: 0, y: 0, zoom: 0.5 };
     }
-    return { x: 0, y: 0, zoom: 1 };
+    return { x: 0, y: 0, zoom: 0.5 };
   });
 
   // Modal states
@@ -448,12 +448,18 @@ export default function WorkspacePage() {
   }, [isAuthenticated, workspaceId, fetchWorkspaceDetails]);
 
   // Update viewport in localStorage when it changes
-  const handleViewportChange = useCallback((newViewport: { x: number; y: number; zoom: number }) => {
-    setViewport(newViewport);
-    if (typeof window !== 'undefined' && workspaceId) {
-      localStorage.setItem(`workspace-${workspaceId}-viewport`, JSON.stringify(newViewport));
-    }
-  }, [workspaceId]);
+  const handleViewportChange = useCallback(
+    (newViewport: { x: number; y: number; zoom: number }) => {
+      setViewport(newViewport);
+      if (typeof window !== "undefined" && workspaceId) {
+        localStorage.setItem(
+          `workspace-${workspaceId}-viewport`,
+          JSON.stringify(newViewport)
+        );
+      }
+    },
+    [workspaceId]
+  );
 
   // Reset viewport when workspace changes
   useEffect(() => {
@@ -463,7 +469,7 @@ export default function WorkspacePage() {
         const parsedViewport = JSON.parse(saved);
         setViewport(parsedViewport);
       } else {
-        setViewport({ x: 0, y: 0, zoom: 1 });
+        setViewport({ x: 0, y: 0, zoom: 0.5 });
       }
     }
   }, [workspaceId]);
