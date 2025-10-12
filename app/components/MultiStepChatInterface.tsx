@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { apiClient } from "../utils/apiClient";
 import { chatApi } from "../utils/chatApi";
+import { useToast } from "./ui/Toast";
 import AttachmentModal from "./AttachmentModal";
 import AssetsStep from "./steps/AssetsStep";
 import ChatStep from "./steps/ChatStep";
@@ -36,6 +37,7 @@ const NotebookLMFlow = ({
 }) => {
   const router = useRouter();
   const params = useParams();
+  const { showToast } = useToast();
 
   // Only find the search knowledge base if explicitly told to use existing one
   const searchKb = useExistingSearchKb
@@ -239,10 +241,12 @@ const NotebookLMFlow = ({
     if (!kbName) return;
 
     try {
-      await apiClient.delete(`/knowledge-bases/${kbName}/notes/${noteId}`);
+      await apiClient.delete(`/agent/knowledge-bases/${kbName}/notes/${noteId}`);
       setNotes((prev) => prev.filter((note) => note.id !== noteId));
+      showToast("Note deleted successfully", "success");
     } catch (error) {
       console.error("Failed to delete note:", error);
+      showToast("Failed to delete note", "error");
     }
   };
 

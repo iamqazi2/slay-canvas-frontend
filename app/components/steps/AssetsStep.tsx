@@ -14,7 +14,7 @@ interface AssetsStepProps {
 
 const SkeletonLoader = ({ searchQuery }: { searchQuery: string }) => (
   <div className="p-8">
-    <div className="bg-[#4596FF]/10 rounded-xl p-4 mb-6">
+    <div className="bg-gradient-to-r from-[#8e5eff]/20 to-[#4596ff]/20 rounded-xl p-4 mb-6 border border-[#8e5eff]/30 shadow-sm">
       <div className="flex items-start gap-2">
         <span className="text-gray-600 font-medium">Searched:</span>
         <span className="text-gray-900 font-semibold flex-1">
@@ -74,7 +74,7 @@ const AssetsStep: React.FC<AssetsStepProps> = ({
         <SkeletonLoader searchQuery={searchQuery} />
       ) : (
         <div className="p-8 h-full flex flex-col">
-          <div className="bg-[#4596FF]/10 rounded-xl p-4 mb-6">
+          <div className="bg-gradient-to-r from-[#8e5eff]/20 to-[#4596ff]/20 rounded-xl p-4 mb-6 border border-[#8e5eff]/30 shadow-sm">
             <div className="flex items-start gap-2">
               <span className="text-gray-600 font-medium">Searched:</span>
               <span className="text-gray-900 font-semibold flex-1">
@@ -97,10 +97,10 @@ const AssetsStep: React.FC<AssetsStepProps> = ({
               Select all sources
             </button>
             <div
-              className={`w-6 h-6 rounded border-2 flex items-center justify-center cursor-pointer transition-colors ${
+              className={`w-6 h-6 rounded border-2 flex items-center justify-center cursor-pointer transition-all duration-300 shadow-sm ${
                 sources.every((s) => s.selected)
-                  ? "bg-blue-600 border-blue-600"
-                  : "border-gray-300 hover:border-gray-400"
+                  ? "bg-gradient-to-r from-[#8e5eff] to-[#4596ff] border-[#8e5eff]"
+                  : "border-gray-300 hover:border-[#8e5eff] hover:bg-[#8e5eff]/10"
               }`}
               onClick={toggleAllSources}
             >
@@ -122,10 +122,10 @@ const AssetsStep: React.FC<AssetsStepProps> = ({
             {sources.map((source) => (
               <div
                 key={source.id}
-                className="flex items-start gap-4 p-4 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
+                className="flex items-start gap-4 p-4 border border-gray-200 rounded-xl hover:bg-gradient-to-r hover:from-[#8e5eff]/5 hover:to-[#4596ff]/5 cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md"
                 onClick={() => toggleSource(source.id)}
               >
-                <div className="min-w-12 min-h-12 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
+                <div className="min-w-12 min-h-12 bg-gradient-to-r from-[#8e5eff]/20 to-[#4596ff]/20 rounded flex items-center justify-center flex-shrink-0 border border-[#8e5eff]/30 shadow-sm">
                   {source.type === "pdf" ? (
                     <div className="w-8 h-8 bg-red-500 rounded flex items-center justify-center text-white text-xs font-bold">
                       PDF
@@ -194,10 +194,10 @@ const AssetsStep: React.FC<AssetsStepProps> = ({
                   <p className="text-gray-600 text-sm">{source.description}</p>
                 </div>
                 <div
-                  className={`w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                  className={`w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all duration-300 shadow-sm ${
                     source.selected
-                      ? "bg-blue-600 border-blue-600"
-                      : "border-gray-300"
+                      ? "bg-gradient-to-r from-[#8e5eff] to-[#4596ff] border-[#8e5eff]"
+                      : "border-gray-300 hover:border-[#8e5eff] hover:bg-[#8e5eff]/10"
                   }`}
                 >
                   {source.selected && (
@@ -226,7 +226,7 @@ const AssetsStep: React.FC<AssetsStepProps> = ({
             <button
               onClick={handleImportBoard}
               disabled={selectedCount === 0 || isImporting}
-              className="px-8 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center gap-2"
+              className="px-8 py-3 bg-gradient-to-r from-[#8e5eff] to-[#4596ff] text-white rounded-full hover:from-[#7c4dff] hover:to-[#3b82f6] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105"
             >
               {isImporting ? (
                 <>
