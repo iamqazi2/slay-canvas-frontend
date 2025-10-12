@@ -10,6 +10,7 @@ interface AssetsStepProps {
   handleImportBoard: () => void;
   isImporting: boolean;
   hasExistingKb?: boolean; // New prop to determine if KB already exists
+  isFullscreen?: boolean; // New prop to determine if in fullscreen mode
 }
 
 const SkeletonLoader = ({ searchQuery }: { searchQuery: string }) => (
@@ -67,9 +68,14 @@ const AssetsStep: React.FC<AssetsStepProps> = ({
   handleImportBoard,
   isImporting,
   hasExistingKb = false,
+  isFullscreen = false,
 }) => {
   return (
-    <>
+    <div
+      className={`flex ${
+        isFullscreen ? "h-[calc(100vh-77px)]" : "h-[calc(700px)]"
+      }`}
+    >
       {isLoading ? (
         <SkeletonLoader searchQuery={searchQuery} />
       ) : (
@@ -257,7 +263,7 @@ const AssetsStep: React.FC<AssetsStepProps> = ({
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 

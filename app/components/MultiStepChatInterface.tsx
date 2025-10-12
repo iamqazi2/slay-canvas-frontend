@@ -948,6 +948,7 @@ const NotebookLMFlow = ({
               handleImportBoard={handleImportBoard}
               isImporting={isImporting}
               hasExistingKb={!!searchKb}
+              isFullscreen={isMaximized}
             />
           )}
 
