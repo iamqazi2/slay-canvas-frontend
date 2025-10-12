@@ -2,11 +2,9 @@
 import { assetApi } from "@/app/utils/assetApi";
 import { knowledgeBaseApi } from "@/app/utils/knowledgeBaseApi";
 import { updatePosition } from "@/app/utils/positionApi";
-import { useCallback, useEffect, useState } from "react";
-import { useToast } from "../../components/ui/Toast";
-
 import { ConnectionMode } from "@xyflow/react";
 import { useParams, useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import ReactFlow, {
   addEdge,
   Background,
@@ -24,6 +22,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import {
   ImageCollection,
+  MultiStepChatCard,
   PdfDocument,
   Sidebar,
   SimpleChatInterface,
@@ -37,6 +36,7 @@ import FolderCollection from "../../components/FolderCollection";
 import ChatNav from "../../components/New-Navbar";
 import DeleteWorkspaceModal from "../../components/modals/DeleteWorkspaceModal";
 import EditWorkspaceModal from "../../components/modals/EditWorkspaceModal";
+import { useToast } from "../../components/ui/Toast";
 import { useUserStore } from "../../store/userStore";
 import { useWorkspaceStore } from "../../store/workspaceStore";
 import {
@@ -86,7 +86,11 @@ interface ComponentInstance {
   backendCollection?: Collection;
 }
 
-const renderComponent = (instance: ComponentInstance) => {
+const renderComponent = (
+  instance: ComponentInstance,
+  workspace?: WorkspaceDetailed,
+  onWorkspaceUpdate?: () => void
+) => {
   const { id, type, data } = instance;
 
   switch (type) {
@@ -204,13 +208,30 @@ const renderComponent = (instance: ComponentInstance) => {
           }}
         />
       );
+    case "multiStepChat":
+      return (
+        <MultiStepChatCard
+          key={id}
+          workspace={workspace}
+          onWorkspaceUpdate={onWorkspaceUpdate}
+          workspaceId={workspace?.id}
+          useExistingSearchKb={false} // Standalone components don't use existing search KBs
+        />
+      );
     default:
       return null;
   }
 };
 
 // Custom Node Components
-const AssetNode = ({ data }: { data: ComponentInstance }) => {
+const AssetNode = ({
+  data,
+}: {
+  data: ComponentInstance & {
+    workspace?: WorkspaceDetailed;
+    onWorkspaceUpdate?: () => void;
+  };
+}) => {
   const handleDragStart = (e: React.DragEvent) => {
     // Set drag data for the asset
     const dragData = {
@@ -311,7 +332,7 @@ const AssetNode = ({ data }: { data: ComponentInstance }) => {
           zIndex: 1000,
         }}
       />
-      {renderComponent(data)}
+      {renderComponent(data, data.workspace, data.onWorkspaceUpdate)}
     </div>
   );
 };
@@ -328,9 +349,57 @@ const ChatNode = ({
     onWorkspaceUpdate?: () => void;
   };
 }) => {
+  // Check if this is a search knowledge base
+  const isSearchKB = data.knowledgeBase.name.includes("kb_search");
+
   return (
     <div className="w-full h-full relative">
-      {data.isLoading && (
+      {/* Left handle */}
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="left"
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+        style={{
+          background: "#F0F5F7",
+          width: "24px",
+          height: "24px",
+          border: "1px solid rgba(69, 150, 255, 0.1)",
+          boxShadow: "0 0 8px rgba(69, 150, 255, 0.3)",
+          left: "-28px",
+          top: "55%",
+          transform: "translateY(-50%)",
+          zIndex: 1000,
+        }}
+      />
+
+      {/* Right handle */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+        style={{
+          background: "#F0F5F7",
+          width: "24px",
+          height: "24px",
+          border: "1px solid rgba(69, 150, 255, 0.1)",
+          boxShadow: "0 0 8px rgba(69, 150, 255, 0.3)",
+          right: "-28px",
+          top: "55%",
+          transform: "translateY(-50%)",
+          zIndex: 1000,
+        }}
+      />
+
+      {/* Only show loading overlay for non-search KBs */}
+      {!isSearchKB && data.isLoading && (
         <div className="absolute inset-0 bg-white/10 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
           <div className="flex flex-col items-center gap-2">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4596FF]"></div>
@@ -338,14 +407,24 @@ const ChatNode = ({
           </div>
         </div>
       )}
-      <SimpleChatInterface
-        knowledgeBase={data.knowledgeBase}
-        workspace={data.workspace}
-        attachedAssets={data.attachedAssets}
-        className="h-full"
-        showHandles={true}
-        onWorkspaceUpdate={data.onWorkspaceUpdate}
-      />
+      {isSearchKB ? (
+        <MultiStepChatCard
+          workspace={data.workspace}
+          isFullscreen={false}
+          onWorkspaceUpdate={data.onWorkspaceUpdate}
+          workspaceId={data.workspace?.id}
+          useExistingSearchKb={true} // Search KB nodes use existing search KBs
+        />
+      ) : (
+        <SimpleChatInterface
+          knowledgeBase={data.knowledgeBase}
+          workspace={data.workspace}
+          attachedAssets={data.attachedAssets}
+          className="h-full"
+          showHandles={true}
+          onWorkspaceUpdate={data.onWorkspaceUpdate}
+        />
+      )}
     </div>
   );
 };
@@ -407,10 +486,21 @@ export default function WorkspacePage() {
     if (currentWorkspace) {
       let allComponentInstances: ComponentInstance[] = [];
 
-      // Load assets (excluding those that are already in collections)
+      // Find search knowledge bases
+      const searchKBs = currentWorkspace.knowledge_bases
+        ? currentWorkspace.knowledge_bases.filter((kb) =>
+            kb.name.includes("kb_search")
+          )
+        : [];
+      const searchKBIds = searchKBs.map((kb) => kb.id);
+
+      // Load assets (excluding those that are already in collections OR linked to search KBs)
       if (currentWorkspace.assets) {
         const standaloneAssets = currentWorkspace.assets.filter(
-          (asset) => !asset.collection_id
+          (asset) =>
+            !asset.collection_id &&
+            (!asset.knowledge_base_id ||
+              !searchKBIds.includes(asset.knowledge_base_id))
         );
         const workspaceAssets = assetsToComponentInstances(standaloneAssets);
         allComponentInstances = [...allComponentInstances, ...workspaceAssets];
@@ -639,7 +729,94 @@ export default function WorkspacePage() {
       if (targetIsKB || sourceIsKB) {
         setEdges((eds) => addEdge(params, eds));
 
-        // Determine which asset/collection and which KB are being connected
+        // Handle KB-to-KB connections
+        if (targetIsKB && sourceIsKB) {
+          const sourceKbId = parseInt(params.source!.replace("kb-", ""));
+          const targetKbId = parseInt(params.target!.replace("kb-", ""));
+
+          // Find the knowledge bases
+          const sourceKb = knowledgeBases.find((kb) => kb.id === sourceKbId);
+          const targetKb = knowledgeBases.find((kb) => kb.id === targetKbId);
+
+          // Only allow kb_search to connect to normal KB
+          if (
+            sourceKb?.name.includes("kb_search") ||
+            targetKb?.name.includes("kb_search")
+          ) {
+            // Determine which is the search KB and which is the normal KB
+            const searchKbId = sourceKb?.name.includes("kb_search")
+              ? sourceKbId
+              : targetKbId;
+            const normalKbId = sourceKb?.name.includes("kb_search")
+              ? targetKbId
+              : sourceKbId;
+
+            if (workspaceId) {
+              try {
+                // Show loading on both KBs
+                setKbLoading(sourceKbId, true);
+                setKbLoading(targetKbId, true);
+
+                // Determine handles
+                const sourceHandle = params.sourceHandle || "right";
+                const targetHandle = params.targetHandle || "left";
+
+                console.log("🔗 Linking KB to KB:", {
+                  sourceKbId: searchKbId,
+                  targetKbId: normalKbId,
+                  sourceHandle,
+                  targetHandle,
+                });
+
+                // Call the KB-to-KB linking API
+                await knowledgeBaseApi.linkKbToKb({
+                  source_kb_id: searchKbId,
+                  target_kb_id: normalKbId,
+                  workspace_id: workspaceId,
+                  kb_connection_asset_handle: sourceKb?.name.includes(
+                    "kb_search"
+                  )
+                    ? sourceHandle
+                    : targetHandle,
+                  kb_connection_kb_handle: sourceKb?.name.includes("kb_search")
+                    ? targetHandle
+                    : sourceHandle,
+                });
+
+                console.log(
+                  `✅ Successfully linked search KB ${searchKbId} to normal KB ${normalKbId}`
+                );
+                showToast("Knowledge bases successfully connected", "success");
+
+                // Refresh workspace
+                fetchWorkspaceDetails(workspaceId);
+              } catch (error) {
+                console.error("Failed to link knowledge bases:", error);
+                showToast("Failed to connect knowledge bases", "error");
+              } finally {
+                // Hide loading on both KBs
+                setKbLoading(sourceKbId, false);
+                setKbLoading(targetKbId, false);
+              }
+            }
+          } else {
+            // Remove the edge if connection is not allowed
+            setEdges((eds) =>
+              eds.filter(
+                (edge) =>
+                  edge.id !==
+                  `reactflow__edge-${params.source}${params.sourceHandle}-${params.target}${params.targetHandle}`
+              )
+            );
+            showToast(
+              "Only search knowledge bases can connect to other knowledge bases",
+              "warning"
+            );
+          }
+          return; // Exit early for KB-to-KB connections
+        }
+
+        // Handle asset/collection to KB connections (existing logic)
         const nodeId = targetIsKB ? params.source : params.target;
         const kbNodeId = targetIsKB ? params.target : params.source;
 
@@ -731,6 +908,7 @@ export default function WorkspacePage() {
       fetchWorkspaceDetails,
       showToast,
       setKbLoading,
+      knowledgeBases,
     ]
   );
 
@@ -957,6 +1135,8 @@ export default function WorkspacePage() {
         case "folderCollection":
           // For resizable nodes, use initial dimensions
           return { width: 400, height: 300 };
+        case "multiStepChat":
+          return { width: 800, height: 600 };
         default:
           return { width: 300, height: 200 };
       }
@@ -1014,7 +1194,15 @@ export default function WorkspacePage() {
             id: instance.id,
             type: "asset",
             position: existingNode ? existingNode.position : backendPosition, // Use backend position instead of default
-            data: instance,
+            data: {
+              ...instance,
+              workspace: currentWorkspace,
+              onWorkspaceUpdate: () => {
+                if (workspaceId) {
+                  fetchWorkspaceDetails(workspaceId);
+                }
+              },
+            },
             width: existingNode?.width || dimensions.width,
             height: existingNode?.height || dimensions.height,
             style:
@@ -1163,6 +1351,27 @@ export default function WorkspacePage() {
       });
     }
 
+    // Create edges for knowledge base to knowledge base relationships
+    if (currentWorkspace.knowledge_bases) {
+      currentWorkspace.knowledge_bases.forEach((kb) => {
+        if (kb.linked_kb_id) {
+          // Create edge from source KB to target KB
+          const sourceKbNodeId = `kb-${kb.id}`;
+          const targetKbNodeId = `kb-${kb.linked_kb_id}`;
+
+          existingEdges.push({
+            id: `${sourceKbNodeId}-${targetKbNodeId}`,
+            source: sourceKbNodeId,
+            target: targetKbNodeId,
+            sourceHandle: kb.kb_connection_asset_handle || "right",
+            targetHandle: kb.kb_connection_kb_handle || "left",
+            type: "default",
+            style: { stroke: "#FF9500", strokeDasharray: "5,5" }, // Different color for KB-KB connections
+          });
+        }
+      });
+    }
+
     if (existingEdges.length > 0) {
       console.log("Creating edges for existing relationships:", existingEdges);
       setEdges(existingEdges);
@@ -1170,6 +1379,7 @@ export default function WorkspacePage() {
   }, [
     currentWorkspace?.assets,
     currentWorkspace?.collections,
+    currentWorkspace?.knowledge_bases,
     knowledgeBases,
     setEdges,
   ]);
@@ -1196,6 +1406,14 @@ export default function WorkspacePage() {
       if (componentType === "folderCollection") {
         console.log(
           "🔄 Skipping asset creation for folderCollection - handled by collection API"
+        );
+        return;
+      }
+
+      // Skip backend asset creation for multiStepChat since it's a UI-only component
+      if (componentType === "multiStepChat") {
+        console.log(
+          "🔄 Skipping asset creation for multiStepChat - UI-only component"
         );
         return;
       }

@@ -32,6 +32,20 @@ export interface UnlinkAssetResponse {
   chunks_removed: number;
 }
 
+export interface LinkKbToKbRequest {
+  source_kb_id: number;
+  target_kb_id: number;
+  workspace_id: number;
+  kb_connection_asset_handle: string;
+  kb_connection_kb_handle: string;
+}
+
+export interface LinkKbToKbResponse {
+  message: string;
+  source_kb_id: number;
+  target_kb_id: number;
+}
+
 class KnowledgeBaseApi {
   /**
    * Create a new knowledge base
@@ -127,6 +141,16 @@ class KnowledgeBaseApi {
   ): Promise<UnlinkAssetResponse> {
     return await apiClient.delete<UnlinkAssetResponse>(
       `/workspaces/${workspaceId}/collections/${collectionId}/unlink-from-kb`
+    );
+  }
+
+  /**
+   * Link a knowledge base to another knowledge base
+   */
+  async linkKbToKb(data: LinkKbToKbRequest): Promise<LinkKbToKbResponse> {
+    return await apiClient.post<LinkKbToKbResponse>(
+      "/search/link-kb-to-kb",
+      data
     );
   }
 }
