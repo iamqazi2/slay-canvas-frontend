@@ -61,6 +61,12 @@ export interface KnowledgeBase {
   linked_kb_id?: number;
   kb_connection_asset_handle?: string; // "left" or "right"
   kb_connection_kb_handle?: string; // "left" or "right"
+  // New connected notebooks structure
+  connected_notebooks?: Array<{
+    kb_id: number;
+    kb_name: string;
+    handle: string; // "left" or "right"
+  }>;
   conversations?: Conversation[];
   notes?: Array<{
     id: number;

@@ -4,9 +4,9 @@ import { Asset, KnowledgeBase, WorkspaceDetailed } from "@/app/types/workspace";
 import { ChevronLeft, File, ImageIcon, Music, Video } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { Handle, Position } from "reactflow";
 import { apiClient } from "../utils/apiClient";
 import { chatApi } from "../utils/chatApi";
-import { useToast } from "./ui/Toast";
 import AttachmentModal from "./AttachmentModal";
 import AssetsStep from "./steps/AssetsStep";
 import ChatStep from "./steps/ChatStep";
@@ -19,6 +19,7 @@ import {
   Source,
   Step,
 } from "./types/multiStepChatTypes";
+import { useToast } from "./ui/Toast";
 
 const NotebookLMFlow = ({
   isFullscreen = false,
@@ -27,6 +28,7 @@ const NotebookLMFlow = ({
   externalLoading = false,
   workspaceId,
   useExistingSearchKb = false, // New prop to control whether to use existing search KB
+  showHandles = false, // Controls whether to show ReactFlow handles
 }: {
   isFullscreen?: boolean;
   workspace?: WorkspaceDetailed;
@@ -34,6 +36,7 @@ const NotebookLMFlow = ({
   externalLoading?: boolean;
   workspaceId?: number;
   useExistingSearchKb?: boolean; // New prop to control whether to use existing search KB
+  showHandles?: boolean; // Controls whether to show ReactFlow handles
 }) => {
   const router = useRouter();
   const params = useParams();
@@ -241,7 +244,9 @@ const NotebookLMFlow = ({
     if (!kbName) return;
 
     try {
-      await apiClient.delete(`/agent/knowledge-bases/${kbName}/notes/${noteId}`);
+      await apiClient.delete(
+        `/agent/knowledge-bases/${kbName}/notes/${noteId}`
+      );
       setNotes((prev) => prev.filter((note) => note.id !== noteId));
       showToast("Note deleted successfully", "success");
     } catch (error) {
@@ -943,6 +948,7 @@ const NotebookLMFlow = ({
               handleImportBoard={handleImportBoard}
               isImporting={isImporting}
               hasExistingKb={!!searchKb}
+              isFullscreen={isMaximized}
             />
           )}
 
@@ -989,6 +995,47 @@ const NotebookLMFlow = ({
         handleFileAttach={handleFileAttach}
         isAttaching={isAttaching}
       />
+
+      {/* ReactFlow Handles - Only show when used in ReactFlow */}
+      {showHandles && (
+        <>
+          {/* Left side handles - both source and target */}
+          <Handle
+            type="source"
+            position={Position.Left}
+            id="left"
+            style={{
+              background: "#F0F5F7",
+              width: "24px",
+              height: "24px",
+              border: "2px solid #4596FF",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              zIndex: 1000,
+              left: "-12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+            }}
+          />
+
+          {/* Right handle */}
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="right"
+            style={{
+              background: "#F0F5F7",
+              width: "24px",
+              height: "24px",
+              border: "2px solid #4596FF",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              zIndex: 1000,
+              right: "-12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+            }}
+          />
+        </>
+      )}
     </div>
   );
 };
