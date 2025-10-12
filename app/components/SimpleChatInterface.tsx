@@ -876,10 +876,54 @@ export default function SimpleChatInterface({
   // Message Component
   const MessageComponent: React.FC<{ message: Message }> = ({ message }) => {
     const isUser = message.role === "user";
+    const [isCopied, setIsCopied] = useState(false);
+
+    const handleCopy = async () => {
+      try {
+        await navigator.clipboard.writeText(message.content);
+        setIsCopied(true);
+        showToast("Message copied to clipboard", "success");
+        setTimeout(() => setIsCopied(false), 2000);
+      } catch (error) {
+        console.error("Failed to copy message:", error);
+        showToast("Failed to copy message", "error");
+      }
+    };
+
+    const CopyIcon = () => (
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM19 21H8V7H19V21Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+
+    const CheckIcon = () => (
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
 
     return (
       <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
         <div className={`max-w-[80%] ${isUser ? "order-2" : "order-1"}`}>
+          {/* Message Card */}
           <div
             className={`rounded-2xl shadow-md border-[1px] border-black/10 px-4 py-3 ${
               isUser ? "bg-[#4596FF]/20 text-black" : "bg-white text-black"
@@ -937,6 +981,19 @@ export default function SimpleChatInterface({
               </ReactMarkdown>
             </div>
           </div>
+
+          {/* Copy button below the message card for AI responses only */}
+          {!isUser && !isStreaming && (
+            <div className="flex justify-start mt-2">
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+                title={isCopied ? "Copied!" : "Copy message"}
+              >
+                {isCopied ? <CheckIcon /> : <CopyIcon />}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
