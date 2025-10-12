@@ -70,6 +70,9 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
 
   const handleRemoveAsset = useCallback(
     async (assetId: string) => {
+      // Set flag to prevent sync conflicts during local updates
+      isLocalUpdateRef.current = true;
+
       // Remove from local state immediately for UI responsiveness
       setAssets((prevAssets) => prevAssets.filter((a) => a.id !== assetId));
 
@@ -395,10 +398,13 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
     }
   }, [id, inline, name, assets]);
 
+  // Use a ref to track when we're making local changes to prevent sync conflicts
+  const isLocalUpdateRef = useRef(false);
+
   // Controlled sync with initialData to prevent infinite loops
   // Only update when the array length changes or when asset IDs differ
   useEffect(() => {
-    if (initialData?.assets) {
+    if (initialData?.assets && !isLocalUpdateRef.current) {
       const currentAssetIds = new Set(assets.map((a) => a.id));
       const newAssetIds = new Set(initialData.assets.map((a) => a.id));
 
@@ -412,7 +418,10 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
         setAssets(initialData.assets);
       }
     }
-  }, [initialData?.assets, assets]);
+    // Reset the flag after processing
+    isLocalUpdateRef.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData?.assets]);
 
   // Handle drop of assets
   const handleDrop = useCallback(
@@ -426,6 +435,9 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
           title: dragData.title,
           data: dragData.data,
         };
+
+        // Set flag to prevent sync conflicts during local updates
+        isLocalUpdateRef.current = true;
 
         // Check for duplicates
         setAssets((prev) => {
