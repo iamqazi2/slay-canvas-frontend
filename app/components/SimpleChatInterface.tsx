@@ -42,6 +42,7 @@ interface SimpleChatInterfaceProps {
   showHandles?: boolean; // Controls whether to show ReactFlow handles
   initialConversationId?: number; // Optional conversation ID to load initially
   onWorkspaceUpdate?: () => void; // Callback to refresh workspace data
+  workspaceId?: number; // Optional workspace ID for navigation
 }
 
 export default function SimpleChatInterface({
@@ -51,6 +52,7 @@ export default function SimpleChatInterface({
   attachedAssets = [],
   showHandles = false,
   initialConversationId,
+  workspaceId,
   onWorkspaceUpdate,
 }: SimpleChatInterfaceProps) {
   const { showToast } = useToast();
@@ -807,6 +809,24 @@ export default function SimpleChatInterface({
     </svg>
   );
 
+  const MinimizeIcon = () => (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M3 8H13"
+        stroke="#6B7280"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+
   const recentChats = conversations.map((conv) => ({
     id: conv.id,
     name: conv.conversation_name || `Chat ${conv.id}`,
@@ -1014,8 +1034,7 @@ export default function SimpleChatInterface({
               ))}
             </div>
           </div>
-
-          {pathname !== "/chat" && (
+          {pathname !== "/chat" ? (
             <div
               className="p-4 border-t border-gray-200"
               onClick={() => router.push(`/chat?kb=${knowledgeBase.name}`)}
@@ -1023,6 +1042,16 @@ export default function SimpleChatInterface({
               <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">
                 <MaximizeIcon />
                 <span>Maximize the Chat</span>
+              </button>
+            </div>
+          ) : (
+            <div
+              className="p-4 border-t border-gray-200"
+              onClick={() => router.push(`/workspace/${workspaceId}`)}
+            >
+              <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">
+                <MinimizeIcon />
+                <span>Minimize the Chat</span>
               </button>
             </div>
           )}

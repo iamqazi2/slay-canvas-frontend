@@ -982,6 +982,7 @@ const NotebookLMFlow = ({
               messagesContainerRef={messagesContainerRef}
               renderAssetIcon={renderAssetIcon}
               handleBackToContext={handleBackToContext}
+              workspaceId={workspaceId}
             />
           )}
         </div>

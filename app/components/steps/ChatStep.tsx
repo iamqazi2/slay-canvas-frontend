@@ -1,5 +1,6 @@
 import { Asset, KnowledgeBase } from "@/app/types/workspace";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import MessageComponent from "../MessageComponent";
@@ -33,6 +34,7 @@ interface ChatStepProps {
   renderAssetIcon: (asset: Asset) => React.ReactElement;
   handleBackToContext: () => void;
   isFullscreen?: boolean;
+  workspaceId?: number;
 }
 
 const ChatStep: React.FC<ChatStepProps> = ({
@@ -62,7 +64,28 @@ const ChatStep: React.FC<ChatStepProps> = ({
   renderAssetIcon,
   handleBackToContext,
   isFullscreen = false,
+  workspaceId,
 }) => {
+  const router = useRouter();
+
+  const MinimizeIcon = () => (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M3 8H13"
+        stroke="#6B7280"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+
   return (
     <div
       className={`flex ${
@@ -70,7 +93,7 @@ const ChatStep: React.FC<ChatStepProps> = ({
       }`}
     >
       {/* Sidebar */}
-      <div className="bg-white">
+      <div className="bg-white flex flex-col justify-between">
         {" "}
         <div
           className={`bg-white shadow-xl border-[1px] border-black/10 flex flex-col py-6 gap-4 px-2 m-4 rounded-[16px] transition-all duration-300 ${
@@ -267,6 +290,17 @@ const ChatStep: React.FC<ChatStepProps> = ({
             </>
           )}
         </div>
+        {isFullscreen && (
+          <div
+            className="p-4 border-t border-gray-200 h-[99px]"
+            onClick={() => router.push(`/workspace/${workspaceId}`)}
+          >
+            <button className="flex items-center h-full gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">
+              <MinimizeIcon />
+              <span>Minimize the Chat</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Main Chat Area */}
