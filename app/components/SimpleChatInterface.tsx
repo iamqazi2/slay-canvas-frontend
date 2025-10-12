@@ -263,12 +263,12 @@ export default function SimpleChatInterface({
   }, []);
 
   // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop =
-        messagesContainerRef.current.scrollHeight;
-    }
-  }, [messages]);
+  // useEffect(() => {
+  //   if (messagesContainerRef.current) {
+  //     messagesContainerRef.current.scrollTop =
+  //       messagesContainerRef.current.scrollHeight;
+  //   }
+  // }, [messages]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
