@@ -1353,20 +1353,46 @@ export default function WorkspacePage() {
 
     // Create edges for knowledge base to knowledge base relationships
     if (currentWorkspace.knowledge_bases) {
-      currentWorkspace.knowledge_bases.forEach((kb) => {
-        if (kb.linked_kb_id) {
-          // Create edge from source KB to target KB
-          const sourceKbNodeId = `kb-${kb.id}`;
-          const targetKbNodeId = `kb-${kb.linked_kb_id}`;
+      const processedConnections = new Set<string>(); // Track processed connections to avoid duplicates
 
-          existingEdges.push({
-            id: `${sourceKbNodeId}-${targetKbNodeId}`,
-            source: sourceKbNodeId,
-            target: targetKbNodeId,
-            sourceHandle: kb.kb_connection_asset_handle || "right",
-            targetHandle: kb.kb_connection_kb_handle || "left",
-            type: "default",
-            style: { stroke: "#FF9500", strokeDasharray: "5,5" }, // Different color for KB-KB connections
+      currentWorkspace.knowledge_bases.forEach((kb) => {
+        // Use the new connected_notebooks structure
+        if (kb.connected_notebooks && kb.connected_notebooks.length > 0) {
+          console.log(
+            `KB ${kb.id} (${kb.name}) has connected notebooks:`,
+            kb.connected_notebooks
+          );
+
+          kb.connected_notebooks.forEach((connection) => {
+            // Create a unique identifier for this connection pair
+            const connectionId1 = `${kb.id}-${connection.kb_id}`;
+            const connectionId2 = `${connection.kb_id}-${kb.id}`;
+
+            // Skip if we've already processed this connection pair (in either direction)
+            if (
+              processedConnections.has(connectionId1) ||
+              processedConnections.has(connectionId2)
+            ) {
+              console.log(`Skipping duplicate connection: ${connectionId1}`);
+              return;
+            }
+
+            // Mark this connection pair as processed
+            processedConnections.add(connectionId1);
+
+            // Create edge from current KB to connected KB
+            const sourceKbNodeId = `kb-${kb.id}`;
+            const targetKbNodeId = `kb-${connection.kb_id}`;
+
+            existingEdges.push({
+              id: `${sourceKbNodeId}-${targetKbNodeId}`,
+              source: sourceKbNodeId,
+              target: targetKbNodeId,
+              sourceHandle: connection.handle || "right", // Use the handle from connected_notebooks
+              targetHandle: "left", // Default target handle
+              type: "default",
+              style: { stroke: "#FF9500", strokeDasharray: "5,5" }, // Different color for KB-KB connections
+            });
           });
         }
       });
