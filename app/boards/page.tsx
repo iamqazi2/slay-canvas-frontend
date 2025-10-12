@@ -153,110 +153,110 @@ export default function BoardsDashboard() {
     }
   };
 
+  // Generate gradient colors for board thumbnails
+  const getGradientColor = (index: number) => {
+    const gradients = [
+      "from-[#8e5eff] to-[#4596ff]",
+      "from-[#4596ff] to-[#8e5eff]",
+      "from-[#8e5eff]/80 to-[#4596ff]/80",
+      "from-[#4596ff]/80 to-[#8e5eff]/80",
+      "from-[#8e5eff]/60 to-[#4596ff]/60",
+      "from-[#4596ff]/60 to-[#8e5eff]/60",
+      "from-[#8e5eff]/40 to-[#4596ff]/40",
+      "from-[#4596ff]/40 to-[#8e5eff]/40",
+    ];
+    return gradients[index % gradients.length];
+  };
+
   return (
     <div className="h-screen flex flex-col">
       <ChatNav />
-      <div className="flex flex-1 bg-gray-50 relative">
-        {/* Sidebar */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+      <div className="flex flex-1 bg-gradient-to-br from-[#8e5eff]/5 to-[#4596ff]/5 relative overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-20 w-72 h-72 bg-[#8e5eff]/20 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+          <div className="absolute top-40 right-20 w-72 h-72 bg-[#4596ff]/20 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+          <div className="absolute -bottom-8 left-40 w-72 h-72 bg-[#8e5eff]/15 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+        </div>
+
+        {/* Sidebar with glass effect */}
+        <div className="w-80 bg-white/70 backdrop-blur-xl border-r border-white/20 flex flex-col shadow-xl relative z-10">
           {/* Navigation Items */}
-          <div className="flex-1 p-4 space-y-1">
+          <div className="flex-1 p-4 space-y-2">
             {/* All Boards */}
             <button
               onClick={() => setCurrentView("all")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
                 currentView === "all"
-                  ? "text-blue-600 bg-blue-50"
-                  : "text-gray-700 hover:bg-gray-100"
+                  ? "text-[#4596ff] bg-gradient-to-r from-[#8e5eff]/10 to-[#4596ff]/10 backdrop-blur-sm shadow-lg scale-105"
+                  : "text-gray-700 hover:bg-white/50 hover:backdrop-blur-sm hover:shadow-md"
               }`}
             >
-              <GridIcon className="w-5 h-5 " />
-              <span className="font-normal">All Boards</span>
+              <GridIcon className="w-5 h-5" />
+              <span className="font-medium">All Boards</span>
             </button>
 
             {/* Starred */}
             <button
               onClick={() => setCurrentView("starred")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
                 currentView === "starred"
-                  ? "text-blue-600 bg-blue-50"
-                  : "text-gray-700 hover:bg-gray-100"
+                  ? "text-[#8e5eff] bg-gradient-to-r from-[#8e5eff]/10 to-[#4596ff]/10 backdrop-blur-sm shadow-lg scale-105"
+                  : "text-gray-700 hover:bg-white/50 hover:backdrop-blur-sm hover:shadow-md"
               }`}
             >
               <Star className="w-5 h-5" />
-              <span className="font-normal">Starred</span>
+              <span className="font-medium">Starred</span>
             </button>
-
-            {/* Templates */}
-            {/* <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-            <Grid2x2 className="w-5 h-5" />
-            <span className="font-medium">Templates</span>
-          </button> */}
-
-            {/* Shared with me */}
-            {/* <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-            <Users className="w-5 h-5" />
-            <span className="font-medium">Shared with me</span>
-          </button> */}
-
-            {/* Folders Section */}
-            {/* <div className="pt-6">
-            <div className="flex items-center justify-between px-4 py-2 mb-2">
-              <span className="text-sm font-medium text-gray-700">Folders</span>
-              <button className="text-gray-500 hover:text-gray-700">
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-            <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-              <Folder className="w-5 h-5" />
-              <span className="font-medium">Instagram Page</span>
-            </button>
-          </div> */}
           </div>
 
           {/* Archived Boards */}
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-white/20">
             <button
               onClick={() => setCurrentView("archived")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
                 currentView === "archived"
-                  ? "text-blue-600 bg-blue-50"
-                  : "text-gray-700 hover:bg-gray-100"
+                  ? "text-[#4596ff] bg-gradient-to-r from-[#8e5eff]/10 to-[#4596ff]/10 backdrop-blur-sm shadow-lg scale-105"
+                  : "text-gray-700 hover:bg-white/50 hover:backdrop-blur-sm hover:shadow-md"
               }`}
             >
               <Archive className="w-5 h-5" />
-              <span className="font-normal">Archived Boards</span>
+              <span className="font-medium">Archived Boards</span>
             </button>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto relative z-10">
           <div className="max-w-7xl mx-auto p-8">
-            {/* New Board Button */}
+            {/* New Board Button with glass effect */}
             <button
               onClick={handleCreateNewBoard}
               disabled={workspaceLoading}
-              className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded-2xl py-6 px-8 flex items-center justify-center gap-3 mb-8 transition-colors shadow-sm"
+              className="w-full bg-gradient-to-r from-[#8e5eff] to-[#4596ff] hover:from-[#7c4dff] hover:to-[#3b82f6] disabled:from-gray-300 disabled:to-gray-400 text-white rounded-2xl py-6 px-8 flex items-center justify-center gap-3 mb-8 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-[1.02] backdrop-blur-sm"
             >
               <Plus className="w-6 h-6" />
-              <span className="text-xl font-semibold">New Board</span>
+              <span className="text-xl font-semibold">Create New Board</span>
             </button>
 
             {/* Boards Section */}
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-[#8e5eff] to-[#4596ff] bg-clip-text text-transparent mb-6">
                 {getSectionTitle()}
               </h2>
 
-              <div className="space-y-4 max-h-[600px] overflow-y-auto">
+              <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                 {workspaces.map((ws, index) => (
                   <div
                     key={ws.id}
-                    className="bg-white rounded-xl p-6 flex items-center gap-6 hover:shadow-md transition-shadow border border-gray-200 relative"
+                    className="group bg-white/60 backdrop-blur-lg rounded-2xl p-6 flex items-center gap-6 transition-all duration-300 border border-white/40 relative hover:bg-white/70 z-20"
                   >
-                    {/* Thumbnail */}
-                    <div className="w-20 h-20 bg-gray-300 rounded-lg flex-shrink-0 flex items-center justify-center text-gray-800 font-bold text-lg">
+                    {/* Gradient Thumbnail */}
+                    <div
+                      className={`w-20 h-20 bg-gradient-to-br ${getGradientColor(
+                        index
+                      )} rounded-xl flex-shrink-0 flex items-center justify-center text-white font-bold text-2xl shadow-lg group-hover:shadow-xl transition-shadow duration-300`}
+                    >
                       {index + 1}
                     </div>
 
@@ -264,25 +264,26 @@ export default function BoardsDashboard() {
                     <div className="flex-1 min-w-0">
                       <h3
                         onClick={() => handleSelectBoard(ws.id)}
-                        className="text-lg font-semibold text-gray-900 mb-1 cursor-pointer hover:text-blue-600"
+                        className="text-lg font-semibold text-gray-900 mb-1 cursor-pointer hover:text-[#4596ff] transition-colors duration-200"
                       >
                         {ws.name}
                       </h3>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-600 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-[#4596ff] rounded-full"></span>
                         Created {new Date(ws.created_at).toLocaleDateString()}
                       </p>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <button
                         onClick={() =>
                           toggleStar(ws.id, ws.is_starred || false)
                         }
-                        className={`transition-colors ${
+                        className={`p-2 rounded-lg transition-all duration-300 ${
                           ws.is_starred
-                            ? "text-red-500"
-                            : "text-gray-400 hover:text-yellow-500"
+                            ? "text-[#8e5eff] bg-[#8e5eff]/10"
+                            : "text-gray-400 hover:text-[#8e5eff] hover:bg-[#8e5eff]/10"
                         }`}
                       >
                         <Star
@@ -296,7 +297,7 @@ export default function BoardsDashboard() {
                           e.stopPropagation();
                           handleEditWorkspace({ id: ws.id, name: ws.name });
                         }}
-                        className="p-1 hover:bg-gray-200 rounded transition-colors"
+                        className="p-2 hover:bg-[#4596ff]/10 rounded-lg transition-all duration-300"
                         title="Edit board"
                       >
                         <EditIcon size={24} color="#6B7280" />
@@ -305,28 +306,28 @@ export default function BoardsDashboard() {
                         onClick={() =>
                           setOpenDropdown(openDropdown === ws.id ? null : ws.id)
                         }
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-[#8e5eff]/5 rounded-lg transition-all duration-300"
                       >
                         <MoreHorizontal className="w-6 h-6" />
                       </button>
                     </div>
 
-                    {/* Dropdown Menu */}
+                    {/* Dropdown Menu with glass effect */}
                     {openDropdown === ws.id && (
-                      <div className="absolute right-6 top-18 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                      <div className="absolute right-6 top-20 mt-2 w-52 bg-white/90 backdrop-blur-xl border border-white/40 rounded-xl shadow-2xl z-[100]">
                         <button
                           onClick={() => archiveBoard(ws.id)}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                          className="w-full flex items-center gap-3 px-4 py-3 text-[#4596ff] hover:bg-[#4596ff]/10 transition-all duration-200"
                         >
                           <Archive className="w-5 h-5" />
-                          <span>Archive Board</span>
+                          <span className="font-medium">Archive Board</span>
                         </button>
                         <button
                           onClick={() => deleteBoard(ws.id)}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="w-full flex items-center gap-3 px-4 py-3 text-[#8e5eff] hover:bg-[#8e5eff]/10 transition-all duration-200"
                         >
                           <DeleteIcon size={20} color="currentColor" />
-                          <span>Delete Board</span>
+                          <span className="font-medium">Delete Board</span>
                         </button>
                       </div>
                     )}
@@ -349,6 +350,32 @@ export default function BoardsDashboard() {
         workspaceName={selectedWorkspace?.name || ""}
         isLoading={workspaceLoading}
       />
+
+      <style jsx global>{`
+        @keyframes blob {
+          0% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          100% {
+            transform: translate(0px, 0px) scale(1);
+          }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
     </div>
   );
 }
