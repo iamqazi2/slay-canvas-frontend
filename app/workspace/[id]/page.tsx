@@ -354,50 +354,6 @@ const ChatNode = ({
 
   return (
     <div className="w-full h-full relative">
-      {/* Left handle */}
-      <Handle
-        type="source"
-        position={Position.Left}
-        id="left"
-        onMouseDown={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-        }}
-        style={{
-          background: "#F0F5F7",
-          width: "24px",
-          height: "24px",
-          border: "1px solid rgba(69, 150, 255, 0.1)",
-          boxShadow: "0 0 8px rgba(69, 150, 255, 0.3)",
-          left: "-28px",
-          top: "55%",
-          transform: "translateY(-50%)",
-          zIndex: 1000,
-        }}
-      />
-
-      {/* Right handle */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="right"
-        onMouseDown={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-        }}
-        style={{
-          background: "#F0F5F7",
-          width: "24px",
-          height: "24px",
-          border: "1px solid rgba(69, 150, 255, 0.1)",
-          boxShadow: "0 0 8px rgba(69, 150, 255, 0.3)",
-          right: "-28px",
-          top: "55%",
-          transform: "translateY(-50%)",
-          zIndex: 1000,
-        }}
-      />
-
       {/* Only show loading overlay for non-search KBs */}
       {!isSearchKB && data.isLoading && (
         <div className="absolute inset-0 bg-white/10 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
@@ -414,6 +370,7 @@ const ChatNode = ({
           onWorkspaceUpdate={data.onWorkspaceUpdate}
           workspaceId={data.workspace?.id}
           useExistingSearchKb={true} // Search KB nodes use existing search KBs
+          showHandles={true}
         />
       ) : (
         <SimpleChatInterface
@@ -1384,12 +1341,30 @@ export default function WorkspacePage() {
             const sourceKbNodeId = `kb-${kb.id}`;
             const targetKbNodeId = `kb-${connection.kb_id}`;
 
+            // Determine target handle based on the connection
+            // Since both KBs will have the same handle info, we need to find the target KB's handle
+            const targetKb = currentWorkspace.knowledge_bases?.find(
+              (tkb) => tkb.id === connection.kb_id
+            );
+            const targetConnection = targetKb?.connected_notebooks?.find(
+              (conn) => conn.kb_id === kb.id
+            );
+            const targetHandle = targetConnection?.handle || "left"; // Use the target KB's handle for this connection
+
+            console.log("Creating KB-to-KB edge:", {
+              sourceKbNodeId,
+              targetKbNodeId,
+              sourceHandle: connection.handle,
+              targetHandle,
+              connection,
+            });
+
             existingEdges.push({
               id: `${sourceKbNodeId}-${targetKbNodeId}`,
               source: sourceKbNodeId,
               target: targetKbNodeId,
               sourceHandle: connection.handle || "right", // Use the handle from connected_notebooks
-              targetHandle: "left", // Default target handle
+              targetHandle: targetHandle, // Use the target KB's handle
               type: "default",
               style: { stroke: "#FF9500", strokeDasharray: "5,5" }, // Different color for KB-KB connections
             });
