@@ -327,6 +327,7 @@ const ChatPage = () => {
                 : undefined
             }
             className="h-full"
+            workspaceId={workspaceId ?? undefined}
             initialConversationId={
               conversationId ? parseInt(conversationId) : undefined
             }
