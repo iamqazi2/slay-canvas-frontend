@@ -466,6 +466,15 @@ export default function WorkspacePage() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
+  // Viewport state for persistence across page refreshes
+  const [viewport, setViewport] = useState(() => {
+    if (typeof window !== 'undefined' && workspaceId) {
+      const saved = localStorage.getItem(`workspace-${workspaceId}-viewport`);
+      return saved ? JSON.parse(saved) : { x: 0, y: 0, zoom: 1 };
+    }
+    return { x: 0, y: 0, zoom: 1 };
+  });
+
   // Modal states
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
@@ -480,6 +489,27 @@ export default function WorkspacePage() {
       fetchWorkspaceDetails(workspaceId);
     }
   }, [isAuthenticated, workspaceId, fetchWorkspaceDetails]);
+
+  // Update viewport in localStorage when it changes
+  const handleViewportChange = useCallback((newViewport: { x: number; y: number; zoom: number }) => {
+    setViewport(newViewport);
+    if (typeof window !== 'undefined' && workspaceId) {
+      localStorage.setItem(`workspace-${workspaceId}-viewport`, JSON.stringify(newViewport));
+    }
+  }, [workspaceId]);
+
+  // Reset viewport when workspace changes
+  useEffect(() => {
+    if (workspaceId) {
+      const saved = localStorage.getItem(`workspace-${workspaceId}-viewport`);
+      if (saved) {
+        const parsedViewport = JSON.parse(saved);
+        setViewport(parsedViewport);
+      } else {
+        setViewport({ x: 0, y: 0, zoom: 1 });
+      }
+    }
+  }, [workspaceId]);
 
   // Load workspace assets when currentWorkspace changes
   useEffect(() => {
@@ -1726,7 +1756,7 @@ export default function WorkspacePage() {
             nodeTypes={nodeTypes}
             isValidConnection={() => true}
             connectionMode={ConnectionMode.Loose}
-            defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+            defaultViewport={viewport}
             defaultEdgeOptions={{
               style: { stroke: "#4596FF", strokeDasharray: "5,5" },
             }}
