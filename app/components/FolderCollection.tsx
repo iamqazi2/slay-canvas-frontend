@@ -1,5 +1,11 @@
 "use client";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { assetApi } from "../utils/assetApi";
 import { getAssetIdFromComponentId } from "../utils/assetUtils";
@@ -62,131 +68,198 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
   // Use refs to track initial values without causing re-renders added
   const initialNameRef = useRef<string>(initialData?.name || "Collection");
 
-  const renderAssetComponent = (asset: AssetItem) => {
-    const getAssetWidth = (type: string) => {
-      switch (type) {
-        case "videoCollection":
-          return "400px";
-        case "imageCollection":
-          return "296px";
-        case "audioPlayer":
-          return "400px";
-        case "pdfDocument":
-          return "300px";
-        case "wikipediaLink":
-          return "300px";
-        case "text":
-          return "300px";
-        default:
-          return "300px";
-      }
-    };
+  const handleRemoveAsset = useCallback(
+    async (assetId: string) => {
+      // Set flag to prevent sync conflicts during local updates
+      isLocalUpdateRef.current = true;
 
-    const component = (() => {
-      switch (asset.type) {
-        case "videoCollection":
-          return (
-            <VideoPreview
-              key={asset.id}
-              file={asset.data?.file}
-              src={asset.data?.text}
-              onClose={() => handleRemoveAsset(asset.id)}
-            />
-          );
-        case "audioPlayer":
-          return (
-            <AudioPlayer
-              key={asset.id}
-              id={asset.id}
-              inline={true}
-              initialData={
-                asset.data?.file
-                  ? { file: asset.data.file }
-                  : asset.data?.url
-                  ? {
-                      url: asset.data.url,
-                      name: asset.data.title || asset.title,
-                    }
-                  : undefined
-              }
-              onClose={() => handleRemoveAsset(asset.id)}
-            />
-          );
-        case "imageCollection":
-          return (
-            <ImageCollection
-              key={asset.id}
-              id={asset.id}
-              inline={true}
-              initialData={
-                asset.data?.files
-                  ? { files: asset.data.files }
-                  : asset.data?.file
-                  ? { files: [asset.data.file] }
-                  : asset.data?.url
-                  ? {
-                      url: asset.data.url,
-                      title: asset.data.title || asset.title,
-                    }
-                  : undefined
-              }
-              onClose={() => handleRemoveAsset(asset.id)}
-            />
-          );
-        case "pdfDocument":
-          return (
-            <PdfDocument
-              key={asset.id}
-              id={asset.id}
-              inline={true}
-              initialData={
-                asset.data?.file
-                  ? { file: asset.data.file }
-                  : asset.data?.url
-                  ? {
-                      url: asset.data.url,
-                      title: asset.data.title || asset.title,
-                    }
-                  : undefined
-              }
-              onClose={() => handleRemoveAsset(asset.id)}
-            />
-          );
-        case "wikipediaLink":
-          return (
-            <WikipediaLink
-              key={asset.id}
-              id={asset.id}
-              inline={true}
-              initialData={
-                asset.data?.text ? { text: asset.data.text } : undefined
-              }
-              onClose={() => handleRemoveAsset(asset.id)}
-            />
-          );
-        case "text":
-          return (
-            <TextCollection
-              key={asset.id}
-              id={asset.id}
-              inline={true}
-              initialData={
-                asset.data?.text
-                  ? { text: asset.data.text }
-                  : asset.data?.content
-                  ? { text: asset.data.content }
-                  : undefined
-              }
-              onClose={() => handleRemoveAsset(asset.id)}
-            />
-          );
-        default:
-          return null;
-      }
-    })();
+      // Remove from local state immediately for UI responsiveness
+      setAssets((prevAssets) => prevAssets.filter((a) => a.id !== assetId));
 
-    return <div style={{ width: getAssetWidth(asset.type) }}>{component}</div>;
-  };
+      // Delete asset from backend
+      if (currentWorkspaceId && id?.startsWith("collection-")) {
+        try {
+          const assetIdNum = getAssetIdFromComponentId(assetId);
+          if (assetIdNum) {
+            await assetApi.deleteAsset(currentWorkspaceId, assetIdNum);
+            console.log(
+              `Successfully deleted asset ${assetIdNum} from workspace ${currentWorkspaceId}`
+            );
+
+            // For the event dispatch, we need the current assets, so use a functional update
+            setAssets((currentAssets) => {
+              const updatedAssets = currentAssets.filter(
+                (a) => a.id !== assetId
+              );
+              // Dispatch updateComponent event to update the collection in the dashboard
+              const updateEvent = new CustomEvent("updateComponent", {
+                detail: {
+                  componentId: id,
+                  data: { name, assets: updatedAssets },
+                },
+              });
+              window.dispatchEvent(updateEvent);
+              return updatedAssets;
+            });
+          } else {
+            console.warn(
+              "Could not extract asset ID from component ID:",
+              assetId
+            );
+          }
+        } catch (error) {
+          console.error("Failed to unlink asset from collection:", error);
+          // Revert the local state change on error - restore to previous state
+          setAssets((prevAssets) => {
+            // This is a bit tricky since we already removed it, but we'll try to restore
+            showToast("Failed to remove asset from collection", "error");
+            return prevAssets; // Keep the current state since removal already happened
+          });
+        }
+      }
+    },
+    [currentWorkspaceId, id, name, showToast]
+  );
+
+  const renderAssetComponent = useCallback(
+    (asset: AssetItem) => {
+      const getAssetWidth = (type: string) => {
+        switch (type) {
+          case "videoCollection":
+            return "400px";
+          case "imageCollection":
+            return "296px";
+          case "audioPlayer":
+            return "400px";
+          case "pdfDocument":
+            return "300px";
+          case "wikipediaLink":
+            return "300px";
+          case "text":
+            return "300px";
+          default:
+            return "300px";
+        }
+      };
+
+      const component = (() => {
+        switch (asset.type) {
+          case "videoCollection":
+            return (
+              <VideoPreview
+                key={asset.id}
+                file={asset.data?.file}
+                src={asset.data?.text}
+                onClose={() => handleRemoveAsset(asset.id)}
+              />
+            );
+          case "audioPlayer":
+            return (
+              <AudioPlayer
+                key={asset.id}
+                id={asset.id}
+                inline={true}
+                initialData={
+                  asset.data?.file
+                    ? { file: asset.data.file }
+                    : asset.data?.url
+                    ? {
+                        url: asset.data.url,
+                        name: asset.data.title || asset.title,
+                      }
+                    : undefined
+                }
+                onClose={() => handleRemoveAsset(asset.id)}
+              />
+            );
+          case "imageCollection":
+            return (
+              <ImageCollection
+                key={asset.id}
+                id={asset.id}
+                inline={true}
+                initialData={
+                  asset.data?.files
+                    ? { files: asset.data.files }
+                    : asset.data?.file
+                    ? { files: [asset.data.file] }
+                    : asset.data?.url
+                    ? {
+                        url: asset.data.url,
+                        title: asset.data.title || asset.title,
+                      }
+                    : undefined
+                }
+                onClose={() => handleRemoveAsset(asset.id)}
+              />
+            );
+          case "pdfDocument":
+            return (
+              <PdfDocument
+                key={asset.id}
+                id={asset.id}
+                inline={true}
+                initialData={
+                  asset.data?.file
+                    ? { file: asset.data.file }
+                    : asset.data?.url
+                    ? {
+                        url: asset.data.url,
+                        title: asset.data.title || asset.title,
+                      }
+                    : undefined
+                }
+                onClose={() => handleRemoveAsset(asset.id)}
+              />
+            );
+          case "wikipediaLink":
+            return (
+              <WikipediaLink
+                key={asset.id}
+                id={asset.id}
+                inline={true}
+                initialData={
+                  asset.data?.text ? { text: asset.data.text } : undefined
+                }
+                onClose={() => handleRemoveAsset(asset.id)}
+              />
+            );
+          case "text":
+            return (
+              <TextCollection
+                key={asset.id}
+                id={asset.id}
+                inline={true}
+                initialData={
+                  asset.data?.text
+                    ? { text: asset.data.text }
+                    : asset.data?.content
+                    ? { text: asset.data.content }
+                    : undefined
+                }
+                onClose={() => handleRemoveAsset(asset.id)}
+              />
+            );
+          default:
+            return null;
+        }
+      })();
+
+      return (
+        <div style={{ width: getAssetWidth(asset.type) }}>{component}</div>
+      );
+    },
+    [handleRemoveAsset]
+  );
+
+  // Memoize the rendered assets to prevent re-rendering when position changes
+  const renderedAssets = useMemo(() => {
+    return assets.map((asset) => (
+      <div className="w-fit" key={asset.id}>
+        {renderAssetComponent(asset)}
+      </div>
+    ));
+  }, [assets, renderAssetComponent]);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -325,11 +398,29 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
     }
   }, [id, inline, name, assets]);
 
-  // Sync assets state with initialData when it changes
+  // Use a ref to track when we're making local changes to prevent sync conflicts
+  const isLocalUpdateRef = useRef(false);
+
+  // Controlled sync with initialData to prevent infinite loops
+  // Only update when the array length changes or when asset IDs differ
   useEffect(() => {
-    if (initialData?.assets) {
-      setAssets(initialData.assets);
+    if (initialData?.assets && !isLocalUpdateRef.current) {
+      const currentAssetIds = new Set(assets.map((a) => a.id));
+      const newAssetIds = new Set(initialData.assets.map((a) => a.id));
+
+      // Only update if there's a real difference in assets
+      const hasDifference =
+        currentAssetIds.size !== newAssetIds.size ||
+        [...currentAssetIds].some((id) => !newAssetIds.has(id)) ||
+        [...newAssetIds].some((id) => !currentAssetIds.has(id));
+
+      if (hasDifference) {
+        setAssets(initialData.assets);
+      }
     }
+    // Reset the flag after processing
+    isLocalUpdateRef.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData?.assets]);
 
   // Handle drop of assets
@@ -344,6 +435,9 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
           title: dragData.title,
           data: dragData.data,
         };
+
+        // Set flag to prevent sync conflicts during local updates
+        isLocalUpdateRef.current = true;
 
         // Check for duplicates
         setAssets((prev) => {
@@ -436,44 +530,6 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
   const handleNameKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       handleNameSave();
-    }
-  };
-
-  const handleRemoveAsset = async (assetId: string) => {
-    // Remove from local state immediately for UI responsiveness
-    const updatedAssets = assets.filter((a) => a.id !== assetId);
-    setAssets(updatedAssets);
-
-    // Delete asset from backend
-    if (currentWorkspaceId && id?.startsWith("collection-")) {
-      try {
-        const assetIdNum = getAssetIdFromComponentId(assetId);
-        if (assetIdNum) {
-          await assetApi.deleteAsset(currentWorkspaceId, assetIdNum);
-          console.log(
-            `Successfully deleted asset ${assetIdNum} from workspace ${currentWorkspaceId}`
-          );
-
-          // Dispatch updateComponent event to update the collection in the dashboard
-          const updateEvent = new CustomEvent("updateComponent", {
-            detail: {
-              componentId: id,
-              data: { name, assets: updatedAssets },
-            },
-          });
-          window.dispatchEvent(updateEvent);
-        } else {
-          console.warn(
-            "Could not extract asset ID from component ID:",
-            assetId
-          );
-        }
-      } catch (error) {
-        console.error("Failed to unlink asset from collection:", error);
-        // Revert the local state change on error
-        setAssets(assets); // Restore original assets
-        showToast("Failed to remove asset from collection", "error");
-      }
     }
   };
 
@@ -586,12 +642,7 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-x-2 gap-y-2">
-              {assets.map((asset) => (
-                <div className="w-fit" key={asset.id}>
-                  {/* Render the actual component */}
-                  {renderAssetComponent(asset)}
-                </div>
-              ))}
+              {renderedAssets}
             </div>
           )}
         </div>
