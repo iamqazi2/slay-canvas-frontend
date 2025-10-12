@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { assetApi } from "../utils/assetApi";
 import { getAssetIdFromComponentId } from "../utils/assetUtils";
@@ -62,7 +62,45 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
   // Use refs to track initial values without causing re-renders added
   const initialNameRef = useRef<string>(initialData?.name || "Collection");
 
-  const renderAssetComponent = (asset: AssetItem) => {
+  const handleRemoveAsset = useCallback(async (assetId: string) => {
+    // Remove from local state immediately for UI responsiveness
+    const updatedAssets = assets.filter((a) => a.id !== assetId);
+    setAssets(updatedAssets);
+
+    // Delete asset from backend
+    if (currentWorkspaceId && id?.startsWith("collection-")) {
+      try {
+        const assetIdNum = getAssetIdFromComponentId(assetId);
+        if (assetIdNum) {
+          await assetApi.deleteAsset(currentWorkspaceId, assetIdNum);
+          console.log(
+            `Successfully deleted asset ${assetIdNum} from workspace ${currentWorkspaceId}`
+          );
+
+          // Dispatch updateComponent event to update the collection in the dashboard
+          const updateEvent = new CustomEvent("updateComponent", {
+            detail: {
+              componentId: id,
+              data: { name, assets: updatedAssets },
+            },
+          });
+          window.dispatchEvent(updateEvent);
+        } else {
+          console.warn(
+            "Could not extract asset ID from component ID:",
+            assetId
+          );
+        }
+      } catch (error) {
+        console.error("Failed to unlink asset from collection:", error);
+        // Revert the local state change on error
+        setAssets(assets); // Restore original assets
+        showToast("Failed to remove asset from collection", "error");
+      }
+    }
+  }, [assets, currentWorkspaceId, id, name, showToast]);
+
+  const renderAssetComponent = useCallback((asset: AssetItem) => {
     const getAssetWidth = (type: string) => {
       switch (type) {
         case "videoCollection":
@@ -186,7 +224,16 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
     })();
 
     return <div style={{ width: getAssetWidth(asset.type) }}>{component}</div>;
-  };
+  }, [handleRemoveAsset]);
+
+  // Memoize the rendered assets to prevent re-rendering when position changes
+  const renderedAssets = useMemo(() => {
+    return assets.map((asset) => (
+      <div className="w-fit" key={asset.id}>
+        {renderAssetComponent(asset)}
+      </div>
+    ));
+  }, [assets, renderAssetComponent]);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -439,44 +486,6 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
     }
   };
 
-  const handleRemoveAsset = async (assetId: string) => {
-    // Remove from local state immediately for UI responsiveness
-    const updatedAssets = assets.filter((a) => a.id !== assetId);
-    setAssets(updatedAssets);
-
-    // Delete asset from backend
-    if (currentWorkspaceId && id?.startsWith("collection-")) {
-      try {
-        const assetIdNum = getAssetIdFromComponentId(assetId);
-        if (assetIdNum) {
-          await assetApi.deleteAsset(currentWorkspaceId, assetIdNum);
-          console.log(
-            `Successfully deleted asset ${assetIdNum} from workspace ${currentWorkspaceId}`
-          );
-
-          // Dispatch updateComponent event to update the collection in the dashboard
-          const updateEvent = new CustomEvent("updateComponent", {
-            detail: {
-              componentId: id,
-              data: { name, assets: updatedAssets },
-            },
-          });
-          window.dispatchEvent(updateEvent);
-        } else {
-          console.warn(
-            "Could not extract asset ID from component ID:",
-            assetId
-          );
-        }
-      } catch (error) {
-        console.error("Failed to unlink asset from collection:", error);
-        // Revert the local state change on error
-        setAssets(assets); // Restore original assets
-        showToast("Failed to remove asset from collection", "error");
-      }
-    }
-  };
-
   const handleCloseComponent = () => {
     setIsDeleteModalOpen(true);
   };
@@ -586,12 +595,7 @@ const FolderCollection: React.FC<FolderCollectionProps> = ({
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-x-2 gap-y-2">
-              {assets.map((asset) => (
-                <div className="w-fit" key={asset.id}>
-                  {/* Render the actual component */}
-                  {renderAssetComponent(asset)}
-                </div>
-              ))}
+              {renderedAssets}
             </div>
           )}
         </div>
