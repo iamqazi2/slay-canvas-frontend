@@ -326,6 +326,7 @@ const ChatPage = () => {
                   }
                 : undefined
             }
+            isFullScreen={true}
             className="h-full"
             workspaceId={workspaceId ?? undefined}
             initialConversationId={

@@ -96,7 +96,7 @@ const ChatStep: React.FC<ChatStepProps> = ({
       <div className="bg-white flex flex-col justify-between">
         {" "}
         <div
-          className={`bg-white shadow-xl border-[1px] border-black/10 flex flex-col py-6 gap-4 px-2 m-4 rounded-[16px] transition-all duration-300 ${
+          className={`bg-white border-[1px] border-black/10 flex flex-col py-6 gap-4 px-2 m-4 rounded-[16px] transition-all duration-300 ${
             isSidebarExpanded ? "w-80" : "w-20"
           }`}
         >
