@@ -124,7 +124,7 @@ const AssetsStep: React.FC<AssetsStepProps> = ({
             </div>
           </div>
 
-          <div className="space-y-4 mb-8 flex-1 overflow-y-scroll">
+          <div className="space-y-4 mb-8 flex-1 overflow-y-auto noDrag">
             {sources.map((source) => (
               <div
                 key={source.id}
