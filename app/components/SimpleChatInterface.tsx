@@ -603,6 +603,26 @@ export default function SimpleChatInterface({
     </svg>
   );
 
+  // Plus Icon
+  const PlusIcon: React.FC = () => (
+    <svg
+      width="30"
+      height="30"
+      viewBox="0 0 24 24"
+      fill="none"
+      color="#1279FF"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M12 5V19M5 12H19"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+
   // Send Icon
   const SendIcon: React.FC = () => (
     <svg
@@ -1042,33 +1062,45 @@ export default function SimpleChatInterface({
               title={isSidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
             >
               <svg
-                width="40"
-                height="40"
-                viewBox="0 0 21 20"
+                width="32"
+                height="32"
+                viewBox="0 0 32 32"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <path
-                  d="M7.70142 1.5V18.5M1.70142 7.4C1.70142 5.16 1.70142 4.04 2.13742 3.184C2.5209 2.43139 3.1328 1.81949 3.88542 1.436C4.74142 1 5.86142 1 8.10142 1H13.3014C15.5414 1 16.6614 1 17.5174 1.436C18.27 1.81949 18.8819 2.43139 19.2654 3.184C19.7014 4.04 19.7014 5.16 19.7014 7.4V12.6C19.7014 14.84 19.7014 15.96 19.2654 16.816C18.8819 17.5686 18.27 18.1805 17.5174 18.564C16.6614 19 15.5414 19 13.3014 19H8.10142C5.86142 19 4.74142 19 3.88542 18.564C3.1328 18.1805 2.5209 17.5686 2.13742 16.816C1.70142 15.96 1.70142 14.84 1.70142 12.6V7.4Z"
-                  stroke="#1E1E1E"
-                  strokeOpacity="0.8"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                  d="M8.74408 20.3417L8.64258 20.1753V23.465V20.1763L8.74408 20.3417Z"
+                  fill="#1E1E1E"
+                />
+                <path
+                  d="M11.6836 23.3109L11.6738 23.3054L11.6836 23.3109Z"
+                  fill="#1E1E1E"
+                />
+                <path
+                  d="M11.6805 23.3105L11.6724 23.3054L11.6561 23.2953C10.4706 22.5481 9.47398 21.5372 8.74408 20.3414L8.64258 20.176V23.4647H11.6805V23.3105Z"
+                  fill="#1E1E1E"
+                />
+                <path
+                  d="M11.6722 23.3035L11.656 23.2923C11.1406 22.9697 10.6591 22.5958 10.2188 22.1765C10.6591 22.5976 11.1406 22.9735 11.656 23.2984L11.6722 23.3035Z"
+                  fill="#1E1E1E"
+                />
+                <path
+                  d="M15.9921 32C18.7534 31.9997 21.4677 31.2856 23.8713 29.9272C26.2748 28.5687 28.2859 26.6121 29.7093 24.2473C31.1326 21.8825 31.9197 19.19 31.9942 16.4314C32.0686 13.6728 31.4279 10.9418 30.1342 8.5038C28.8405 6.06579 26.9378 4.00363 24.611 2.51766C22.2842 1.03169 19.6124 0.172436 16.8551 0.0233646C14.0979 -0.125707 11.3489 0.440475 8.87527 1.66691C6.40165 2.89334 4.28749 4.73833 2.73817 7.02264C3.72198 6.88777 4.72162 6.92208 5.69386 7.12408L6.19122 7.22551C8.34284 4.81639 11.3107 3.28864 14.5227 2.93682C17.7346 2.58499 20.9631 3.43399 23.5858 5.32015C26.2085 7.2063 28.0396 9.99605 28.7262 13.1515C29.4127 16.307 28.9061 19.6048 27.3039 22.409C25.7017 25.2133 23.1174 27.3254 20.0493 28.3383C16.9812 29.3512 13.6465 29.193 10.6882 27.8943C7.72981 26.5957 5.35729 24.2484 4.02801 21.3051C2.69873 18.3618 2.50682 15.0309 3.48927 11.9546C3.54306 11.7852 3.60092 11.6168 3.66182 11.4474C3.72272 11.278 3.78667 11.1147 3.85366 10.9514H3.91354C4.06813 10.951 4.22263 10.9587 4.37638 10.9747C4.54414 10.9907 4.71087 11.0161 4.87577 11.0508C5.72101 11.2279 6.50185 11.6323 7.13413 12.2202C7.76641 12.8081 8.22616 13.5573 8.46381 14.3871C8.52367 14.598 8.56811 14.8129 8.59678 15.0302C8.62668 15.2443 8.6416 15.4602 8.64144 15.6764V15.7434C8.64144 15.931 8.6526 16.1298 8.66986 16.3459C8.68711 16.562 8.71858 16.7882 8.75613 17.0032C9.03107 18.5791 9.78607 20.0316 10.918 21.1626C12.0499 22.2935 13.5036 23.0476 15.0804 23.3219C16.6573 23.5963 18.2804 23.3775 19.7281 22.6953C21.1759 22.0132 22.3776 20.9011 23.1692 19.5108L23.1895 19.4743C23.2839 19.3039 23.3661 19.1477 23.4372 18.9945C23.5184 18.8231 23.5965 18.6435 23.6706 18.4498C23.7051 18.3595 23.7386 18.2672 23.7721 18.1738C23.8452 17.9547 23.9051 17.7508 23.9548 17.548C24.0414 17.1936 24.1035 16.8336 24.1406 16.4707C24.1673 16.2112 24.1809 15.9505 24.1812 15.6896V15.6764C24.1812 15.4563 24.172 15.2352 24.1538 15.0201C24.1335 14.7949 24.1051 14.5738 24.0685 14.3638C23.8289 12.9702 23.2129 11.6685 22.2871 10.5993C21.3612 9.53002 20.1608 8.73383 18.8152 8.29665C17.4697 7.85948 16.0302 7.79793 14.6522 8.11866C13.2742 8.43939 12.0101 9.13021 10.9963 10.1165L10.9607 10.15L10.9912 10.1886C11.6366 11.014 12.1308 11.9471 12.4508 12.9447L12.4843 13.0461L12.5462 12.9568C13.0608 12.226 13.7721 11.6559 14.5978 11.3128C15.4235 10.9696 16.3295 10.8675 17.2109 11.0182C18.0923 11.1689 18.9129 11.5662 19.5775 12.1641C20.2421 12.762 20.7234 13.536 20.9656 14.3962C21.0253 14.6076 21.0704 14.8228 21.1006 15.0404C21.1292 15.2543 21.1438 15.4698 21.1443 15.6855C21.1436 16.8246 20.7312 17.9251 19.9831 18.7844C19.2351 19.6438 18.2016 20.2042 17.0729 20.3626C15.9443 20.521 14.7963 20.2667 13.8404 19.6465C12.8844 19.0262 12.1848 18.0818 11.8702 16.987L11.856 16.9485C11.8489 16.9211 11.8407 16.8937 11.8357 16.8643C11.796 16.7139 11.7645 16.5615 11.7413 16.4078C11.7413 16.3956 11.7413 16.3845 11.7413 16.3733C11.7402 16.3635 11.7402 16.3537 11.7413 16.3439L11.722 16.1816C11.7045 16.0212 11.6957 15.86 11.6956 15.6987V15.6855C11.6956 15.4654 11.6875 15.2443 11.6702 15.0282C11.653 14.8121 11.6215 14.5849 11.5839 14.3719C11.3511 13.0105 10.7585 11.736 9.86751 10.6802C8.97652 9.62442 7.81946 8.82572 6.51602 8.36671C6.35362 8.30855 6.18918 8.25614 6.02272 8.20948C5.8522 8.1618 5.68067 8.11919 5.5071 8.08369C4.36655 7.84436 3.18648 7.86726 2.05608 8.15064C0.686505 10.5843 -0.0221442 13.3337 0.00052739 16.1258C0.0231989 18.9179 0.776402 21.6555 2.18532 24.0666C3.59423 26.4778 5.60983 28.4786 8.03191 29.8703C10.454 31.262 13.1982 31.9962 15.9921 32Z"
+                  fill="#1E1E1E"
                 />
               </svg>
+              {isSidebarExpanded ? (
+                <span className="text-sm ml-2">SlayCanvas ChatBot</span>
+              ) : (
+                ""
+              )}{" "}
             </button>
+            <div className="pb-4 border-b border-gray-200"></div>
 
             {isSidebarExpanded ? (
               /* Expanded Sidebar View */
               <div className="flex flex-col gap-4 w-full px-2 flex-1 overflow-hidden">
                 {/* Top Section */}
-                <div className="pb-4 border-b border-gray-200">
-                  <div className="flex items-center">
-                    <LogoIcon size={28} />
-                    <span className="text-sm ml-2">SlayCanvas ChatBot</span>
-                  </div>
-                </div>
 
                 {/* Recent Chats Section */}
                 <div className="flex-1 overflow-y-auto">
@@ -1146,36 +1178,50 @@ export default function SimpleChatInterface({
                 </div>
               </div>
             ) : (
-              /* Collapsed Sidebar View */
-              <div className="flex flex-col items-center gap-4 flex-1 justify-between">
-                {/* Chat icon in collapsed mode */}
-                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <ChatIcon fill="#1E1E1E" />
+              <>
+                {" "}
+                <div className="flex justify-center">
+                  {" "}
+                  <button
+                    onClick={handleNewChat}
+                    className="w-12 h-12 bg-white rounded-lg flex items-center justify-center transition-colors"
+                    title="New Chat"
+                  >
+                    <PlusIcon />
+                  </button>
                 </div>
+                <div className="flex flex-col items-center gap-4 flex-1 justify-between">
+                  {/* Chat icon in collapsed mode */}
+                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <ChatIcon fill="#1E1E1E" />
+                  </div>
 
-                {/* Maximize/Minimize icon in collapsed mode */}
-                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                  {pathname !== "/chat" ? (
-                    <button
-                      onClick={() =>
-                        router.push(`/chat?kb=${knowledgeBase.name}`)
-                      }
-                      className="w-full h-full flex items-center justify-center"
-                      title="Maximize the Chat"
-                    >
-                      <MaximizeIcon />
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => router.push(`/workspace/${workspaceId}`)}
-                      className="w-full h-full flex items-center justify-center"
-                      title="Minimize the Chat"
-                    >
-                      <MinimizeIcon />
-                    </button>
-                  )}
+                  {/* New Chat button in collapsed mode */}
+
+                  {/* Maximize/Minimize icon in collapsed mode */}
+                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                    {pathname !== "/chat" ? (
+                      <button
+                        onClick={() =>
+                          router.push(`/chat?kb=${knowledgeBase.name}`)
+                        }
+                        className="w-full h-full flex items-center justify-center"
+                        title="Maximize the Chat"
+                      >
+                        <MaximizeIcon />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => router.push(`/workspace/${workspaceId}`)}
+                        className="w-full h-full flex items-center justify-center"
+                        title="Minimize the Chat"
+                      >
+                        <MinimizeIcon />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
         </div>
@@ -1183,23 +1229,35 @@ export default function SimpleChatInterface({
         {/* Main Content Area */}
         <div className="flex-1 min-w-[300px] flex flex-col min-h-0">
           {/* Filter Tags and Model Selection */}
-          <div className="px-6 py-4 border-b border-gray-200 bg-white">
+          <div className="pr-6 pt-4 border-b border-gray-200 bg-white">
             <div className="flex items-center justify-between gap-4 mb-3">
-              <span className="text-sm font-medium text-gray-700">
-                Filter Content:
-              </span>
+              <div
+                className="flex gap-2 w-full overflow-x-auto bg-white shadow-md rounded-lg p-2"
+                style={{ scrollbarWidth: "none" }}
+              >
+                {filterTags.map((tag, index) => (
+                  <button
+                    key={index}
+                    className={`px-4 py-2 min-w-fit rounded-full text-sm font-medium transition-colors ${
+                      selectedFilters.has(tag)
+                        ? "bg-[#4596FF] text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                    onClick={() => toggleFilter(tag)}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-700">
-                  AI Model:
-                </span>
                 {/* Custom Model Dropdown */}
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
                     disabled={isStreaming}
-                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4596FF] focus:border-transparent bg-white hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+                    className="px-3 py-4 shadow-md whitespace-nowrap text-sm  rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4596FF] focus:border-transparent bg-white hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
                   >
-                    <span>
+                    <span className="whitespace-nowrap">
                       {
                         availableModels.find((m) => m.id === selectedModel)
                           ?.name
@@ -1244,24 +1302,6 @@ export default function SimpleChatInterface({
                   )}
                 </div>
               </div>
-            </div>
-            <div
-              className="flex gap-2 w-full overflow-x-auto"
-              style={{ scrollbarWidth: "none" }}
-            >
-              {filterTags.map((tag, index) => (
-                <button
-                  key={index}
-                  className={`px-4 py-2 min-w-fit rounded-full text-sm font-medium transition-colors ${
-                    selectedFilters.has(tag)
-                      ? "bg-[#4596FF] text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                  onClick={() => toggleFilter(tag)}
-                >
-                  {tag}
-                </button>
-              ))}
             </div>
           </div>
 
