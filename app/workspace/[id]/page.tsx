@@ -223,6 +223,122 @@ const renderComponent = (
   }
 };
 
+// Custom Edge Component for unlinkable connections
+const UnlinkableEdgeComponent = ({
+  id,
+  source,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  data,
+}: {
+  id: string;
+  source: string;
+  sourceX: number;
+  sourceY: number;
+  targetX: number;
+  targetY: number;
+  data?: {
+    onWorkspaceUpdate?: () => void;
+  };
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const { showToast } = useToast();
+  const params = useParams();
+  const workspaceId = params?.id ? parseInt(params.id as string) : null;
+
+  const handleUnlink = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (!workspaceId) {
+      showToast("Workspace ID not found", "error");
+      return;
+    }
+
+    try {
+      // Determine if this is asset or collection based on source node
+      const isCollection = source?.startsWith("collection-");
+      const isAsset = source?.startsWith("asset-");
+
+      if (isCollection) {
+        const collectionId = parseInt(source.replace("collection-", ""));
+        await knowledgeBaseApi.unlinkCollectionFromKnowledgeBase(
+          workspaceId,
+          collectionId
+        );
+        showToast("Collection unlinked from knowledge base", "success");
+      } else if (isAsset) {
+        const assetId = parseInt(source.replace("asset-", ""));
+        await knowledgeBaseApi.unlinkAssetFromKnowledgeBase(
+          workspaceId,
+          assetId
+        );
+        showToast("Asset unlinked from knowledge base", "success");
+      }
+
+      // Refresh workspace data
+      if (data?.onWorkspaceUpdate) {
+        await data.onWorkspaceUpdate();
+      }
+    } catch (error) {
+      console.error("Failed to unlink from knowledge base:", error);
+      showToast("Failed to unlink from knowledge base", "error");
+    }
+  };
+
+  const UnlinkIcon = () => (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M8 12H16M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+
+  return (
+    <>
+      <path
+        id={id}
+        d={`M ${sourceX} ${sourceY} L ${targetX} ${targetY}`}
+        stroke="#4596FF"
+        strokeDasharray="5,5"
+        strokeWidth={2}
+        fill="none"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      />
+      {/* Unlink button positioned at the midpoint of the edge */}
+      {isHovered && (
+        <foreignObject
+          x={(sourceX + targetX) / 2 - 10}
+          y={(sourceY + targetY) / 2 - 10}
+          width={20}
+          height={20}
+        >
+          <button
+            onClick={handleUnlink}
+            className="w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs"
+            title="Unlink from Knowledge Base"
+          >
+            <UnlinkIcon />
+          </button>
+        </foreignObject>
+      )}
+    </>
+  );
+};
+
 // Custom Node Components
 const AssetNode = ({
   data,
@@ -505,6 +621,10 @@ const nodeTypes = {
   chat: ChatNode,
 };
 
+const edgeTypes = {
+  unlinkable: UnlinkableEdgeComponent,
+};
+
 export default function WorkspacePage() {
   const { showToast } = useToast();
   const params = useParams();
@@ -559,7 +679,7 @@ export default function WorkspacePage() {
     if (isAuthenticated && workspaceId) {
       fetchWorkspaceDetails(workspaceId);
     }
-  }, [isAuthenticated, workspaceId, fetchWorkspaceDetails]);
+  }, [isAuthenticated, workspaceId]);
 
   // Update viewport in localStorage when it changes
   const handleViewportChange = useCallback(
@@ -1434,7 +1554,14 @@ export default function WorkspacePage() {
           target: kbNodeId,
           sourceHandle: asset.kb_connection_asset_handle || "right",
           targetHandle: asset.kb_connection_kb_handle || "left",
-          type: "default",
+          type: "unlinkable",
+          data: {
+            onWorkspaceUpdate: async () => {
+              if (workspaceId) {
+                await fetchWorkspaceDetails(workspaceId);
+              }
+            },
+          },
           style: { stroke: "#4596FF", strokeDasharray: "5,5" },
         });
       }
@@ -1454,7 +1581,14 @@ export default function WorkspacePage() {
             target: kbNodeId,
             sourceHandle: collection.kb_connection_asset_handle || "right",
             targetHandle: collection.kb_connection_kb_handle || "left",
-            type: "default",
+            type: "unlinkable",
+            data: {
+              onWorkspaceUpdate: async () => {
+                if (workspaceId) {
+                  await fetchWorkspaceDetails(workspaceId);
+                }
+              },
+            },
             style: { stroke: "#4596FF", strokeDasharray: "5,5" },
           });
         }
@@ -1882,6 +2016,7 @@ export default function WorkspacePage() {
             onConnect={onConnect}
             onNodeDragStop={onNodeDragStop}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             isValidConnection={() => true}
             connectionMode={ConnectionMode.Loose}
             defaultViewport={viewport}
