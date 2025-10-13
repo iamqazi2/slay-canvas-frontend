@@ -232,6 +232,10 @@ const AssetNode = ({
     onWorkspaceUpdate?: () => void;
   };
 }) => {
+  const { showToast } = useToast();
+  const params = useParams();
+  const workspaceId = params?.id ? parseInt(params.id as string) : null;
+
   const handleDragStart = (e: React.DragEvent) => {
     // Set drag data for the asset
     const dragData = {
@@ -267,9 +271,108 @@ const AssetNode = ({
     }
   };
 
+  // Helper function to extract asset ID from component ID
+  const getAssetIdFromComponentId = (componentId: string): number | null => {
+    // Component IDs often contain the asset ID - this depends on how they're structured
+    // You may need to adjust this based on your actual component ID format
+    const match = componentId.match(/(\d+)$/);
+    return match ? parseInt(match[1]) : null;
+  };
+
+  // Check if this asset/collection is linked to a knowledge base
+  const isLinkedToKB = () => {
+    if (!data.workspace) return false;
+
+    if (data.type === "folderCollection") {
+      // Check if collection is linked to KB
+      const collectionId = data.data?.collectionId;
+      if (collectionId && data.workspace.collections) {
+        const collection = data.workspace.collections.find(
+          (c) => c.id === collectionId
+        );
+        return (
+          collection?.knowledge_base_id !== null &&
+          collection?.knowledge_base_id !== undefined
+        );
+      }
+    } else {
+      // Check if asset is linked to KB
+      const assetId = getAssetIdFromComponentId(data.id);
+      if (assetId && data.workspace.assets) {
+        const asset = data.workspace.assets.find((a) => a.id === assetId);
+        return (
+          asset?.knowledge_base_id !== null &&
+          asset?.knowledge_base_id !== undefined
+        );
+      }
+    }
+    return false;
+  };
+
+  // Handle unlink from knowledge base
+  const handleUnlink = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (!workspaceId) {
+      showToast("Workspace ID not found", "error");
+      return;
+    }
+
+    try {
+      if (data.type === "folderCollection") {
+        // Unlink collection from KB
+        const collectionId = data.data?.collectionId;
+        if (collectionId) {
+          await knowledgeBaseApi.unlinkCollectionFromKnowledgeBase(
+            workspaceId,
+            collectionId
+          );
+          showToast("Collection unlinked from knowledge base", "success");
+        }
+      } else {
+        // Unlink asset from KB
+        const assetId = getAssetIdFromComponentId(data.id);
+        if (assetId) {
+          await knowledgeBaseApi.unlinkAssetFromKnowledgeBase(
+            workspaceId,
+            assetId
+          );
+          showToast("Asset unlinked from knowledge base", "success");
+        }
+      }
+
+      // Refresh workspace data
+      if (data.onWorkspaceUpdate) {
+        await data.onWorkspaceUpdate();
+      }
+    } catch (error) {
+      console.error("Failed to unlink from knowledge base:", error);
+      showToast("Failed to unlink from knowledge base", "error");
+    }
+  };
+
+  const UnlinkIcon = () => (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M8 12H16M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+
   return (
     <div
-      className="relative "
+      className="relative group"
       style={{
         border:
           data.type === "videoCollection" || data.type === "videoSocial"
@@ -287,6 +390,17 @@ const AssetNode = ({
           minWidth={300}
           minHeight={200}
         />
+      )}
+
+      {/* Unlink button - shown when asset/collection is linked to KB */}
+      {isLinkedToKB() && (
+        <button
+          onClick={handleUnlink}
+          className="absolute top-2 right-2 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+          title="Unlink from Knowledge Base"
+        >
+          <UnlinkIcon />
+        </button>
       )}
 
       {/* Left handle */}
@@ -1190,9 +1304,9 @@ export default function WorkspacePage() {
             data: {
               ...instance,
               workspace: currentWorkspace,
-              onWorkspaceUpdate: () => {
+              onWorkspaceUpdate: async () => {
                 if (workspaceId) {
-                  fetchWorkspaceDetails(workspaceId);
+                  await fetchWorkspaceDetails(workspaceId);
                 }
               },
             },
@@ -1415,6 +1529,10 @@ export default function WorkspacePage() {
     if (existingEdges.length > 0) {
       console.log("Creating edges for existing relationships:", existingEdges);
       setEdges(existingEdges);
+    } else {
+      // Clear all edges if no relationships exist
+      console.log("No existing relationships found, clearing all edges");
+      setEdges([]);
     }
   }, [
     currentWorkspace?.assets,
