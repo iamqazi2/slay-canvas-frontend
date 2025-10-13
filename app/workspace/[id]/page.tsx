@@ -353,7 +353,7 @@ const ChatNode = ({
   const isSearchKB = data.knowledgeBase.name.includes("kb_search");
 
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative" style={{ zIndex: -1 }}>
       {/* Only show loading overlay for non-search KBs */}
       {!isSearchKB && data.isLoading && (
         <div className="absolute inset-0 bg-white/10 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
@@ -1202,6 +1202,7 @@ export default function WorkspacePage() {
               instance.type === "folderCollection"
                 ? {}
                 : { width: dimensions.width, height: dimensions.height },
+            zIndex: 1, // Put assets in front of KBs
           };
         }),
         // Knowledge base (chat) nodes
@@ -1247,6 +1248,7 @@ export default function WorkspacePage() {
               },
             },
             style: { width: 800, height: 600 },
+            zIndex: -1, // Put KBs behind other elements
           };
         }),
         ...(showChatInFlow
@@ -1272,6 +1274,7 @@ export default function WorkspacePage() {
                     },
                   },
                   style: { width: 800, height: 600 },
+                  zIndex: -1, // Put chat flow behind assets too
                 };
               })(),
             ]
