@@ -312,10 +312,10 @@ const ChatStep: React.FC<ChatStepProps> = ({
         >
           {messages.length === 0 ? (
             <div className="h-full flex flex-col px-6 py-8">
-              <div className="flex flex-col max-w-lg">
+              <div className="flex flex-col ">
                 {/* Show KB Description as formatted markdown */}
                 {searchKb?.description ? (
-                  <div className="w-full max-w-2xl">
+                  <div className="w-full max-w-3xl">
                     <div className="prose prose-gray max-w-none text-left">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
