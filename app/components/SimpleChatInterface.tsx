@@ -41,6 +41,7 @@ interface SimpleChatInterfaceProps {
   attachedAssets?: ComponentInstance[];
   showHandles?: boolean; // Controls whether to show ReactFlow handles
   initialConversationId?: number; // Optional conversation ID to load initially
+  isFullScreen?: boolean; // Whether to display in full-screen mode
   onWorkspaceUpdate?: () => void; // Callback to refresh workspace data
   workspaceId?: number; // Optional workspace ID for navigation
 }
@@ -53,6 +54,7 @@ export default function SimpleChatInterface({
   showHandles = false,
   initialConversationId,
   workspaceId,
+  isFullScreen = false,
   onWorkspaceUpdate,
 }: SimpleChatInterfaceProps) {
   const { showToast } = useToast();
@@ -71,7 +73,7 @@ export default function SimpleChatInterface({
   const [isStreaming, setIsStreaming] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(isFullScreen);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -1051,7 +1053,7 @@ export default function SimpleChatInterface({
         {/* Left Sidebar */}
         <div className="bg-white flex flex-col justify-between">
           <div
-            className={`bg-white shadow-xl h-full border-[1px] border-black/10 flex flex-col py-6 gap-4 px-2 m-4 rounded-[16px] transition-all duration-300 ${
+            className={`bg-white h-full border-[1px] border-black/10 flex flex-col py-6 gap-4 px-2 m-4 rounded-[16px] transition-all duration-300 ${
               isSidebarExpanded ? "w-80" : "w-20"
             }`}
           >
