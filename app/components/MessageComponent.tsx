@@ -1,13 +1,19 @@
+import { Pin } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Message } from "./types/multiStepChatTypes";
-import { Pin } from "lucide-react";
 
 const MessageComponent: React.FC<{
   message: Message;
   onSaveNote?: (content: string) => void;
-}> = ({ message, onSaveNote }) => {
+  isStreaming?: boolean;
+}> = ({ message, onSaveNote, isStreaming = false }) => {
   const isUser = message.role === "user";
+
+  // Don't render if no content and not a user message (prevents empty white box during streaming)
+  if (!isUser && !message.content?.trim()) {
+    return null;
+  }
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
@@ -66,7 +72,7 @@ const MessageComponent: React.FC<{
           </div>
 
           {/* Save to Notes button for AI responses */}
-          {!isUser && onSaveNote && (
+          {!isUser && onSaveNote && !isStreaming && message.content?.trim() && (
             <div className="mt-3 pt-2 border-t  border-gray-100">
               <button
                 onClick={() => onSaveNote(message.content)}

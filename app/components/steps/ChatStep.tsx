@@ -441,6 +441,7 @@ const ChatStep: React.FC<ChatStepProps> = ({
                     key={message.id}
                     message={message}
                     onSaveNote={handleSaveNote}
+                    isStreaming={isStreaming}
                   />
                 ))}
 

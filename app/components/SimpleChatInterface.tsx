@@ -8,7 +8,7 @@ import {
 } from "@/app/types/workspace";
 import { apiClient } from "@/app/utils/apiClient";
 import { chatApi } from "@/app/utils/chatApi";
-import { Expand, ExpandIcon, Loader2 } from "lucide-react";
+import { Expand, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -942,6 +942,11 @@ export default function SimpleChatInterface({
       </svg>
     );
 
+    // Don't render if no content and not a user message (prevents empty white box during streaming)
+    if (!isUser && !message.content?.trim()) {
+      return null;
+    }
+
     return (
       <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
         <div className={`max-w-[80%] ${isUser ? "order-2" : "order-1"}`}>
@@ -1196,6 +1201,7 @@ export default function SimpleChatInterface({
                 </div>
               </div>
             ) : (
+              /* Collapsed Sidebar View */
               <>
                 <div className="flex justify-center">
                   <button
@@ -1206,8 +1212,34 @@ export default function SimpleChatInterface({
                     <PlusIcon />
                   </button>
                 </div>
-                {/* Spacer to push maximize button to bottom */}
-                <div className="flex-1"></div>
+
+                {/* Recent Chats Icons */}
+                <div className="flex flex-col gap-2 flex-1 overflow-y-auto">
+                  {recentChats.slice(0, 8).map((chat, index) => (
+                    <button
+                      key={chat.id}
+                      className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
+                        selectedChat === index
+                          ? "bg-[#4596FF] text-white"
+                          : "bg-white hover:bg-gray-50"
+                      }`}
+                      onClick={() => handleChatClick(index)}
+                      title={chat.name}
+                    >
+                      <ChatIcon
+                        fill={selectedChat === index ? "#fff" : "#1E1E1E"}
+                      />
+                    </button>
+                  ))}
+                  {recentChats.length > 8 && (
+                    <div className="w-12 h-8 flex items-center justify-center">
+                      <span className="text-xs text-gray-500">
+                        +{recentChats.length - 8}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
                 {/* Maximize/Minimize icon at bottom */}
                 <div className="flex justify-center pb-4">
                   <div className=" rounded-lg flex items-center justify-center">
