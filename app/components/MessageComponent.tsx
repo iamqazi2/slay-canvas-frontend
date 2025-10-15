@@ -1,6 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Message } from "./types/multiStepChatTypes";
+import { Pin } from "lucide-react";
 
 const MessageComponent: React.FC<{
   message: Message;
@@ -16,7 +17,7 @@ const MessageComponent: React.FC<{
             isUser ? "bg-[#4596FF]/20 text-black" : "bg-white text-black"
           }`}
         >
-          <div className="text-sm leading-relaxed prose prose-sm max-w-none">
+          <div className="text-[18px] leading-relaxed prose prose-sm max-w-none">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
@@ -50,13 +51,13 @@ const MessageComponent: React.FC<{
                   </blockquote>
                 ),
                 h1: ({ children }) => (
-                  <h1 className="text-lg font-semibold mb-2">{children}</h1>
+                  <h1 className="text-[20px] font-semibold mb-2">{children}</h1>
                 ),
                 h2: ({ children }) => (
-                  <h2 className="text-base font-semibold mb-2">{children}</h2>
+                  <h2 className="text-[20px] font-semibold mb-2">{children}</h2>
                 ),
                 h3: ({ children }) => (
-                  <h3 className="text-sm font-semibold mb-1">{children}</h3>
+                  <h3 className="text-[22px] font-semibold mb-1">{children}</h3>
                 ),
               }}
             >
@@ -66,25 +67,17 @@ const MessageComponent: React.FC<{
 
           {/* Save to Notes button for AI responses */}
           {!isUser && onSaveNote && (
-            <div className="mt-3 pt-2 border-t border-gray-100">
+            <div className="mt-3 pt-2 border-t  border-gray-100">
               <button
                 onClick={() => onSaveNote(message.content)}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
+                className="flex items-center gap-2 border border-black/30  px-3 py-1.5 text-[16px] text-gray-500 hover:text-gray-800 hover:bg-gray-50 rounded-[20px] transition-colors"
               >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                  <polyline points="17,21 17,13 7,13 7,21" />
-                  <polyline points="7,3 7,8 15,8" />
-                </svg>
+                <Pin
+                  height={16}
+                  width={16}
+                  color="#1E1E1E"
+                  className="opacity-50"
+                />
                 Save to Notes
               </button>
             </div>

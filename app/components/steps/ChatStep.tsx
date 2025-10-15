@@ -1,5 +1,5 @@
 import { Asset, KnowledgeBase } from "@/app/types/workspace";
-import { Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, Minimize } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -93,17 +93,19 @@ const ChatStep: React.FC<ChatStepProps> = ({
       }`}
     >
       {/* Sidebar */}
-      <div className="bg-white flex flex-col justify-between">
+      <div className="bg-white flex flex-col pb-[20px]">
         {" "}
         <div
-          className={`bg-white border-[1px] border-black/10 flex flex-col py-6 gap-4 px-2 m-4 rounded-[16px] transition-all duration-300 ${
+          className={`bg-white border-[1px] border-black/10 flex flex-col py-6 gap-4 px-2 m-4  rounded-[16px] transition-all duration-300 ${
             isSidebarExpanded ? "w-80" : "w-20"
-          }`}
+          } ${isFullscreen ? "h-[78.5vh]" : "h-[72vh]"}`}
         >
           {/* Expand/Collapse Button */}
           <button
             onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-            className="min-w-12 min-h-12  flex items-center justify-center  transition-all duration-300"
+            className={`${
+              isSidebarExpanded ? "justify-left" : "justify-center"
+            } min-w-12 min-h-12  flex items-center   transition-all duration-300`}
             title={isSidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
           >
             <svg
@@ -165,11 +167,23 @@ const ChatStep: React.FC<ChatStepProps> = ({
                       type="checkbox"
                       checked={selectedAssets.has(asset.id)}
                       onChange={() => {}} // Handled by parent onClick
-                      className="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      className="mt-1 w-4 h-4 accent-black text-white rounded focus:ring-blue-500"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        {renderAssetIcon(asset)}
+                        <svg
+                          width="21"
+                          height="16"
+                          viewBox="0 0 21 16"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M2.70142 16C2.15142 16 1.68075 15.8043 1.28942 15.413C0.898083 15.0217 0.702083 14.5507 0.701416 14V2C0.701416 1.45 0.897416 0.979333 1.28942 0.588C1.68142 0.196666 2.15208 0.000666667 2.70142 0H18.7014C19.2514 0 19.7224 0.196 20.1144 0.588C20.5064 0.98 20.7021 1.45067 20.7014 2V14C20.7014 14.55 20.5057 15.021 20.1144 15.413C19.7231 15.805 19.2521 16.0007 18.7014 16H2.70142ZM2.70142 14H13.2014V10.5H2.70142V14ZM15.2014 14H18.7014V5H15.2014V14ZM2.70142 8.5H13.2014V5H2.70142V8.5Z"
+                            fill="#1279FF"
+                          />
+                        </svg>
+
                         <span className="text-sm font-medium text-gray-900 truncate">
                           {asset.title.length > 25
                             ? `${asset.title.substring(0, 25)}...`
@@ -202,7 +216,7 @@ const ChatStep: React.FC<ChatStepProps> = ({
             </button> */}
               <button
                 onClick={() => setIsAttachModalOpen(true)}
-                className="min-w-12 min-h-12 border-t border-black/20   flex items-center justify-center  transition-all duration-300"
+                className="min-w-12 min-h-12 border-t border-black/20  pt-3 flex items-center justify-center  transition-all duration-300"
               >
                 <span className="text-5xl font-light text-black">+</span>
               </button>
@@ -235,12 +249,12 @@ const ChatStep: React.FC<ChatStepProps> = ({
                   />
                 </svg>
               </button> */}
-              <div className="overflow-y-auto border-b border-black/20 flex flex-col space-y-2 h-[40vh] scrollbar-hide">
+              <div className="overflow-y-auto border-b border-black/20 flex flex-col space-y-2  scrollbar-hide">
                 {" "}
                 {searchAssets.map((asset) => (
                   <button
                     key={asset.id}
-                    className="min-w-12 min-h-12 backdrop-blur-lg rounded-lg flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
+                    className="min-w-12 min-h-12 backdrop-blur-lg rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-105"
                     title={asset.title}
                   >
                     <svg
@@ -292,23 +306,26 @@ const ChatStep: React.FC<ChatStepProps> = ({
         </div>
         {isFullscreen && (
           <div
-            className="p-4 border-t border-gray-200 h-[99px]"
+            className={`   ${
+              isSidebarExpanded ? "bg-black text-gray-100" : "text-gray-600"
+            } flex mx-4 rounded-[16px] py-4 justify-center`}
             onClick={() => router.push(`/workspace/${workspaceId}`)}
           >
-            <button className="flex items-center h-full gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors">
-              <MinimizeIcon />
-              <span>Minimize the Chat</span>
+            <button
+              className={` flex items-center h-full gap-2 text-sm  transition-colors`}
+            >
+              <Minimize height={40} width={40} />
             </button>
           </div>
         )}
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 min-w-[300px] flex flex-col h-full min-h-0">
+      <div className="flex-1 min-w-[300px] flex flex-col h-full pl-0 pt-0 p-[20px] bg-white min-h-0">
         {/* Chat Messages Area */}
         <div
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto bg-white min-h-0"
+          className="flex-1 overflow-y-auto bg-white min-h-0 scrollbar-hide "
         >
           {messages.length === 0 ? (
             <div className="h-full flex flex-col px-6 py-8">
@@ -322,42 +339,45 @@ const ChatStep: React.FC<ChatStepProps> = ({
                         components={{
                           h1: (props) => (
                             <h1
-                              className="text-2xl font-bold text-gray-800 mb-4"
+                              className="text-3xl font-bold text-gray-800 mb-4"
                               {...props}
                             />
                           ),
                           h2: (props) => (
                             <h2
-                              className="text-xl font-semibold text-gray-800 mb-3"
+                              className="text-2xl font-semibold text-gray-800 mb-3"
                               {...props}
                             />
                           ),
                           h3: (props) => (
                             <h3
-                              className="text-lg font-medium text-gray-800 mb-2"
+                              className="text-xl font-medium text-gray-800 mb-2"
                               {...props}
                             />
                           ),
                           p: (props) => (
                             <p
-                              className="text-gray-700 mb-3 leading-relaxed"
+                              className="text-base text-gray-700 mb-3 leading-relaxed"
                               {...props}
                             />
                           ),
                           ul: (props) => (
                             <ul
-                              className="list-disc list-inside text-gray-700 mb-3 space-y-1"
+                              className="list-disc list-inside text-base text-gray-700 mb-3 space-y-1"
                               {...props}
                             />
                           ),
                           ol: (props) => (
                             <ol
-                              className="list-decimal list-inside text-gray-700 mb-3 space-y-1"
+                              className="list-decimal list-inside text-base text-gray-700 mb-3 space-y-1"
                               {...props}
                             />
                           ),
                           li: (props) => (
-                            <li className="text-gray-700" {...props} />
+                            <li
+                              className="text-base text-gray-700"
+                              {...props}
+                            />
                           ),
                           strong: (props) => (
                             <strong
@@ -382,7 +402,7 @@ const ChatStep: React.FC<ChatStepProps> = ({
                           ),
                           blockquote: (props) => (
                             <blockquote
-                              className="border-l-4 border-blue-300 pl-4 py-2 bg-blue-50 rounded-r-lg text-gray-700 mb-3"
+                              className="border-l-4 border-blue-300 pl-4 py-2 bg-blue-50 rounded-r-lg text-base text-gray-700 mb-3"
                               {...props}
                             />
                           ),
@@ -414,7 +434,7 @@ const ChatStep: React.FC<ChatStepProps> = ({
               </div>
             </div>
           ) : (
-            <div className="px-6 py-2">
+            <div className="pt-6 pb-2">
               <div className="space-y-4 bg-gray pb-4">
                 {messages.map((message) => (
                   <MessageComponent
@@ -436,50 +456,36 @@ const ChatStep: React.FC<ChatStepProps> = ({
         </div>
 
         {/* Input Area */}
-        <div className="p-6 bg-white border-t border-gray-200">
-          <div className="flex items-center gap-2  bg-white border border-gray-200 rounded-xl shadow-sm">
-            <div className="flex-1 relative">
-              <textarea
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleChatSubmit();
-                  }
-                }}
-                placeholder="Type your prompt here"
-                className="w-full px-3 py-2.5 pr-16 focus:outline-none focus:border-transparent resize-none text-sm"
-                rows={1}
-                style={{ minHeight: "40px", maxHeight: "100px" }}
-                disabled={isStreaming}
-              />
+        <div className="p-6 bg-white border-[1px] shadow-md rounded-[10px] border-black/20  ">
+          <div className="flex items-center gap-2 ">
+            <textarea
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleChatSubmit();
+                }
+              }}
+              placeholder="Type your prompt here"
+              className="w-full focus:outline-none focus:border-transparent resize-none text-lg"
+              rows={1}
+              style={{ minHeight: "40px", maxHeight: "100px" }}
+              disabled={isStreaming}
+            />
 
-              <div className="absolute right-2 bottom-2 flex items-center gap-1">
-                <button
-                  onClick={handleChatSubmit}
-                  disabled={!chatInput.trim() || isStreaming}
-                  className={`p-1.5 rounded-lg bg-black transition-colors ${
-                    chatInput.trim()
-                      ? "opacity-100"
-                      : "opacity-50 cursor-not-allowed"
-                  }`}
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M22 2L11 13" />
-                    <polygon points="22,2 15,22 11,13 2,9" />
-                  </svg>
-                </button>
-              </div>
+            <div className=" flex items-center gap-1">
+              <button
+                onClick={handleChatSubmit}
+                disabled={!chatInput.trim() || isStreaming}
+                className={`p-1.5 rounded-lg bg-black transition-colors ${
+                  chatInput.trim()
+                    ? "opacity-100"
+                    : "opacity-100 cursor-not-allowed"
+                }`}
+              >
+                <ArrowRight height={40} width={40} color="white" />
+              </button>
             </div>
           </div>
         </div>
@@ -509,7 +515,7 @@ const ChatStep: React.FC<ChatStepProps> = ({
           </div>
           <button
             onClick={() => setIsNotesExpanded(!isNotesExpanded)}
-            className="min-w-8 min-h-8 bg-gradient-to-r from-[#8e5eff] to-[#4596ff] rounded-lg flex items-center justify-center hover:from-[#7c4dff] hover:to-[#3b82f6] transition-all duration-200 hover:scale-105 shadow-md"
+            className="min-w-8 min-h-8 bg-black rounded-lg flex items-center justify-center transition-all duration-200  shadow-md"
             title={isNotesExpanded ? "Collapse notes" : "Expand notes"}
           >
             <svg
@@ -655,20 +661,24 @@ const ChatStep: React.FC<ChatStepProps> = ({
                                 remarkPlugins={[remarkGfm]}
                                 components={{
                                   p: ({ children }) => (
-                                    <p className="mb-2 last:mb-0">{children}</p>
+                                    <p className="mb-2 text-base last:mb-0">
+                                      {children}
+                                    </p>
                                   ),
                                   ul: ({ children }) => (
-                                    <ul className="list-disc ml-4 mb-2">
+                                    <ul className="list-disc ml-4 mb-2 text-base">
                                       {children}
                                     </ul>
                                   ),
                                   ol: ({ children }) => (
-                                    <ol className="list-decimal ml-4 mb-2">
+                                    <ol className="list-decimal ml-4 mb-2 text-base">
                                       {children}
                                     </ol>
                                   ),
                                   li: ({ children }) => (
-                                    <li className="mb-1">{children}</li>
+                                    <li className="mb-1 text-base">
+                                      {children}
+                                    </li>
                                   ),
                                   code: ({ children }) => (
                                     <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">
@@ -676,17 +686,17 @@ const ChatStep: React.FC<ChatStepProps> = ({
                                     </code>
                                   ),
                                   h1: ({ children }) => (
-                                    <h1 className="font-semibold text-base mb-2">
+                                    <h1 className="font-semibold text-xl mb-2">
                                       {children}
                                     </h1>
                                   ),
                                   h2: ({ children }) => (
-                                    <h2 className="font-semibold text-sm mb-2">
+                                    <h2 className="font-semibold text-lg mb-2">
                                       {children}
                                     </h2>
                                   ),
                                   h3: ({ children }) => (
-                                    <h3 className="font-semibold text-sm mb-1">
+                                    <h3 className="font-semibold text-base mb-1">
                                       {children}
                                     </h3>
                                   ),
@@ -715,7 +725,7 @@ const ChatStep: React.FC<ChatStepProps> = ({
               {notes.slice(0, 5).map((note) => (
                 <button
                   key={note.id}
-                  className="min-w-12 min-h-12 bg-gradient-to-r from-[#8e5eff]/20 to-[#4596ff]/20 rounded-lg flex items-center justify-center hover:from-[#8e5eff]/30 hover:to-[#4596ff]/30 border border-[#8e5eff]/30 transition-all duration-200 hover:scale-105 shadow-sm"
+                  className="min-w-12 min-h-12 bg-white rounded-lg flex items-center justify-center border border-black/10 transition-all duration-200 hover:scale-105 shadow-sm"
                   title={
                     note.content.length > 50
                       ? `${note.content.substring(0, 50)}...`
@@ -733,7 +743,7 @@ const ChatStep: React.FC<ChatStepProps> = ({
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
-                    className="text-[#8e5eff]"
+                    className="text-black"
                   >
                     <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
                     <polyline points="17,21 17,13 7,13 7,21" />

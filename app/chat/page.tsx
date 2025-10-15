@@ -276,7 +276,7 @@ const ChatPage = () => {
   return (
     <>
       <ChatNav />
-      <div className="h-[calc(100vh-78px)]">
+      <div>
         {knowledgeBase.name.includes("kb_search") ? (
           <MultiStepChatInterface
             isFullscreen={true}

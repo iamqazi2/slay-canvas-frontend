@@ -8,7 +8,7 @@ import {
 } from "@/app/types/workspace";
 import { apiClient } from "@/app/utils/apiClient";
 import { chatApi } from "@/app/utils/chatApi";
-import { Loader2 } from "lucide-react";
+import { Expand, ExpandIcon, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -951,21 +951,27 @@ export default function SimpleChatInterface({
               isUser ? "bg-[#4596FF]/20 text-black" : "bg-white text-black"
             }`}
           >
-            <div className="text-sm leading-relaxed prose prose-sm max-w-none">
+            <div className="text-md leading-relaxed prose prose-sm max-w-none">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
                   // Custom styling for markdown elements
                   p: ({ children }) => (
-                    <p className="mb-2 last:mb-0">{children}</p>
+                    <p className="mb-2 text-[18px] last:mb-0">{children}</p>
                   ),
                   ul: ({ children }) => (
-                    <ul className="list-disc ml-4 mb-2">{children}</ul>
+                    <ul className="list-disc ml-4 mb-2 text-[18px]">
+                      {children}
+                    </ul>
                   ),
                   ol: ({ children }) => (
-                    <ol className="list-decimal ml-4 mb-2">{children}</ol>
+                    <ol className="list-decimal ml-4 mb-2 text-[18px]">
+                      {children}
+                    </ol>
                   ),
-                  li: ({ children }) => <li className="mb-1">{children}</li>,
+                  li: ({ children }) => (
+                    <li className="mb-1 text-[18px]">{children}</li>
+                  ),
                   code: ({ children, className }) => {
                     const isInline = !className;
                     return isInline ? (
@@ -980,18 +986,24 @@ export default function SimpleChatInterface({
                   },
                   pre: ({ children }) => <pre className="mb-2">{children}</pre>,
                   blockquote: ({ children }) => (
-                    <blockquote className="border-l-4 border-gray-300 pl-4 italic mb-2">
+                    <blockquote className="border-l-4 border-gray-300 pl-4 italic mb-2 text-base">
                       {children}
                     </blockquote>
                   ),
                   h1: ({ children }) => (
-                    <h1 className="text-lg font-semibold mb-2">{children}</h1>
+                    <h1 className="text-[20px] font-semibold mb-2">
+                      {children}
+                    </h1>
                   ),
                   h2: ({ children }) => (
-                    <h2 className="text-base font-semibold mb-2">{children}</h2>
+                    <h2 className="text-[20px] font-semibold mb-2">
+                      {children}
+                    </h2>
                   ),
                   h3: ({ children }) => (
-                    <h3 className="text-sm font-semibold mb-2">{children}</h3>
+                    <h3 className="text-[22px] font-semibold mb-2">
+                      {children}
+                    </h3>
                   ),
                   strong: ({ children }) => (
                     <strong className="font-semibold">{children}</strong>
@@ -1049,11 +1061,15 @@ export default function SimpleChatInterface({
         </div>
       )}
 
-      <div className="border-1 border-black/10 shadow-md flex h-full min-h-0 noDrag">
+      <div
+        className={`${
+          isFullScreen ? "min-h-[93vh]" : ""
+        }  border-1 bg-gradient-to-b from-white to-[#F1F5F8] border-black/10 shadow-md flex h-full  noDrag }`}
+      >
         {/* Left Sidebar */}
-        <div className="bg-white flex flex-col justify-between">
+        <div className=" flex flex-col  justify-between">
           <div
-            className={`bg-white h-full border-[1px] border-black/10 flex flex-col py-6 gap-4 px-2 m-4 rounded-[16px] transition-all duration-300 ${
+            className={`bg-white h-full border-[1px] border-black/10 flex flex-col py-2 gap-4 px-2 m-4 mr-0 rounded-[16px] transition-all duration-300 ${
               isSidebarExpanded ? "w-80" : "w-20"
             }`}
           >
@@ -1157,7 +1173,7 @@ export default function SimpleChatInterface({
                 </div>
 
                 {/* Bottom Action Button */}
-                <div className="pt-4 border-t border-gray-200">
+                <div className="py-4 border-t border-gray-200">
                   {pathname !== "/chat" ? (
                     <button
                       className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors w-full"
@@ -1181,9 +1197,7 @@ export default function SimpleChatInterface({
               </div>
             ) : (
               <>
-                {" "}
                 <div className="flex justify-center">
-                  {" "}
                   <button
                     onClick={handleNewChat}
                     className="w-12 h-12 bg-white rounded-lg flex items-center justify-center transition-colors"
@@ -1192,16 +1206,11 @@ export default function SimpleChatInterface({
                     <PlusIcon />
                   </button>
                 </div>
-                <div className="flex flex-col items-center gap-4 flex-1 justify-between">
-                  {/* Chat icon in collapsed mode */}
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <ChatIcon fill="#1E1E1E" />
-                  </div>
-
-                  {/* New Chat button in collapsed mode */}
-
-                  {/* Maximize/Minimize icon in collapsed mode */}
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                {/* Spacer to push maximize button to bottom */}
+                <div className="flex-1"></div>
+                {/* Maximize/Minimize icon at bottom */}
+                <div className="flex justify-center pb-4">
+                  <div className=" rounded-lg flex items-center justify-center">
                     {pathname !== "/chat" ? (
                       <button
                         onClick={() =>
@@ -1210,7 +1219,7 @@ export default function SimpleChatInterface({
                         className="w-full h-full flex items-center justify-center"
                         title="Maximize the Chat"
                       >
-                        <MaximizeIcon />
+                        <Expand height={30} width={30} />
                       </button>
                     ) : (
                       <button
@@ -1218,7 +1227,7 @@ export default function SimpleChatInterface({
                         className="w-full h-full flex items-center justify-center"
                         title="Minimize the Chat"
                       >
-                        <MinimizeIcon />
+                        <Expand height={30} width={30} />
                       </button>
                     )}
                   </div>
@@ -1229,12 +1238,12 @@ export default function SimpleChatInterface({
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 min-w-[300px] flex flex-col min-h-0">
+        <div className="flex-1  min-w-[300px] flex flex-col min-h-0">
           {/* Filter Tags and Model Selection */}
-          <div className="pr-6 pt-4 border-b border-gray-200 bg-white">
+          <div className="px-4 pt-4 border-b border-gray-200 ">
             <div className="flex items-center justify-between gap-4 mb-3">
               <div
-                className="flex gap-2 w-full overflow-x-auto bg-white shadow-md rounded-lg p-2"
+                className="flex gap-2 bg-white w-full overflow-x-auto bg- shadow-sm rounded-lg p-2"
                 style={{ scrollbarWidth: "none" }}
               >
                 {filterTags.map((tag, index) => (
@@ -1257,7 +1266,7 @@ export default function SimpleChatInterface({
                   <button
                     onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
                     disabled={isStreaming}
-                    className="px-3 py-4 shadow-md whitespace-nowrap text-sm  rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4596FF] focus:border-transparent bg-white hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+                    className="px-3 py-4 shadow-sm whitespace-nowrap text-sm  rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4596FF] focus:border-transparent bg-white hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
                   >
                     <span className="whitespace-nowrap">
                       {
@@ -1310,7 +1319,7 @@ export default function SimpleChatInterface({
           {/* Chat Messages Area */}
           <div
             ref={messagesContainerRef}
-            className="flex-1 overflow-y-auto bg-gradient-to-b from-white to-[#F1F5F8] min-h-0"
+            className="flex-1 overflow-y-auto  min-h-0"
           >
             {isLoading ? (
               <div className="h-full flex items-center justify-center">
@@ -1319,22 +1328,22 @@ export default function SimpleChatInterface({
             ) : messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center px-6 py-8">
                 <div className="text-center flex flex-col items-center justify-center max-w-lg">
-                  <div className="mb-8">
+                  <div className="mb-4">
                     <LogoIcon size={80} />
                   </div>
 
-                  <h2 className="text-2xl text-center font-medium text-gray-800 mb-4">
+                  <h2 className="text-lg text-center font-medium text-gray-800">
                     How can we assist you today?
                   </h2>
 
-                  <p className="text-base text-gray-500 leading-relaxed">
+                  <p className="text-[12px] max-w-[300px] text-gray-500 leading-relaxed">
                     Get expert guidance from your knowledge base &ldquo;
                     {knowledgeBase.name}&rdquo;. Ask any question and get
                     AI-powered responses based on your uploaded content.
                   </p>
 
                   <div className="mt-4 px-3 py-2 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-sm text-blue-700">
+                    <p className="text-[10px] text-blue-700">
                       <span className="font-medium">Current Model:</span>{" "}
                       {
                         availableModels.find((m) => m.id === selectedModel)
@@ -1345,8 +1354,8 @@ export default function SimpleChatInterface({
                 </div>
               </div>
             ) : (
-              <div className="px-6 py-2">
-                <div className="space-y-4 bg-gray pb-4">
+              <div className="">
+                <div className="space-y-4 bg-gray p-4">
                   {messages.map((message) => (
                     <MessageComponent key={message.id} message={message} />
                   ))}
@@ -1366,37 +1375,36 @@ export default function SimpleChatInterface({
           </div>
 
           {/* Input Area */}
-          <div className="p-6 bg-white border-t border-gray-200">
-            <div className="flex items-center gap-2 p-2 bg-white border border-gray-200 rounded-xl shadow-sm">
+          <div className="p-6  border-t border-gray-200">
+            <div className="flex  items-center gap-2 p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
               <div className="flex-1 relative">
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Type your prompt here"
-                  className="w-full px-3 py-2.5 pr-16 focus:outline-none focus:border-transparent resize-none text-sm"
+                  className="w-full  focus:outline-none focus:border-transparent resize-none text-[16px]"
                   rows={1}
-                  style={{ minHeight: "40px", maxHeight: "100px" }}
+                  // style={{ minHeight: "40px", maxHeight: "100px" }}
                   disabled={isStreaming}
                 />
-
-                <div className="absolute right-2 bottom-1 flex items-center gap-1">
-                  <button
-                    onClick={handleSendMessage}
-                    disabled={!message.trim() || isStreaming}
-                    className={`p-1.5 rounded-lg transition-colors ${
-                      message.trim()
-                        ? "opacity-100"
-                        : "opacity-50 cursor-not-allowed"
-                    }`}
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%)",
-                    }}
-                  >
-                    <SendIcon />
-                  </button>
-                </div>
+              </div>
+              <div className=" flex ju items-center gap-1">
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!message.trim() || isStreaming}
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    message.trim()
+                      ? "opacity-100"
+                      : "opacity-100 cursor-not-allowed"
+                  }`}
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%)",
+                  }}
+                >
+                  <SendIcon />
+                </button>
               </div>
             </div>
           </div>
