@@ -34,7 +34,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
   // Logo Component
   const LogoIcon: React.FC<{ size?: number }> = ({ size = 24 }) => (
     <div
-      className="flex items-center justify-center rounded-full bg-white"
+      className="flex items-center justify-center rounded-ful"
       style={{ width: size, height: size }}
     >
       <svg
@@ -447,7 +447,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
 
   return (
     <div>
-      <div className={`flex h-[calc(100vh-78px)] overflow-auto ${className}`}>
+      <div className={`flex overflow-auto ${className}`}>
         {/* Left Sidebar */}
         <div className="w-80 sticky left-0 top-0 bg-white border-r border-gray-200 flex flex-col">
           {/* Top Section */}
@@ -562,7 +562,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ className = "" }) => {
                     <LogoIcon size={80} />
                   </div>
 
-                  <h2 className="text-2xl text-center font-medium text-gray-800 mb-4">
+                  <h2 className="text-xl text-center font-medium text-gray-800 mb-4">
                     How can we assist you today?
                   </h2>
 
